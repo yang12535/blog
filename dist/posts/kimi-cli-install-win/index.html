@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows 下安装 Kimi CLI，PowerShell 一键指令 - Bogl Blog</title>
+  <meta name="description" content="[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process …">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      <a class="menu-item" href="../../posts/hello-world/">← Hello World</a>
+      <a class="menu-item" href="../../posts/gbk-test/">→ GBK测试</a>
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">Windows 下安装 Kimi CLI，PowerShell 一键指令</h1>
+    <div class="article-page-meta">
+      <span>2026-04-08</span>
+      
+        
+        <a class="tag" href="../../tags/kimi/">kimi</a>
+        
+        <a class="tag" href="../../tags/cli/">cli</a>
+        
+        <a class="tag" href="../../tags/windows/">windows</a>
+        
+        <a class="tag" href="../../tags/教程/">教程</a>
+        
+      
+    </div>
+  </header>
+  <div class="article-content">
+    <pre><code class="language-powershell">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &quot;&gt;&gt;&gt; 安装 Python 3.12 (华为云镜像)...&quot; -ForegroundColor Cyan;Invoke-WebRequest -Uri &quot;https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe&quot; -OutFile &quot;$env:TEMP\py.exe&quot; -UseBasicParsing;Start-Process &quot;$env:TEMP\py.exe&quot; -ArgumentList &quot;/quiet PrependPath=1 Include_test=0 InstallAllUsers=0&quot; -Wait};Write-Host &quot;&gt;&gt;&gt; 安装 uv (清华源)...&quot; -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable(&quot;UV_INDEX_URL&quot;,&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;,&quot;User&quot;);[Environment]::SetEnvironmentVariable(&quot;UV_EXTRA_INDEX_URL&quot;,&quot;https://mirrors.aliyun.com/pypi/simple/&quot;,&quot;User&quot;);$env:UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;;$env:UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;;Write-Host &quot;&gt;&gt;&gt; 安装 kimi-cli...&quot; -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable(&quot;Path&quot;,&quot;User&quot;);$uvBin=&quot;$env:USERPROFILE\.local\bin&quot;;if($uPath -notlike &quot;*$uvBin*&quot;){[Environment]::SetEnvironmentVariable(&quot;Path&quot;,&quot;$uPath;$uvBin&quot;,&quot;User&quot;)};$env:Path=&quot;$env:Path;$uvBin&quot;;Write-Host &quot;&gt;&gt;&gt; 完成！&quot; -ForegroundColor Green;python -m uv --version;kimi --version;Write-Host &quot;`n✓ 环境变量已永久保存&quot; -ForegroundColor Green;Read-Host &quot;按回车退出&quot;
+</code></pre>
+
+  </div>
+</article>
+
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+  </footer>
+</body>
+</html>

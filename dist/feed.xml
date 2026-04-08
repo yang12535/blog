@@ -4,17 +4,9 @@
     <title>Bogl Blog</title>
     <link>https://example.com/</link>
     <description>A lightweight static blog powered by Bogl.</description>
-    <lastBuildDate>Wed, 08 Apr 2026 14:37:32 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 08 Apr 2026 15:37:52 GMT</lastBuildDate>
     <language>zh-CN</language>
     
-    <item>
-      <title>ceshi</title>
-      <link>https://example.com/posts/1/</link>
-      <guid>https://example.com/posts/1/</guid>
-      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
-      <description>测试，czsvfaffagbisgbaebvadsdbviabviabfoiuewbfkawbvoadsuilfduhiafoivabi偶发哈额外iu哦发IE忘记及哦啊办法啊都收不到好吧VB计划八法客服吧是不是方便的深V高科技阿爸就半盒阿爸奥我就把而不考核额干部爱为方便加额外功几号
-</description>
-    </item>
     <item>
       <title>Hello World</title>
       <link>https://example.com/posts/hello-world/</link>
@@ -31,6 +23,13 @@ EdgeOne Pages：专为腾讯云 EdgeOne Pages 优化
 代码示例
 const greeting = &amp;#39;Hello, Bogl!&amp;#39;;
 console.log(gre</description>
+    </item>
+    <item>
+      <title>Windows 下安装 Kimi CLI，PowerShell 一键指令</title>
+      <link>https://example.com/posts/kimi-cli-install-win/</link>
+      <guid>https://example.com/posts/kimi-cli-install-win/</guid>
+      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
+      <description>[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &amp;qu</description>
     </item>
     <item>
       <title>GBK测试</title>

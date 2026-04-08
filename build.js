@@ -199,6 +199,17 @@ async function build() {
   }
   console.log(`  Generated ${published.length} post pages.`);
 
+  // Prepare tagMap and sidebar data
+  const tagMap = {};
+  for (const post of published) {
+    for (const tag of post.tags) {
+      if (!tagMap[tag]) tagMap[tag] = [];
+      tagMap[tag].push(post);
+    }
+  }
+  const allTags = Object.keys(tagMap).sort().map(name => ({ name, count: tagMap[name].length }));
+  const archiveYears = [...new Set(published.map(p => new Date(p.date).getFullYear()))].sort((a, b) => b - a);
+
   // --- Generate index pages ---
   const totalPages = Math.max(1, Math.ceil(published.length / CONFIG.postsPerPage));
   for (let page = 1; page <= totalPages; page++) {
@@ -210,6 +221,8 @@ async function build() {
       totalPages,
       prevPage: page > 1 ? page - 1 : null,
       nextPage: page < totalPages ? page + 1 : null,
+      allTags,
+      archiveYears,
     };
     const html = render('index.html', ctx, page === 1 ? '' : '../');
     if (page === 1) {
@@ -221,15 +234,6 @@ async function build() {
     }
   }
   console.log(`  Generated ${totalPages} index pages.`);
-
-  // --- Generate tags ---
-  const tagMap = {};
-  for (const post of published) {
-    for (const tag of post.tags) {
-      if (!tagMap[tag]) tagMap[tag] = [];
-      tagMap[tag].push(post);
-    }
-  }
 
   const tagsOut = path.join(CONFIG.outputDir, 'tags');
   ensureDir(tagsOut);

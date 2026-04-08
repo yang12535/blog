@@ -1,42 +1,64 @@
 {% extends "base.html" %}
 
-{% block content %}
-<a class="rss-link" href="{{ root }}feed.xml">RSS</a>
-<h1 style="margin-bottom:8px;font-size:1.4rem">最新文章</h1>
+{% block sidebar %}
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-header">标签</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        {% for tag in allTags %}
+        <li><a class="menu-item" href="{{ root }}tags/{{ tag.name }}/">{{ tag.name }} <span class="tag">{{ tag.count }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="widget">
+    <div class="widget-header">归档</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        {% for year in archiveYears %}
+        <li><a class="menu-item" href="{{ root }}archive">{{ year }} 年</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</aside>
+{% endblock %}
 
+{% block content %}
 {% if posts.length %}
-<ul class="post-list">
   {% for post in posts %}
-  <li class="post-item">
-    <h2><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
-    <div class="post-meta">
-      <time datetime="{{ post.date }}">{{ post.dateDisplay }}</time>
-      {% if post.tags.length %}
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
+      <div class="article-tags">
         {% for tag in post.tags %}
         <a class="tag" href="{{ root }}tags/{{ tag }}/">{{ tag }}</a>
         {% endfor %}
+      </div>
+      {% if post.excerpt %}
+      <p class="article-excerpt">{{ post.excerpt }}</p>
       {% endif %}
+      <div class="article-footer">
+        <span>{{ post.dateDisplay }}</span>
+        <span>RSS</span>
+      </div>
     </div>
-    {% if post.excerpt %}
-    <p class="post-excerpt">{{ post.excerpt }}</p>
-    {% endif %}
-  </li>
+  </article>
   {% endfor %}
-</ul>
 
-{% if totalPages > 1 %}
-<div class="pagination">
-  {% if prevPage %}
-  <a href="{% if prevPage == 1 %}{{ root }}{% else %}{{ root }}page/{{ prevPage }}/{% endif %}">上一页</a>
+  {% if totalPages > 1 %}
+  <div class="pagination">
+    {% if prevPage %}
+    <a href="{% if prevPage == 1 %}{{ root }}{% else %}{{ root }}page/{{ prevPage }}/{% endif %}">上一页</a>
+    {% endif %}
+    <span class="current">{{ currentPage }} / {{ totalPages }}</span>
+    {% if nextPage %}
+    <a href="{{ root }}page/{{ nextPage }}/">下一页</a>
+    {% endif %}
+  </div>
   {% endif %}
-  <span class="current">{{ currentPage }} / {{ totalPages }}</span>
-  {% if nextPage %}
-  <a href="{{ root }}page/{{ nextPage }}/">下一页</a>
-  {% endif %}
-</div>
-{% endif %}
-
 {% else %}
-<p style="color:var(--muted);margin-top:20px">暂无文章。</p>
+  <div class="article-card"><div class="article-body" style="text-align:center;color:var(--text-light);padding:60px 20px;">暂无文章。</div></div>
 {% endif %}
 {% endblock %}

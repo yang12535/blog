@@ -5,61 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bogl Blog</title>
   <meta name="description" content="A lightweight static blog powered by Bogl.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="feed.xml">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container inner">
-      <a class="site-title" href="">Bogl Blog</a>
-      <nav class="site-nav">
-        <a href="">首页</a>
-        <a href="archive">归档</a>
-        <a href="tags">标签</a>
-      </nav>
+  <nav class="navbar">
+    <a class="navbar-brand" href="">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="">首页</a>
+      <a class="navbar-item " href="archive">归档</a>
+      <a class="navbar-item " href="tags">标签</a>
     </div>
-  </header>
+  </nav>
 
-  <main class="container">
+  <div class="main-wrapper">
     
-<a class="rss-link" href="feed.xml">RSS</a>
-<h1 style="margin-bottom:8px;font-size:1.4rem">最新文章</h1>
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-header">标签</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        
+        <li><a class="menu-item" href="tags/bogl/">bogl <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/cli/">cli <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/gbk/">gbk <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/kimi/">kimi <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/windows/">windows <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/教程/">教程 <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/测试/">测试 <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/随笔/">随笔 <span class="tag">1</span></a></li>
+        
+      </ul>
+    </div>
+  </div>
+  <div class="widget">
+    <div class="widget-header">归档</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        
+        <li><a class="menu-item" href="archive">2026 年</a></li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
 
 
-<ul class="post-list">
-  
-  <li class="post-item">
-    <h2><a href="posts/1/">ceshi</a></h2>
-    <div class="post-meta">
-      <time datetime="2026-04-08T00:00:00.000Z">2026-04-08</time>
+    <main class="content-main">
       
+
+  
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="posts/hello-world/">Hello World</a></h2>
+      <div class="article-tags">
         
         <a class="tag" href="tags/bogl/">bogl</a>
         
         <a class="tag" href="tags/随笔/">随笔</a>
         
+      </div>
       
-    </div>
-    
-    <p class="post-excerpt">测试，czsvfaffagbisgbaebvadsdbviabviabfoiuewbfkawbvoadsuilfduhiafoivabi偶发哈额外iu哦发IE忘记及哦啊办法啊都收不到好吧VB计划八法客服吧是不是方便的深V高科技阿爸就半盒阿爸奥我就把而不考核额干部爱为方便加额外功几号
-</p>
-    
-  </li>
-  
-  <li class="post-item">
-    <h2><a href="posts/hello-world/">Hello World</a></h2>
-    <div class="post-meta">
-      <time datetime="2026-04-08T00:00:00.000Z">2026-04-08</time>
-      
-        
-        <a class="tag" href="tags/bogl/">bogl</a>
-        
-        <a class="tag" href="tags/随笔/">随笔</a>
-        
-      
-    </div>
-    
-    <p class="post-excerpt">这是 Bogl 博客的第一篇文章。
+      <p class="article-excerpt">这是 Bogl 博客的第一篇文章。
 特性
 
 静态生成：纯 HTML/CSS/JS，无服务端依赖
@@ -70,43 +87,71 @@ EdgeOne Pages：专为腾讯云 EdgeOne Pages 优化
 代码示例
 const greeting = &amp;#39;Hello, Bogl!&amp;#39;;
 console.log(gre</p>
-    
-  </li>
-  
-  <li class="post-item">
-    <h2><a href="posts/gbk-test/">GBK测试</a></h2>
-    <div class="post-meta">
-      <time datetime="2026-04-07T00:00:00.000Z">2026-04-07</time>
       
+      <div class="article-footer">
+        <span>2026-04-08</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
+  
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="posts/kimi-cli-install-win/">Windows 下安装 Kimi CLI，PowerShell 一键指令</a></h2>
+      <div class="article-tags">
+        
+        <a class="tag" href="tags/kimi/">kimi</a>
+        
+        <a class="tag" href="tags/cli/">cli</a>
+        
+        <a class="tag" href="tags/windows/">windows</a>
+        
+        <a class="tag" href="tags/教程/">教程</a>
+        
+      </div>
+      
+      <p class="article-excerpt">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &amp;qu</p>
+      
+      <div class="article-footer">
+        <span>2026-04-08</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
+  
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="posts/gbk-test/">GBK测试</a></h2>
+      <div class="article-tags">
         
         <a class="tag" href="tags/测试/">测试</a>
         
         <a class="tag" href="tags/gbk/">gbk</a>
         
+      </div>
       
-    </div>
-    
-    <p class="post-excerpt">这是一篇GBK编码的文章。
+      <p class="article-excerpt">这是一篇GBK编码的文章。
 测试内容
 CRLF换行测试。
 中文内容正常显示。
 </p>
-    
-  </li>
+      
+      <div class="article-footer">
+        <span>2026-04-07</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
   
-</ul>
+
+  
 
 
-
-
-
-  </main>
+    </main>
+  </div>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
-    </div>
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
   </footer>
-  <script src="assets/js/main.js"></script>
 </body>
 </html>

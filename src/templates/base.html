@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site.title }}{% endblock %}</title>
   <meta name="description" content="{% block desc %}{{ site.description }}{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ root }}assets/css/style.css">
   <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ root }}feed.xml">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container inner">
-      <a class="site-title" href="{{ root }}">{{ site.title }}</a>
-      <nav class="site-nav">
-        <a href="{{ root }}">首页</a>
-        <a href="{{ root }}archive">归档</a>
-        <a href="{{ root }}tags">标签</a>
-      </nav>
+  <nav class="navbar">
+    <a class="navbar-brand" href="{{ root }}">{{ site.title }}</a>
+    <div class="navbar-menu">
+      <a class="navbar-item {% if active == 'home' %}active{% endif %}" href="{{ root }}">首页</a>
+      <a class="navbar-item {% if active == 'archive' %}active{% endif %}" href="{{ root }}archive">归档</a>
+      <a class="navbar-item {% if active == 'tags' %}active{% endif %}" href="{{ root }}tags">标签</a>
     </div>
-  </header>
+  </nav>
 
-  <main class="container">
-    {% block content %}{% endblock %}
-  </main>
+  <div class="main-wrapper">
+    {% block sidebar %}{% endblock %}
+
+    <main class="content-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; {{ site.year }} {{ site.title }}. Powered by Bogl.</p>
-    </div>
+    <p>&copy; {{ site.year }} {{ site.title }}. Powered by Bogl.</p>
   </footer>
-  <script src="{{ root }}assets/js/main.js"></script>
 </body>
 </html>

@@ -9,28 +9,42 @@
 CRLF换行测试。
 中文内容正常显示。
 ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container inner">
-      <a class="site-title" href="../../">Bogl Blog</a>
-      <nav class="site-nav">
-        <a href="../../">首页</a>
-        <a href="../../archive">归档</a>
-        <a href="../../tags">标签</a>
-      </nav>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
     </div>
-  </header>
+  </nav>
 
-  <main class="container">
+  <div class="main-wrapper">
     
-<article>
-  <header class="post-header">
-    <h1>GBK测试</h1>
-    <div class="post-meta">
-      <time datetime="2026-04-07T00:00:00.000Z">2026-04-07</time>
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      <a class="menu-item" href="../../posts/kimi-cli-install-win/">← Windows 下安装 Kimi CLI…</a>
+      
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">GBK测试</h1>
+    <div class="article-page-meta">
+      <span>2026-04-07</span>
       
         
         <a class="tag" href="../../tags/测试/">测试</a>
@@ -40,7 +54,7 @@ CRLF换行测试。
       
     </div>
   </header>
-  <div class="post-content">
+  <div class="article-content">
     <p>这是一篇GBK编码的文章。</p>
 <h2>测试内容</h2>
 <p>CRLF换行测试。</p>
@@ -49,23 +63,11 @@ CRLF换行测试。
   </div>
 </article>
 
-<nav style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border)">
-  
-  <div style="margin-bottom:10px">
-    <span style="color:var(--muted)">上一篇：</span>
-    <a href="../../posts/hello-world/">Hello World</a>
+    </main>
   </div>
-  
-  
-</nav>
-
-  </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
-    </div>
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
   </footer>
-  <script src="../../assets/js/main.js"></script>
 </body>
 </html>
