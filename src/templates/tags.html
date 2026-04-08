@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}标签 - {{ site.title }}{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom:24px">所有标签</h1>
+{% if tags.length %}
+<ul class="tag-list">
+  {% for tag in tags %}
+  <li><a href="{{ root }}tags/{{ tag.name }}/">{{ tag.name }} ({{ tag.count }})</a></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p style="color:var(--muted)">暂无标签。</p>
+{% endif %}
+{% endblock %}

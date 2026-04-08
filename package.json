@@ -1,0 +1,21 @@
+{
+  "name": "bogl-html",
+  "version": "1.0.0",
+  "description": "Bogl - 轻量静态博客生成器 for Tencent EdgeOne Pages",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "keywords": ["blog", "ssg", "edgeone", "static"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "marked": "^14.1.2",
+    "gray-matter": "^4.0.3",
+    "jschardet": "^3.1.2",
+    "iconv-lite": "^0.6.3",
+    "nunjucks": "^3.2.4"
+  }
+}

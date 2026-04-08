@@ -1,0 +1,27 @@
+{
+  "name": "bogl-blog",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
+  "nodeVersion": "20.18.0",
+  "headers": [
+    {
+      "source": "/*",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/assets/*",
+      "headers": [
+        { "key": "Cache-Control", "value": "max-age=31536000, immutable" }
+      ]
+    }
+  ],
+  "caches": [
+    { "source": "/assets/*", "cacheTtl": 2592000 },
+    { "source": "/posts/*", "cacheTtl": 86400 },
+    { "source": "/feed.xml", "cacheTtl": 0 }
+  ]
+}

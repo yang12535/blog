@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Bogl Blog</title>
+    <link>https://example.com/</link>
+    <description>A lightweight static blog powered by Bogl.</description>
+    <lastBuildDate>Wed, 08 Apr 2026 14:37:32 GMT</lastBuildDate>
+    <language>zh-CN</language>
+    
+    <item>
+      <title>ceshi</title>
+      <link>https://example.com/posts/1/</link>
+      <guid>https://example.com/posts/1/</guid>
+      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
+      <description>测试，czsvfaffagbisgbaebvadsdbviabviabfoiuewbfkawbvoadsuilfduhiafoivabi偶发哈额外iu哦发IE忘记及哦啊办法啊都收不到好吧VB计划八法客服吧是不是方便的深V高科技阿爸就半盒阿爸奥我就把而不考核额干部爱为方便加额外功几号
+</description>
+    </item>
+    <item>
+      <title>Hello World</title>
+      <link>https://example.com/posts/hello-world/</link>
+      <guid>https://example.com/posts/hello-world/</guid>
+      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
+      <description>这是 Bogl 博客的第一篇文章。
+特性
+
+静态生成：纯 HTML/CSS/JS，无服务端依赖
+自动编码转换：GBK / GB2312 自动识别并转为 UTF-8
+换行规范化：CRLF 自动转为 LF
+EdgeOne Pages：专为腾讯云 EdgeOne Pages 优化
+
+代码示例
+const greeting = &amp;#39;Hello, Bogl!&amp;#39;;
+console.log(gre</description>
+    </item>
+    <item>
+      <title>GBK测试</title>
+      <link>https://example.com/posts/gbk-test/</link>
+      <guid>https://example.com/posts/gbk-test/</guid>
+      <pubDate>Tue, 07 Apr 2026 00:00:00 GMT</pubDate>
+      <description>这是一篇GBK编码的文章。
+测试内容
+CRLF换行测试。
+中文内容正常显示。
+</description>
+    </item>
+  </channel>
+</rss>

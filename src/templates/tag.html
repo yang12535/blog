@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom:24px">标签：{{ tag }}</h1>
+<ul class="post-list">
+  {% for post in posts %}
+  <li class="post-item">
+    <h2><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
+    <div class="post-meta">
+      <time datetime="{{ post.date }}">{{ post.dateDisplay }}</time>
+    </div>
+    {% if post.excerpt %}
+    <p class="post-excerpt">{{ post.excerpt }}</p>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a class="rss-link" href="{{ root }}feed.xml">RSS</a>
+<h1 style="margin-bottom:8px;font-size:1.4rem">最新文章</h1>
+
+{% if posts.length %}
+<ul class="post-list">
+  {% for post in posts %}
+  <li class="post-item">
+    <h2><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
+    <div class="post-meta">
+      <time datetime="{{ post.date }}">{{ post.dateDisplay }}</time>
+      {% if post.tags.length %}
+        {% for tag in post.tags %}
+        <a class="tag" href="{{ root }}tags/{{ tag }}/">{{ tag }}</a>
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% if post.excerpt %}
+    <p class="post-excerpt">{{ post.excerpt }}</p>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+
+{% if totalPages > 1 %}
+<div class="pagination">
+  {% if prevPage %}
+  <a href="{% if prevPage == 1 %}{{ root }}{% else %}{{ root }}page/{{ prevPage }}/{% endif %}">上一页</a>
+  {% endif %}
+  <span class="current">{{ currentPage }} / {{ totalPages }}</span>
+  {% if nextPage %}
+  <a href="{{ root }}page/{{ nextPage }}/">下一页</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<p style="color:var(--muted);margin-top:20px">暂无文章。</p>
+{% endif %}
+{% endblock %}
