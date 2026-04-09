@@ -74,7 +74,10 @@
     });
   }
 
-  // Run both
-  renderMermaid();
+  // Run code block enhancements immediately
   enhanceCodeBlocks();
+
+  // Run mermaid rendering now (if already loaded) or expose for later
+  renderMermaid();
+  window.renderMermaidDiagrams = renderMermaid;
 })();
