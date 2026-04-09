@@ -383,3 +383,18 @@ a:hover { color: var(--primary-dark); }
   .navbar-brand { margin-right: 16px; }
   .article-page { padding: 20px; }
 }
+
+/* Mermaid diagrams */
+.mermaid-diagram {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
