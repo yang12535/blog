@@ -319,6 +319,13 @@ async function build() {
     copyRecursive(CONFIG.assetsDir, assetsOut);
     console.log('  Copied assets.');
   }
+  // Copy favicon to root
+  const faviconSrc = path.join(CONFIG.assetsDir, 'favicon.svg');
+  const faviconDest = path.join(CONFIG.outputDir, 'favicon.svg');
+  if (fs.existsSync(faviconSrc)) {
+    fs.copyFileSync(faviconSrc, faviconDest);
+    console.log('  Copied favicon.');
+  }
 
   console.log(`✅ Build finished in ${Date.now() - startTime}ms.`);
 }
