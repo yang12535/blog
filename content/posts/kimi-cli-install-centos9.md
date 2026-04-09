@@ -1,3 +1,9 @@
+---
+title: CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
+date: 2026-04-09
+tags: [kimi-cli, centos, rhel, linux, uv]
+---
+
 # CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
 
 > 对应 Windows 版：[Windows 下安装 Kimi CLI，PowerShell 一键指令](https://bash.yang125.fun/posts/kimi-cli-install-win/)
