@@ -135,6 +135,8 @@ async function build() {
 
   const { marked } = await import('marked');
 
+
+
   // Prepare dirs
   ensureDir(CONFIG.outputDir);
 
@@ -151,7 +153,9 @@ async function build() {
     const slug = path.basename(filename, '.md');
 
     // Parse
-    const text = normalizeText(raw);
+    let text = normalizeText(raw);
+    // Auto-convert .md links to absolute article URLs before parsing
+    text = text.replace(/\]\((\.?\/?)([^\)/]+)\.md\)/g, '](/posts/$2/)');
     const parsed = matter(text);
     const html = marked.parse(parsed.content);
     const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 200);

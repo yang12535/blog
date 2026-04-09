@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI - Bogl Blog</title>
+  <meta name="description" content="CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
+
+对应 Windows 版：Windows 下安装 Kimi CLI，PowerShell 一键指令
+
+环境信息
+
+系统：CentOS Stream 9 / …">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=2">
+  <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      <a class="menu-item" href="../../posts/centos9-mirror-switch/">← CentOS Stream 9 / RH…</a>
+      <a class="menu-item" href="../../posts/hello-world/">→ Hello World</a>
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI</h1>
+    <div class="article-page-meta">
+      <span>2026-04-09</span>
+      
+        
+        <a class="tag" href="../../tags/kimi-cli/">kimi-cli</a>
+        
+        <a class="tag" href="../../tags/centos/">centos</a>
+        
+        <a class="tag" href="../../tags/rhel/">rhel</a>
+        
+        <a class="tag" href="../../tags/linux/">linux</a>
+        
+        <a class="tag" href="../../tags/uv/">uv</a>
+        
+      
+    </div>
+  </header>
+  <div class="article-content">
+    <h1>CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI</h1>
+<blockquote>
+<p>对应 Windows 版：<a href="https://bash.yang125.fun/posts/kimi-cli-install-win/">Windows 下安装 Kimi CLI，PowerShell 一键指令</a></p>
+</blockquote>
+<h2>环境信息</h2>
+<ul>
+<li><strong>系统</strong>：CentOS Stream 9 / RHEL 9 / Rocky Linux 9 / AlmaLinux 9</li>
+<li><strong>场景</strong>：无红帽订阅（无 Subscription）</li>
+<li><strong>目标</strong>：一行命令完成 Python + uv + kimi-cli 安装</li>
+<li><strong>网络</strong>：国内环境，使用阿里云/清华镜像加速</li>
+</ul>
+<hr>
+<h2>为什么这玩意这么折腾？</h2>
+<table>
+<thead>
+<tr>
+<th>坑</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Subscription Manager</strong></td>
+<td>RHEL 默认强制注册红帽订阅，无订阅时必须禁用插件并更换开源源</td>
+</tr>
+<tr>
+<td><strong>GPG Key 404</strong></td>
+<td>阿里云 <code>centos-stream/RPM-GPG-KEY...</code> 路径已失效，必须手动修正为 <code>centos/RPM-GPG-KEY...</code></td>
+</tr>
+<tr>
+<td><strong>缺少 pip</strong></td>
+<td>最小化安装的 CentOS/RHEL 只有 <code>python3</code>，没有 <code>python3-pip</code></td>
+</tr>
+<tr>
+<td><strong>国内镜像碎片化</strong></td>
+<td>华为云做 Python 安装包、清华做 PyPI、阿里云做系统源，各管一摊</td>
+</tr>
+<tr>
+<td><strong>Windows vs Linux 差异</strong></td>
+<td>Windows 直接下载 <code>.exe</code> 安装包；Linux 必须用包管理器（dnf/yum）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>一键安装（单行版）</h2>
+<p>复制以下整行，在 <code>root</code> 权限下执行：</p>
+<pre><code class="language-bash">sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-manager.conf 2&gt;/dev/null; mkdir -p /etc/yum.repos.d/backup &amp;&amp; mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2&gt;/dev/null; echo -e &quot;[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official&quot; &gt; /etc/yum.repos.d/centos9.repo &amp;&amp; dnf clean all &amp;&amp; dnf install -y python3-pip &amp;&amp; export UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple&quot; UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot; &amp;&amp; python3 -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple --user --quiet &amp;&amp; python3 -m uv tool install kimi-cli --force &amp;&amp; { grep -q &quot;.local/bin&quot; ~/.bashrc || echo &#39;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc; } &amp;&amp; export PATH=&quot;$HOME/.local/bin:$PATH&quot; &amp;&amp; python3 -m uv --version &amp;&amp; kimi --version
+</code></pre>
+<hr>
+<h2>分步详解</h2>
+<p>如果你想知道上面那行命令到底干了什么，以下是逐段拆解：</p>
+<h3>1. 禁用 subscription-manager 插件</h3>
+<pre><code class="language-bash">sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-manager.conf 2&gt;/dev/null
+</code></pre>
+<p>RHEL/CentOS 默认启用 <code>subscription-manager</code>，每次执行 <code>dnf</code> 都会尝试连接红帽订阅服务器。
+无订阅环境下会报 <strong>&quot;无法读取客户身份&quot;</strong>，拖慢速度甚至导致命令失败。</p>
+<h3>2. 备份旧源并写入阿里云镜像</h3>
+<pre><code class="language-bash">mkdir -p /etc/yum.repos.d/backup
+mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2&gt;/dev/null
+</code></pre>
+<p>原有源可能包含指向红帽官方或已失效的地址，先备份到 <code>backup</code> 目录，防止误删。</p>
+<p>然后写入新的 <code>centos9.repo</code>：</p>
+<pre><code class="language-ini">[baseos]
+name=CentOS Stream 9 BaseOS
+baseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/
+gpgcheck=1
+enabled=1
+gpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official
+
+[appstream]
+name=CentOS Stream 9 AppStream
+baseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/
+gpgcheck=1
+enabled=1
+gpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>注意 GPG Key 路径</strong>：阿里云上 <code>centos-stream/RPM-GPG-KEY-CentOS-Official</code> 返回 404，
+必须改成 <code>centos/RPM-GPG-KEY-CentOS-Official</code> 才能正常导入公钥。</p>
+</blockquote>
+<h3>3. 安装 python3-pip</h3>
+<pre><code class="language-bash">dnf clean all
+dnf install -y python3-pip
+</code></pre>
+<ul>
+<li><code>dnf clean all</code>：清除旧缓存，避免元数据冲突</li>
+<li><code>python3-pip</code>：CentOS 最小化安装不带 pip，必须手动安装</li>
+</ul>
+<h3>4. 配置国内 PyPI 镜像并安装 uv</h3>
+<pre><code class="language-bash">export UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple&quot;
+export UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;
+python3 -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple --user --quiet
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>镜像</th>
+<th>用途</th>
+<th>稳定性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>清华 TUNA</strong></td>
+<td>PyPI 主源</td>
+<td>教育网+公网双栈，延迟低</td>
+</tr>
+<tr>
+<td><strong>阿里云</strong></td>
+<td>PyPI 备用源</td>
+<td>主源故障时自动 fallback</td>
+</tr>
+</tbody></table>
+<p><code>--user</code>：无需 root 权限即可安装 uv（当前已在 root 下，但养成好习惯）。</p>
+<h3>5. 安装 kimi-cli</h3>
+<pre><code class="language-bash">python3 -m uv tool install kimi-cli --force
+</code></pre>
+<p>使用 <code>uv tool install</code> 将 <code>kimi-cli</code> 安装到 <code>~/.local/bin</code>，隔离依赖，避免污染系统 Python。</p>
+<h3>6. 配置 PATH</h3>
+<pre><code class="language-bash">{ grep -q &quot;.local/bin&quot; ~/.bashrc || echo &#39;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc; }
+export PATH=&quot;$HOME/.local/bin:$PATH&quot;
+</code></pre>
+<ul>
+<li>写入 <code>~/.bashrc</code>：永久生效，下次登录自动加载</li>
+<li>当前会话 <code>export</code>：立即生效，无需重新登录</li>
+</ul>
+<h3>7. 验证安装</h3>
+<pre><code class="language-bash">python3 -m uv --version
+kimi --version
+</code></pre>
+<p>正常输出示例：</p>
+<pre><code>uv 0.11.5 (x86_64-unknown-linux-gnu)
+kimi, version 1.30.0
+</code></pre>
+<hr>
+<h2>常见问题</h2>
+<h3>Q: 执行时提示 <code>bash: python3: command not found</code></h3>
+<p>A: 通常是复制粘贴时带了控制字符（如 <code>~[200~</code>）。建议手敲或右键粘贴<strong>纯文本</strong>。</p>
+<h3>Q: <code>Failed to download gpg key for repo &#39;baseos&#39;: Status code: 404</code></h3>
+<p>A: GPG Key 路径错误。检查 <code>centos9.repo</code> 中的 <code>gpgkey</code> 是否为：</p>
+<pre><code>https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official
+</code></pre>
+<p>而不是 <code>centos-stream/RPM-GPG-KEY-CentOS-Official</code>。</p>
+<h3>Q: <code>WARNING: Running pip as the &#39;root&#39; user...</code></h3>
+<p>A: 正常提示，可忽略。已在命令中使用 <code>--user</code> 限制安装范围。
+如需更规范，可创建普通用户后在其 home 目录下执行。</p>
+<hr>
+<h2>对比 Windows 版</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>Windows (PowerShell)</th>
+<th>Linux (Bash)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Python 安装</strong></td>
+<td>下载华为云 <code>.exe</code> 静默安装</td>
+<td><code>dnf install python3-pip</code></td>
+</tr>
+<tr>
+<td><strong>包管理器</strong></td>
+<td>pip / uv</td>
+<td>uv (通过 pip 安装)</td>
+</tr>
+<tr>
+<td><strong>镜像策略</strong></td>
+<td>华为云 (Python) + 清华/阿里 (PyPI)</td>
+<td>阿里云 (系统源) + 清华/阿里 (PyPI)</td>
+</tr>
+<tr>
+<td><strong>环境变量</strong></td>
+<td><code>[Environment]::SetEnvironmentVariable</code></td>
+<td>写入 <code>~/.bashrc</code> + <code>export</code></td>
+</tr>
+<tr>
+<td><strong>订阅问题</strong></td>
+<td>无</td>
+<td>需禁用 <code>subscription-manager</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>参考链接</h2>
+<ul>
+<li>Windows 原版：<a href="https://bash.yang125.fun/posts/kimi-cli-install-win/">https://bash.yang125.fun/posts/kimi-cli-install-win/</a></li>
+<li>阿里云 CentOS 镜像：<a href="https://developer.aliyun.com/mirror/centos">https://developer.aliyun.com/mirror/centos</a></li>
+<li>清华 PyPI 镜像：<a href="https://mirrors.tuna.tsinghua.edu.cn/help/pypi/">https://mirrors.tuna.tsinghua.edu.cn/help/pypi/</a></li>
+<li>Kimi CLI 官方文档：<a href="https://www.kimi.com/code">https://www.kimi.com/code</a></li>
+</ul>
+
+  </div>
+</article>
+
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+  </footer>
+  <script src="../../assets/js/main.js"></script>
+</body>
+</html>

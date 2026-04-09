@@ -4,7 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Windows 下安装 Kimi CLI，PowerShell 一键指令 - Bogl Blog</title>
-  <meta name="description" content="[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process …">
+  <meta name="description" content="
+PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
+
+
+环境信息
+
+系统：Windows 10 / Windows 11
+权限：普通用户（无需管理员，部分操作自动提窗）
+…">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,8 +63,192 @@
     </div>
   </header>
   <div class="article-content">
-    <pre><code class="language-powershell">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &quot;&gt;&gt;&gt; 安装 Python 3.12 (华为云镜像)...&quot; -ForegroundColor Cyan;Invoke-WebRequest -Uri &quot;https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe&quot; -OutFile &quot;$env:TEMP\py.exe&quot; -UseBasicParsing;Start-Process &quot;$env:TEMP\py.exe&quot; -ArgumentList &quot;/quiet PrependPath=1 Include_test=0 InstallAllUsers=0&quot; -Wait};Write-Host &quot;&gt;&gt;&gt; 安装 uv (清华源)...&quot; -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable(&quot;UV_INDEX_URL&quot;,&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;,&quot;User&quot;);[Environment]::SetEnvironmentVariable(&quot;UV_EXTRA_INDEX_URL&quot;,&quot;https://mirrors.aliyun.com/pypi/simple/&quot;,&quot;User&quot;);$env:UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;;$env:UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;;Write-Host &quot;&gt;&gt;&gt; 安装 kimi-cli...&quot; -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable(&quot;Path&quot;,&quot;User&quot;);$uvBin=&quot;$env:USERPROFILE\.local\bin&quot;;if($uPath -notlike &quot;*$uvBin*&quot;){[Environment]::SetEnvironmentVariable(&quot;Path&quot;,&quot;$uPath;$uvBin&quot;,&quot;User&quot;)};$env:Path=&quot;$env:Path;$uvBin&quot;;Write-Host &quot;&gt;&gt;&gt; 完成！&quot; -ForegroundColor Green;python -m uv --version;kimi --version;Write-Host &quot;`n✓ 环境变量已永久保存&quot; -ForegroundColor Green;Read-Host &quot;按回车退出&quot;
+    <blockquote>
+<p>PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。</p>
+</blockquote>
+<hr>
+<h2>环境信息</h2>
+<ul>
+<li><strong>系统</strong>：Windows 10 / Windows 11</li>
+<li><strong>权限</strong>：普通用户（无需管理员，部分操作自动提窗）</li>
+<li><strong>目标</strong>：一行 PowerShell 完成全套环境搭建</li>
+<li><strong>网络</strong>：国内环境，使用华为云/清华/阿里云镜像加速</li>
+</ul>
+<hr>
+<h2>完整命令</h2>
+<p>以管理员身份打开 PowerShell，复制粘贴执行：</p>
+<pre><code class="language-powershell">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &quot;&gt;&gt;&gt; 安装 Python 3.12 (华为云镜像)...&quot; -ForegroundColor Cyan;Invoke-WebRequest -Uri &quot;https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe&quot; -OutFile &quot;$env:TEMP\py.exe&quot; -UseBasicParsing;Start-Process &quot;$env:TEMP\py.exe&quot; -ArgumentList &quot;/quiet PrependPath=1 Include_test=0 InstallAllUsers=0&quot; -Wait};Write-Host &quot;&gt;&gt;&gt; 安装 uv (清华源)...&quot; -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable(&quot;UV_INDEX_URL&quot;,&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;,&quot;User&quot;);[Environment]::SetEnvironmentVariable(&quot;UV_EXTRA_INDEX_URL&quot;,&quot;https://mirrors.aliyun.com/pypi/simple/&quot;,&quot;User&quot;);$env:UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;;$env:UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;;Write-Host &quot;&gt;&gt;&gt; 安装 kimi-cli...&quot; -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable(&quot;Path&quot;,&quot;User&quot;);$uvBin=&quot;$env:USERPROFILE\.local\bin&quot;;if($uPath -notlike &quot;*$uvBin*&quot;){[Environment]::SetEnvironmentVariable(&quot;Path&quot;,&quot;$uPath;$uvBin&quot;,&quot;User&quot;)};$env:Path=&quot;$env:Path;$uvBin&quot;;Write-Host &quot;&gt;&gt;&gt; 完成！&quot; -ForegroundColor Green;python -m uv --version;kimi --version;Write-Host &quot;`n✓ 环境变量已永久保存&quot; -ForegroundColor Green;Read-Host &quot;按回车退出&quot;
 </code></pre>
+<hr>
+<h2>分步详解</h2>
+<h3>1. 启用 TLS 1.2 与绕过执行策略</h3>
+<pre><code class="language-powershell">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
+Set-ExecutionPolicy Bypass -Scope Process -Force
+</code></pre>
+<ul>
+<li><strong>TLS 1.2</strong>：Windows 默认可能使用 TLS 1.0/1.1，下载 Python 安装包时会握手失败，强制启用 1.2。</li>
+<li><strong>执行策略</strong>：PowerShell 默认禁止运行脚本，<code>Bypass -Scope Process</code> 仅当前会话放行，不影响系统安全策略。</li>
+</ul>
+<h3>2. 检测并安装 Python 3.12（华为云镜像）</h3>
+<pre><code class="language-powershell">if(-not(Get-Command python -ErrorAction SilentlyContinue)){
+    Write-Host &quot;&gt;&gt;&gt; 安装 Python 3.12 (华为云镜像)...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri &quot;https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe&quot; -OutFile &quot;$env:TEMP\py.exe&quot; -UseBasicParsing
+    Start-Process &quot;$env:TEMP\py.exe&quot; -ArgumentList &quot;/quiet PrependPath=1 Include_test=0 InstallAllUsers=0&quot; -Wait
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/quiet</code></td>
+<td>静默安装，无弹窗</td>
+</tr>
+<tr>
+<td><code>PrependPath=1</code></td>
+<td>自动将 Python 加入用户 PATH</td>
+</tr>
+<tr>
+<td><code>Include_test=0</code></td>
+<td>不安装测试套件，节省空间</td>
+</tr>
+<tr>
+<td><code>InstallAllUsers=0</code></td>
+<td>仅安装到当前用户目录，无需管理员权限</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>为什么用华为云？</strong> 国内下载 <code>python.org</code> 官方安装包极慢，华为云镜像同步了完整的 Python 发布目录，且支持直链下载。</p>
+</blockquote>
+<h3>3. 安装 uv（清华 PyPI 镜像）</h3>
+<pre><code class="language-powershell">Write-Host &quot;&gt;&gt;&gt; 安装 uv (清华源)...&quot; -ForegroundColor Cyan
+python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet
+</code></pre>
+<ul>
+<li><strong>uv</strong>：Rust 编写的高性能 Python 包管理器，替代 <code>pip</code> + <code>venv</code> + <code>pip-tools</code>，安装 kimi-cli 及其依赖极快。</li>
+<li><strong>清华源</strong>：国内访问 PyPI 官方源常超时，清华 TUNA 同步频率高、带宽大。</li>
+<li><strong><code>--user</code></strong>：安装到用户目录，避免写系统 Program Files 的权限问题。</li>
+</ul>
+<h3>4. 配置 uv 永久镜像环境变量</h3>
+<pre><code class="language-powershell">[Environment]::SetEnvironmentVariable(&quot;UV_INDEX_URL&quot;,&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;,&quot;User&quot;)
+[Environment]::SetEnvironmentVariable(&quot;UV_EXTRA_INDEX_URL&quot;,&quot;https://mirrors.aliyun.com/pypi/simple/&quot;,&quot;User&quot;)
+$env:UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple/&quot;
+$env:UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>UV_INDEX_URL</code></td>
+<td>uv 默认 PyPI 主源 → <strong>清华 TUNA</strong></td>
+</tr>
+<tr>
+<td><code>UV_EXTRA_INDEX_URL</code></td>
+<td>uv 备用源 → <strong>阿里云</strong>，清华抽风时自动 fallback</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong><code>[Environment]::SetEnvironmentVariable(..., &quot;User&quot;)</code></strong>：写入用户级注册表，<strong>永久生效</strong>，重启后仍然有效。</li>
+<li><strong><code>$env:...</code></strong>：当前会话立即生效，无需重启 PowerShell。</li>
+</ul>
+<h3>5. 安装 kimi-cli</h3>
+<pre><code class="language-powershell">Write-Host &quot;&gt;&gt;&gt; 安装 kimi-cli...&quot; -ForegroundColor Cyan
+python -m uv tool install kimi-cli --force
+</code></pre>
+<ul>
+<li><strong><code>uv tool install</code></strong>：将 <code>kimi-cli</code> 作为独立工具安装到隔离环境，不污染系统 Python 的 site-packages。</li>
+<li><strong><code>--force</code></strong>：若已存在则覆盖升级，保证装到最新版。</li>
+</ul>
+<h3>6. 将 uv 工具目录加入 PATH</h3>
+<pre><code class="language-powershell">$uPath=[Environment]::GetEnvironmentVariable(&quot;Path&quot;,&quot;User&quot;)
+$uvBin=&quot;$env:USERPROFILE\.local\bin&quot;
+if($uPath -notlike &quot;*$uvBin*&quot;){
+    [Environment]::SetEnvironmentVariable(&quot;Path&quot;,&quot;$uPath;$uvBin&quot;,&quot;User&quot;)
+}
+$env:Path=&quot;$env:Path;$uvBin&quot;
+</code></pre>
+<p>uv 默认将可执行文件放在 <code>$env:USERPROFILE\.local\bin</code>（即 <code>C:\Users\&lt;用户名&gt;\.local\bin</code>）。
+脚本检测该路径是否已在用户 PATH 中，没有则追加，<strong>同样永久生效</strong>。</p>
+<h3>7. 验证安装</h3>
+<pre><code class="language-powershell">python -m uv --version
+kimi --version
+</code></pre>
+<p>正常输出示例：</p>
+<pre><code>uv 0.11.5
+kimi, version 1.30.0
+</code></pre>
+<h3>8. 交互提示</h3>
+<pre><code class="language-powershell">Write-Host &quot;`n✓ 环境变量已永久保存&quot; -ForegroundColor Green
+Read-Host &quot;按回车退出&quot;
+</code></pre>
+<p>安装完成后暂停，方便用户查看版本信息和任何报错。</p>
+<hr>
+<h2>为什么吃百家饭？</h2>
+<table>
+<thead>
+<tr>
+<th>你要的东西</th>
+<th>去哪吃</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Python 安装包</strong> (<code>.exe</code>)</td>
+<td><strong>华为云</strong></td>
+<td>只有华为云完整镜像了 <code>python.org</code> 发布目录，清华/阿里云不做这个</td>
+</tr>
+<tr>
+<td><strong>PyPI 包</strong> (<code>pip/uv</code>)</td>
+<td><strong>清华 TUNA</strong></td>
+<td>同步最及时，阿里云 PyPI 偶有延迟</td>
+</tr>
+<tr>
+<td><strong>PyPI 备用</strong></td>
+<td><strong>阿里云</strong></td>
+<td>清华故障时兜底</td>
+</tr>
+<tr>
+<td><strong>Windows 安装参数</strong></td>
+<td><code>/quiet</code></td>
+<td>微软 MSI/EXE 静默安装标准，无弹窗</td>
+</tr>
+</tbody></table>
+<p>国内没有一家镜像站能全包，只能系统源、安装包、PyPI 分开蹭。</p>
+<hr>
+<h2>常见问题</h2>
+<h3>Q: 执行时红字报错 &quot;无法加载文件，因为在此系统上禁止运行脚本&quot;</h3>
+<p>A: 先执行一次 <code>Set-ExecutionPolicy RemoteSigned -Scope CurrentUser</code>，再重新运行本命令。</p>
+<h3>Q: Python 安装后 <code>python</code> 命令仍识别不到</h3>
+<p>A: 安装参数已包含 <code>PrependPath=1</code>，但有时需要<strong>新开一个 PowerShell 窗口</strong>或注销重登才能加载新 PATH。</p>
+<h3>Q: 如何卸载？</h3>
+<p>A: </p>
+<pre><code class="language-powershell"># 卸载 kimi-cli
+python -m uv tool uninstall kimi-cli
+
+# 卸载 uv
+python -m pip uninstall uv -y
+
+# 卸载 Python（控制面板 → 应用 → Python 3.12）
+</code></pre>
+<h3>Q: 不想用国内镜像了，如何恢复官方源？</h3>
+<p>A: 删除环境变量后重启 PowerShell：</p>
+<pre><code class="language-powershell">[Environment]::SetEnvironmentVariable(&quot;UV_INDEX_URL&quot;, $null, &quot;User&quot;)
+[Environment]::SetEnvironmentVariable(&quot;UV_EXTRA_INDEX_URL&quot;, $null, &quot;User&quot;)
+</code></pre>
+<hr>
+<h2>相关链接</h2>
+<ul>
+<li>Linux 版（CentOS Stream 9 / RHEL 无订阅）：<a href="/posts/kimi-cli-install-centos9/">kimi-cli-install-centos9.md</a></li>
+<li>纯换源版（两行命令）：<a href="/posts/centos9-mirror-switch/">centos9-mirror-switch.md</a></li>
+<li>Kimi CLI 官方文档：<a href="https://www.kimi.com/code">https://www.kimi.com/code</a></li>
+</ul>
 
   </div>
 </article>
@@ -67,5 +259,6 @@
   <footer class="site-footer">
     <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
   </footer>
+  <script src="../../assets/js/main.js"></script>
 </body>
 </html>

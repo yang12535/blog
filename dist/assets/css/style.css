@@ -236,16 +236,40 @@ a:hover { color: var(--primary-dark); }
 .article-content pre {
   background: #2d2d2d;
   color: #f8f8f2;
-  padding: 16px;
+  padding: 16px 16px 16px 56px;
   border-radius: var(--radius);
   overflow-x: auto;
   font-size: 0.9rem;
   margin: 20px 0;
+  position: relative;
+  counter-reset: line;
 }
 
-.article-content code {
+.article-content pre code {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.9em;
+  display: block;
+}
+
+.article-content pre code .line {
+  display: block;
+  counter-increment: line;
+  position: relative;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding-right: 8px;
+  min-height: 1.6em;
+}
+
+.article-content pre code .line::before {
+  content: counter(line);
+  position: absolute;
+  left: -44px;
+  width: 32px;
+  text-align: right;
+  color: #888;
+  font-size: 0.85em;
+  user-select: none;
 }
 
 .article-content :not(pre) > code {
@@ -253,6 +277,26 @@ a:hover { color: var(--primary-dark); }
   padding: 2px 6px;
   border-radius: 3px;
   color: #e83e8c;
+}
+
+/* Code copy button */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  color: #ccc;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.copy-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
 }
 
 .article-content blockquote {

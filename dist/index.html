@@ -31,13 +31,29 @@
         
         <li><a class="menu-item" href="tags/bogl/">bogl <span class="tag">1</span></a></li>
         
+        <li><a class="menu-item" href="tags/centos/">centos <span class="tag">2</span></a></li>
+        
         <li><a class="menu-item" href="tags/cli/">cli <span class="tag">1</span></a></li>
         
         <li><a class="menu-item" href="tags/gbk/">gbk <span class="tag">1</span></a></li>
         
         <li><a class="menu-item" href="tags/kimi/">kimi <span class="tag">1</span></a></li>
         
+        <li><a class="menu-item" href="tags/kimi-cli/">kimi-cli <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/linux/">linux <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/mirror/">mirror <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/pip/">pip <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/rhel/">rhel <span class="tag">2</span></a></li>
+        
+        <li><a class="menu-item" href="tags/uv/">uv <span class="tag">1</span></a></li>
+        
         <li><a class="menu-item" href="tags/windows/">windows <span class="tag">1</span></a></li>
+        
+        <li><a class="menu-item" href="tags/yum/">yum <span class="tag">1</span></a></li>
         
         <li><a class="menu-item" href="tags/教程/">教程 <span class="tag">1</span></a></li>
         
@@ -64,6 +80,73 @@
     <main class="content-main">
       
 
+  
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="posts/centos9-mirror-switch/">CentOS Stream 9 / RHEL 9 纯换源（两行）</a></h2>
+      <div class="article-tags">
+        
+        <a class="tag" href="tags/centos/">centos</a>
+        
+        <a class="tag" href="tags/rhel/">rhel</a>
+        
+        <a class="tag" href="tags/mirror/">mirror</a>
+        
+        <a class="tag" href="tags/yum/">yum</a>
+        
+        <a class="tag" href="tags/pip/">pip</a>
+        
+      </div>
+      
+      <p class="article-excerpt">CentOS Stream 9 / RHEL 9 纯换源（两行）
+
+只换源，不装任何软件。解决国内访问官方源慢、GPG Key 404、subscription 注册提示等问题。
+
+
+两行命令
+# 第一行：系统源（yum/dnf）换阿里云，禁用红帽订阅插件
+sed -i &amp;#39;s/enabled=1/enabled=0/g&amp;#39; /etc/yum/pluginconf.d/subscrip</p>
+      
+      <div class="article-footer">
+        <span>2026-04-09</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
+  
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="posts/kimi-cli-install-centos9/">CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI</a></h2>
+      <div class="article-tags">
+        
+        <a class="tag" href="tags/kimi-cli/">kimi-cli</a>
+        
+        <a class="tag" href="tags/centos/">centos</a>
+        
+        <a class="tag" href="tags/rhel/">rhel</a>
+        
+        <a class="tag" href="tags/linux/">linux</a>
+        
+        <a class="tag" href="tags/uv/">uv</a>
+        
+      </div>
+      
+      <p class="article-excerpt">CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
+
+对应 Windows 版：Windows 下安装 Kimi CLI，PowerShell 一键指令
+
+环境信息
+
+系统：CentOS Stream 9 / RHEL 9 / Rocky Linux 9 / AlmaLinux 9
+场景：无红帽订阅（无 Subscription）
+目标：一行命令完成 Python +</p>
+      
+      <div class="article-footer">
+        <span>2026-04-09</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
   
   <article class="article-card">
     <div class="article-body">
@@ -110,7 +193,20 @@ console.log(gre</p>
         
       </div>
       
-      <p class="article-excerpt">[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;if(-not(Get-Command python -ErrorAction SilentlyContinue)){Write-Host &amp;qu</p>
+      <p class="article-excerpt">
+PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
+
+
+环境信息
+
+系统：Windows 10 / Windows 11
+权限：普通用户（无需管理员，部分操作自动提窗）
+目标：一行 PowerShell 完成全套环境搭建
+网络：国内环境，使用华为云/清华/阿里云镜像加速
+
+
+完整命令
+以管理员身份打开 PowerShell，复制</p>
       
       <div class="article-footer">
         <span>2026-04-08</span>
@@ -153,5 +249,6 @@ CRLF换行测试。
   <footer class="site-footer">
     <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
   </footer>
+  <script src="assets/js/main.js"></script>
 </body>
 </html>
