@@ -1,3 +1,9 @@
+---
+title: Windows 一键安装 Kimi CLI
+date: 2026-04-14
+tags: [kimi-cli, windows, uv, powershell]
+---
+
 > PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
 
 * * *
