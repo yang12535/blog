@@ -4,9 +4,29 @@
     <title>Bogl Blog</title>
     <link>https://example.com/</link>
     <description>A lightweight static blog powered by Bogl.</description>
-    <lastBuildDate>Thu, 09 Apr 2026 15:18:41 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 15 Apr 2026 12:18:21 GMT</lastBuildDate>
     <language>zh-CN</language>
     
+    <item>
+      <title>Windows 一键安装 Kimi CLI</title>
+      <link>https://example.com/posts/kimi-cli-install-win/</link>
+      <guid>https://example.com/posts/kimi-cli-install-win/</guid>
+      <pubDate>Tue, 14 Apr 2026 00:00:00 GMT</pubDate>
+      <description>
+PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
+
+
+环境信息
+
+系统：Windows 10 / Windows 11
+权限：普通用户（无需管理员，部分操作自动提窗）
+目标：一行 PowerShell 完成全套环境搭建
+网络：国内环境，使用华为云/清华/阿里云镜像加速
+
+
+完整命令
+以管理员身份打开 PowerShell，复制</description>
+    </item>
     <item>
       <title>CentOS Stream 9 / RHEL 9 纯换源（两行）</title>
       <link>https://example.com/posts/centos9-mirror-switch/</link>
@@ -52,26 +72,6 @@ EdgeOne Pages：专为腾讯云 EdgeOne Pages 优化
 代码示例
 const greeting = &amp;#39;Hello, Bogl!&amp;#39;;
 console.log(gre</description>
-    </item>
-    <item>
-      <title>Windows 下安装 Kimi CLI，PowerShell 一键指令</title>
-      <link>https://example.com/posts/kimi-cli-install-win/</link>
-      <guid>https://example.com/posts/kimi-cli-install-win/</guid>
-      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
-      <description>
-PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
-
-
-环境信息
-
-系统：Windows 10 / Windows 11
-权限：普通用户（无需管理员，部分操作自动提窗）
-目标：一行 PowerShell 完成全套环境搭建
-网络：国内环境，使用华为云/清华/阿里云镜像加速
-
-
-完整命令
-以管理员身份打开 PowerShell，复制</description>
     </item>
     <item>
       <title>GBK测试</title>
