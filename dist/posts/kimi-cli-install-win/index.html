@@ -97,6 +97,19 @@ Remove-Item &quot;$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe&quot; -Err
 <p>Windows 10/11 会在 <code>WindowsApps</code> 目录放一个 <strong>App Execution Alias</strong>（空壳 <code>python.exe</code>）。
 即使你的 PATH 里已经有真正的 Python，执行 <code>python</code> 时仍可能被它劫持到 Microsoft Store。
 脚本在安装前先删掉这两个假入口，防止后续命令被截胡。</p>
+<p><strong>进阶说明：Microsoft Store 假 <code>python</code> 劫持流程</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+    A[用户在 PowerShell 执行 python] --&gt; B{WindowsApps 下有空壳 python.exe?}
+    B --&gt;|是| C[被 Microsoft Store 劫持]
+    C --&gt; D[弹出商店 / 找不到真正的 Python]
+    D --&gt; E[Remove-Item 删掉假入口]
+    E --&gt; F[再次执行 python]
+    B --&gt;|否| F
+    F --&gt; G[命中真正的 Python 3.12]
+    G --&gt; H[继续安装 Kimi CLI]
+    style C fill:#ffcccc
+    style G fill:#ccffcc
+</code></pre>
 <h3>3. 检测并安装 Python 3.12（华为云镜像）</h3>
 <pre><code>$pyDir=&quot;$env:LOCALAPPDATA\Programs\Python\Python312&quot;
 $pyExe=&quot;$pyDir\python.exe&quot;

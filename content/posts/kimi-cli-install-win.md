@@ -50,6 +50,22 @@ Windows 10/11 会在 `WindowsApps` 目录放一个 **App Execution Alias**（空
 即使你的 PATH 里已经有真正的 Python，执行 `python` 时仍可能被它劫持到 Microsoft Store。
 脚本在安装前先删掉这两个假入口，防止后续命令被截胡。
 
+**进阶说明：Microsoft Store 假 `python` 劫持流程**
+
+```mermaid
+flowchart TD
+    A[用户在 PowerShell 执行 python] --> B{WindowsApps 下有空壳 python.exe?}
+    B -->|是| C[被 Microsoft Store 劫持]
+    C --> D[弹出商店 / 找不到真正的 Python]
+    D --> E[Remove-Item 删掉假入口]
+    E --> F[再次执行 python]
+    B -->|否| F
+    F --> G[命中真正的 Python 3.12]
+    G --> H[继续安装 Kimi CLI]
+    style C fill:#ffcccc
+    style G fill:#ccffcc
+```
+
 ### 3\. 检测并安装 Python 3.12（华为云镜像）
 
 ```
