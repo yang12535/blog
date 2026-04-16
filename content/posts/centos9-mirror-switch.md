@@ -8,13 +8,17 @@ tags: [centos, rhel, mirror, yum, pip]
 
 > 只换源，不装任何软件。解决国内访问官方源慢、GPG Key 404、subscription 注册提示等问题。
 
+> ⚠️ **如果你的机器是 RHEL 9**：学校/企业机房常见预装 RHEL 9（不是 CentOS Stream 9）。
+> 仅换源不处理系统身份的话，执行 `yum update` 会触发 `redhat-release` 与 CentOS Stream 源包的文件冲突。
+> **下面的命令已自动处理该问题**，会在换源时摘掉 RHEL 身份证并换上 CentOS Stream 身份证，无需手动干预。
+
 ---
 
 ## 两行命令
 
 ```bash
-# 第一行：系统源（yum/dnf）换阿里云，禁用红帽订阅插件
-sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/subscription-manager.conf; mkdir -p /etc/yum.repos.d/backup && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2>/dev/null; echo -e "[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[crb]\nname=CentOS Stream 9 CRB\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/CRB/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official" > /etc/yum.repos.d/centos9.repo && dnf clean all && dnf makecache
+# 第一行：系统源（yum/dnf）换阿里云，禁用红帽订阅插件，并处理 RHEL 9 身份冲突
+sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/subscription-manager.conf 2>/dev/null; mkdir -p /etc/yum.repos.d/backup && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2>/dev/null; echo -e "[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[crb]\nname=CentOS Stream 9 CRB\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/CRB/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official" > /etc/yum.repos.d/centos9.repo && dnf clean all && (rpm -e --nodeps redhat-release redhat-release-eula 2>/dev/null; rm -rf /usr/share/redhat-release 2>/dev/null; dnf install -y centos-stream-release 2>/dev/null || true) && dnf makecache
 
 # 第二行：pip 换清华源（主）+ 阿里云（备）
 mkdir -p ~/.pip && echo -e "[global]\nindex-url = https://pypi.tuna.tsinghua.edu.cn/simple\ntrusted-host = pypi.tuna.tsinghua.edu.cn\nextra-index-url = https://mirrors.aliyun.com/pypi/simple/" > ~/.pip/pip.conf
@@ -29,6 +33,8 @@ mkdir -p ~/.pip && echo -e "[global]\nindex-url = https://pypi.tuna.tsinghua.edu
 | `sed -i ... subscription-manager.conf` | 禁用红帽订阅插件。无订阅的 RHEL/CentOS 每次执行 `dnf` 都会提示"无法读取客户身份"，关掉它。 |
 | `mkdir -p .../backup && mv ...` | 备份原有 `.repo` 文件到 `backup` 目录，防止误删后无法恢复。 |
 | `echo -e "..." > /etc/yum.repos.d/centos9.repo` | 写入阿里云 CentOS Stream 9 源，包含 BaseOS、AppStream、CRB 三个核心仓库。 |
+| `rpm -e ... redhat-release` | **关键**：若原系统是 RHEL 9，摘掉 RHEL 系统身份证，避免后续与 CentOS Stream 源包冲突。 |
+| `dnf install -y centos-stream-release` | 装上 CentOS Stream 身份证。真 CentOS Stream 机器本来就有，会跳过。 |
 | `dnf clean all && dnf makecache` | 清除旧缓存，重新拉取阿里云元数据，验证新源是否可用。 |
 
 > **注意 GPG Key 路径**：阿里云上 `centos-stream/RPM-GPG-KEY-CentOS-Official` 会 404，
@@ -58,6 +64,16 @@ mkdir -p ~/.pip && echo -e "[global]\nindex-url = https://pypi.tuna.tsinghua.edu
 | **GPG Key** | **阿里云** | 各家路径不统一，`centos-stream/` 和 `centos/` 下文件名还不一样 |
 
 **没有一家镜像站能全包**，所以系统源吃阿里、pip 吃清华、安装包吃华为、key 还得自己找路径——这就是国内源的"百家饭"现状。
+
+---
+
+## 只想装 kimi-cli，不想升级系统？
+
+如果你只是临时用（比如学校机房），**不想也不必要跑 `yum update -y`**，建议直接用这篇脚本：
+
+- [CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI](https://bash.yang125.fun/posts/kimi-cli-install-centos9/)
+
+那个脚本**只安装 `python3-pip`，不触发系统级身份冲突**，换完源后直接装 kimi-cli 即可。
 
 ---
 
