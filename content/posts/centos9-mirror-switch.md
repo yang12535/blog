@@ -12,12 +12,16 @@ tags: [centos, rhel, mirror, yum, pip]
 > 仅换源不处理系统身份的话，执行 `yum update` 会触发 `redhat-release` 与 CentOS Stream 源包的文件冲突。
 > **下面的命令已自动处理该问题**，会在换源时摘掉 RHEL 身份证并换上 CentOS Stream 身份证，无需手动干预。
 
+> 🔴 **警告：此操作会永久改变系统身份标识（RHEL 9 → CentOS Stream 9），且不可逆。**
+> 仅建议在**可还原的虚拟机、学校机房、个人测试环境**中使用。
+> **生产服务器、有红帽订阅的机器、需要 RHEL 官方技术支持的环境请勿执行！**
+
 ---
 
 ## 两行命令
 
 ```bash
-# 第一行：系统源（yum/dnf）换阿里云，禁用红帽订阅插件，并处理 RHEL 9 身份冲突
+# 第一行：系统源换阿里云 + 禁用红帽订阅插件 + 处理 RHEL 9 身份冲突（不可逆！会改变系统身份为 CentOS Stream 9）
 sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/subscription-manager.conf 2>/dev/null; mkdir -p /etc/yum.repos.d/backup && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2>/dev/null; echo -e "[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[crb]\nname=CentOS Stream 9 CRB\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/CRB/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official" > /etc/yum.repos.d/centos9.repo && dnf clean all && (rpm -e --nodeps redhat-release redhat-release-eula 2>/dev/null; rm -rf /usr/share/redhat-release 2>/dev/null; dnf install -y centos-stream-release 2>/dev/null || true) && dnf makecache
 
 # 第二行：pip 换清华源（主）+ 阿里云（备）
