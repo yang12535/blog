@@ -19,7 +19,15 @@
 | 安装命令 | `npm install` |
 | Node 版本 | 20.x 或更高 |
 
-> 上述配置也可通过 `edgeone.json` 文件自动识别，无需手动填写。
+### 环境变量（可选）
+
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `SITE_URL` | 站点 URL，用于 RSS feed | `https://blog.example.com` |
+| `SITE_ICP` | ICP 备案号，留空则不显示 | `京ICP备12345678号-1` |
+| `SITE_PSB` | 公网安备号，留空则不显示 | `京公网安备11010502012345号` |
+
+> 框架预设、构建命令等可通过 `edgeone.json` 自动识别；环境变量（`SITE_URL`、`SITE_ICP`、`SITE_PSB`）需在 EdgeOne Pages 控制台手动配置。
 
 ### 3. 自定义域名（可选）
 

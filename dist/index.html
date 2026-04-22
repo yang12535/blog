@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="assets/css/style.css?v=2">
+  <link rel="stylesheet" href="assets/css/style.css?v=3">
   <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="feed.xml">
 </head>
 <body>
@@ -137,9 +137,8 @@ PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与
 只换源，不装任何软件。解决国内访问官方源慢、GPG Key 404、subscription 注册提示等问题。
 
 
-两行命令
-# 第一行：系统源（yum/dnf）换阿里云，禁用红帽订阅插件
-sed -i &amp;#39;s/enabled=1/enabled=0/g&amp;#39; /etc/yum/pluginconf.d/subscrip</p>
+⚠️ 如果你的机器是 RHEL 9：学校/企业机房常见预装 RHEL 9（不是 CentOS Stream 9）。
+仅换源不处理系统身份的话，执行 yum update 会触发 redhat-release 与 Ce</p>
       
       <div class="article-footer">
         <span>2026-04-09</span>
@@ -245,8 +244,9 @@ CRLF换行测试。
 
   <footer class="site-footer">
     <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+    
   </footer>
-  <script src="assets/js/main.js?v=3"></script>
+  <script src="assets/js/main.js?v=4"></script>
   <script src="assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
 </body>
 </html>
