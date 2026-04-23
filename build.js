@@ -57,6 +57,8 @@ const CONFIG = {
   assetsDir: path.join(__dirname, 'src', 'assets'),
   postsPerPage: 10,
   siteUrl: process.env.SITE_URL || 'https://example.com',
+  icp: process.env.SITE_ICP || '',
+  psb: process.env.SITE_PSB || '',
 };
 
 // Setup Nunjucks
@@ -137,7 +139,10 @@ async function build() {
 
 
 
-  // Prepare dirs
+  // Clean and prepare output dir
+  if (fs.existsSync(CONFIG.outputDir)) {
+    fs.rmSync(CONFIG.outputDir, { recursive: true, force: true });
+  }
   ensureDir(CONFIG.outputDir);
 
   // Collect markdown files
@@ -191,6 +196,8 @@ async function build() {
     title: CONFIG.title,
     description: CONFIG.description,
     url: CONFIG.siteUrl,
+    icp: CONFIG.icp,
+    psb: CONFIG.psb,
   };
 
   // --- Generate posts ---
