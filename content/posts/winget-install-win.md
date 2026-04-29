@@ -6,8 +6,6 @@ tags: [winget, windows, powershell, github-proxy, 机房]
 
 # Windows 10 / 11 无管理员权限安装 winget
 
-> 对应 CentOS 版：[CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI](https://bash.yang125.fun/posts/kimi-cli-install-centos9/)
-
 ## 环境信息
 
 - **系统**：Windows 10 19041+ / Windows 11（64 位）
