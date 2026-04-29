@@ -31,37 +31,73 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 $temp = "$env:TEMP\bunsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
-# --- 1. 从清华 TUNA 镜像下载 Node.js LTS ---
-$nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.14.0/node-v22.14.0-x64.msi"
-$nodeOut = "$temp\node-v22.14.0-x64.msi"
-if (-not (Test-Path $nodeOut)) {
-    Write-Host ">>> 从清华 TUNA 下载 Node.js v22.14.0..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing
+# --- 1. 检测是否已有 Node.js（避免重复安装，兼容 nvm-windows） ---
+$node = Get-Command node -ErrorAction SilentlyContinue
+$npm  = Get-Command npm  -ErrorAction SilentlyContinue
+
+if (-not $node -or -not $npm) {
+    # --- 1a. 从清华 TUNA 镜像下载 Node.js LTS ---
+    $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.14.0/node-v22.14.0-x64.msi"
+    $nodeOut = "$temp\node-v22.14.0-x64.msi"
+    if (-not (Test-Path $nodeOut)) {
+        Write-Host ">>> 从清华 TUNA 下载 Node.js v22.14.0..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing
+    }
+
+    # --- 1b. 静默安装 Node.js（关键：-Wait 等安装完成！） ---
+    Write-Host ">>> 安装 Node.js..." -ForegroundColor Cyan
+    Start-Process -FilePath "msiexec" -ArgumentList "/i `"$nodeOut`" /qn /norestart" -Wait
+
+    # --- 1c. 刷新环境变量，让当前会话识别 npm ---
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+    $npm = Get-Command npm -ErrorAction SilentlyContinue
 }
 
-# --- 2. 静默安装 Node.js ---
-Write-Host ">>> 安装 Node.js..." -ForegroundColor Cyan
-msiexec /i "$nodeOut" /qn /norestart
-Start-Sleep -Seconds 15
+if (-not $npm) {
+    # 若注册表刷新后仍找不到，追加常见路径兜底（兼容 nvm-windows）
+    $fallbackPaths = @("C:\Program Files\nodejs", "C:\nodejs", "C:\nvm4w\nodejs")
+    foreach ($p in $fallbackPaths) {
+        if (Test-Path "$p\npm.cmd") {
+            $env:Path += ";$p"
+            $npm = Get-Command npm -ErrorAction SilentlyContinue
+            break
+        }
+    }
+}
 
-# --- 3. 刷新环境变量，让当前会话能识别 npm ---
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User") + ";C:\Program Files\nodejs"
+if (-not $npm) {
+    Write-Host ">>> 错误：仍未找到 npm，请检查 Node.js 安装是否成功。" -ForegroundColor Red
+    exit 1
+}
 
-# --- 4. npm 切到阿里云镜像 ---
+Write-Host ">>> 使用 Node.js: $(node --version), npm: $(npm --version)" -ForegroundColor Green
+
+# --- 2. npm 切到阿里云镜像 ---
 Write-Host ">>> 配置 npm 国内源..." -ForegroundColor Cyan
-& "C:\Program Files\nodejs\npm.cmd" config set registry https://registry.npmmirror.com/
+& $npm.Source config set registry https://registry.npmmirror.com/
 
-# --- 5. 通过 npm 安装 Bun ---
+# --- 3. 通过 npm 安装 Bun ---
 Write-Host ">>> 通过 npm 安装 Bun..." -ForegroundColor Cyan
-& "C:\Program Files\nodejs\npm.cmd" install -g bun
+& $npm.Source install -g bun
 
-# --- 6. 验证安装 ---
-$env:Path += ";C:\Users\$env:USERNAME\AppData\Roaming\npm"
+# --- 4. 刷新 PATH 并定位 bun.exe ---
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+$env:Path += ";$env:APPDATA\npm"
+
 $bunExe = "$env:APPDATA\npm\node_modules\bun\bin\bun.exe"
-$bunVer = & $bunExe --version
-Write-Host ">>> Bun 安装完成: $bunVer" -ForegroundColor Green
+if (-not (Test-Path $bunExe)) {
+    # 某些 npm 版本安装路径不同，fallback 到 .bun\bin
+    $bunExe = "$env:USERPROFILE\.bun\bin\bun.exe"
+}
 
-# --- 7. 写入 Bun 国内源配置 ---
+if (Test-Path $bunExe) {
+    $bunVer = & $bunExe --version
+    Write-Host ">>> Bun 安装完成: $bunVer" -ForegroundColor Green
+} else {
+    Write-Host ">>> 警告：未找到 bun.exe，但 npm 安装未报错，请新开窗口再试。" -ForegroundColor Yellow
+}
+
+# --- 5. 写入 Bun 国内源配置 ---
 $bunfig = @"
 [install]
 registry = "https://registry.npmmirror.com/"
@@ -69,12 +105,12 @@ registry = "https://registry.npmmirror.com/"
 Set-Content -Path "$env:USERPROFILE\.bunfig.toml" -Value $bunfig -Encoding UTF8
 Write-Host ">>> 已写入 ~/.bunfig.toml，bun install 将走阿里云镜像" -ForegroundColor Green
 
-# --- 8. 删除 bun.ps1，避免 Windows PowerShell 5.1 执行策略拦截 ---
+# --- 6. 删除 bun.ps1，避免 Windows PowerShell 5.1 执行策略拦截 ---
 Remove-Item -Path "$env:APPDATA\npm\bun.ps1" -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:APPDATA\npm\bunx.ps1" -ErrorAction SilentlyContinue
 Write-Host ">>> 已清理 bun.ps1 wrapper，Windows PowerShell 5.1 可直接使用 bun" -ForegroundColor Green
 
-# --- 9. 把 Bun 全局安装目录加入 PATH ---
+# --- 7. 把 Bun 全局安装目录加入 PATH ---
 $bunGlobalBin = "$env:USERPROFILE\.bun\bin"
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($userPath -notlike "*$bunGlobalBin*") {
@@ -112,7 +148,12 @@ https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/
 ### 2. 静默安装 Node.js
 
 ```powershell
+# 错误：msiexec 默认异步返回，脚本会继续执行但安装还没完成
 msiexec /i "node-v22.14.0-x64.msi" /qn /norestart
+Start-Sleep -Seconds 15   # 瞎等 15 秒，不靠谱
+
+# 正确：用 Start-Process -Wait 阻塞到安装真正结束
+Start-Process -FilePath "msiexec" -ArgumentList "/i `"node-v22.14.0-x64.msi`" /qn /norestart" -Wait
 ```
 
 | 参数 | 含义 |
@@ -121,15 +162,22 @@ msiexec /i "node-v22.14.0-x64.msi" /qn /norestart
 | `/qn` | 静默安装，无弹窗 |
 | `/norestart` | 禁止自动重启 |
 
-安装后本体位于 `C:\Program Files\nodejs\`，与系统互不冲突。
+**坑点**：`msiexec` 在 PowerShell 里直接调用会**立即返回**（后台异步），导致后面找 `npm` 时文件还没释放。必须用 `Start-Process -Wait` 等待安装完成。
+
+安装后本体通常位于 `C:\Program Files\nodejs\`，但如果你装了 **nvm-windows**，实际路径可能是 `C:\nvm4w\nodejs` 或 `C:\nodejs`，脚本里通过 `Get-Command` + 兜底路径自动检测，不再硬编码。
 
 ### 3. 刷新环境变量
 
 Node.js 安装程序会修改系统 PATH，但**当前已打开的 PowerShell 窗口不会自动感知**。脚本里通过读取注册表重新拼接 Path 来解决：
 
 ```powershell
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User") + ";C:\Program Files\nodejs"
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 ```
+
+如果刷新后仍找不到 npm（比如你之前装了 nvm-windows 或其他版本），脚本还会自动检测以下兜底路径：
+- `C:\Program Files\nodejs`
+- `C:\nodejs`
+- `C:\nvm4w\nodejs`
 
 > **坑点：装完 node 后当前窗口仍提示找不到 npm**
 >
@@ -176,16 +224,22 @@ registry = "https://registry.npmmirror.com/"
 
 **解决**：本文走的是 "Node.js → npm → Bun" 的曲线救国路线。如果你不想装 Node.js，请看文末附录的 **ghproxy 直装方案**（直接从 GitHub 代理下载官方安装脚本）。
 
-### Q2：执行时提示 "无法将 npm 识别为 cmdlet..."？
+### Q2：我已有 Node.js（或 nvm-windows），脚本会重复安装吗？
+
+**不会**。脚本开头用 `Get-Command node` 和 `Get-Command npm` 检测当前环境，如果已经能找到 `npm`，就会**跳过 Node.js 下载和安装**，直接走后续配置和装 Bun 的步骤。
+
+> 如果你通过 **nvm-windows** 管理 Node.js，npm 路径可能在 `C:\nvm4w\nodejs` 或 `C:\nodejs`。脚本在检测不到 npm 时会自动扫描这些常见路径，确保能正确调用。
+
+### Q3：执行时提示 "无法将 npm 识别为 cmdlet..."？
 
 **原因**：Node.js 安装后 Path 未刷新，当前 PowerShell 会话找不到 npm。
 
 **解决**：
 - 方案 A：关闭当前 PowerShell，重新开一个窗口再试。
 - 方案 B：运行脚本里的 Path 刷新命令（见分步详解第 3 节）。
-- 方案 C：直接用完整路径调用：`C:\Program Files\nodejs\npm.cmd config get registry`
+- 方案 C：直接用完整路径调用：先确认你的 npm 实际在哪，例如 `C:\nvm4w\nodejs\npm.cmd config get registry`
 
-### Q3：执行 `bun` 时提示 "无法加载 bun.ps1，因为在此系统上禁止运行脚本"？
+### Q4：执行 `bun` 时提示 "无法加载 bun.ps1，因为在此系统上禁止运行脚本"？
 
 **原因**：Windows 默认 PowerShell 执行策略为 `Restricted`，禁止运行 `.ps1` 脚本。npm 安装时生成了 `bun.ps1` 作为包装器，被系统拦截。
 
@@ -215,7 +269,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 之后就可以直接使用 `bun` 命令。
 
-### Q4：TUNA 镜像站有 Bun 的镜像吗？
+### Q5：TUNA 镜像站有 Bun 的镜像吗？
 
 **没有**。TUNA 只提供了 npm registry 镜像（用来加速下载 JS 包），但 **Bun 本身是一个预编译二进制文件**，通过 GitHub Releases 分发，TUNA 没有同步 GitHub Releases 二进制文件。
 
@@ -223,7 +277,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - npm 安装（本文方案）
 - 或 GitHub 代理直链下载（附录方案）
 
-### Q5：重启后 npm 或 Bun 找不到了？
+### Q6：重启后 npm 或 Bun 找不到了？
 
 **原因**：Path 环境变量在用户级已写入，但部分还原卡/域控环境会在重启后还原注册表。
 
@@ -231,7 +285,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - 检查 Path 是否包含 `C:\Program Files\nodejs` 和 `%APPDATA%\npm`。
 - 若被还原，把一键脚本保存为 `.ps1` 文件，每次开机后右键"使用 PowerShell 运行"一遍（约 30 秒，若已下载过安装包则更快）。
 
-### Q6：如何升级 Bun？
+### Q7：如何升级 Bun？
 
 ```powershell
 npm update -g bun
@@ -241,7 +295,7 @@ npm update -g bun
 
 > **注意**：不要用 `bun upgrade`，这会尝试从 GitHub 官方源下载，国内可能失败或极慢。
 
-### Q7：安装完成后 `bun install` 还是走的官方源？
+### Q8：安装完成后 `bun install` 还是走的官方源？
 
 **原因**：`~/.bunfig.toml` 未生效，或项目目录下有其他配置覆盖。
 
@@ -260,7 +314,7 @@ $env:npm_config_registry = "https://registry.npmmirror.com"
 bun install
 ```
 
-### Q8：`bun add -g xxx` 装成功了，但命令找不到？
+### Q9：`bun add -g xxx` 装成功了，但命令找不到？
 
 **原因**：Bun 的全局安装目录和 npm 不一样。npm 放在 `%APPDATA%\npm`，Bun 放在 `%USERPROFILE%\.bun\bin`，后者默认不在系统 PATH 里。
 
