@@ -36,9 +36,10 @@ function pullContent() {
   console.log(`📥 Pulling content from ${CONTENT_REPO}...`);
   execSync(`git clone --depth 1 --branch ${CONTENT_BRANCH} "${repoUrl}" "${tmpDir}"`, { stdio: 'inherit' });
 
-  // Copy .md files from repo root (or posts/ subdir if exists)
+  // Copy .md files from repo: prefer posts/ or content/posts/ subdir, fallback to root
   const srcPosts = path.join(tmpDir, 'posts');
-  const srcDir = fs.existsSync(srcPosts) ? srcPosts : tmpDir;
+  const srcContentPosts = path.join(tmpDir, 'content', 'posts');
+  const srcDir = fs.existsSync(srcPosts) ? srcPosts : (fs.existsSync(srcContentPosts) ? srcContentPosts : tmpDir);
   const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.md'));
   for (const f of files) {
     fs.copyFileSync(path.join(srcDir, f), path.join(dest, f));
