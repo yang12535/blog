@@ -73,6 +73,14 @@ Write-Host ">>> 已写入 ~/.bunfig.toml，bun install 将走阿里云镜像" -F
 Remove-Item -Path "$env:APPDATA\npm\bun.ps1" -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:APPDATA\npm\bunx.ps1" -ErrorAction SilentlyContinue
 Write-Host ">>> 已清理 bun.ps1 wrapper，Windows PowerShell 5.1 可直接使用 bun" -ForegroundColor Green
+
+# --- 9. 把 Bun 全局安装目录加入 PATH ---
+$bunGlobalBin = "$env:USERPROFILE\.bun\bin"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$bunGlobalBin*") {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$bunGlobalBin", "User")
+    Write-Host ">>> 已添加 Bun 全局目录到 PATH: $bunGlobalBin" -ForegroundColor Green
+}
 ```
 
 > **提示**：脚本运行期间请不要关闭窗口。TUNA 镜像下载速度通常在 5~20MB/s，若卡住超过 3 分钟请检查网络。
@@ -251,6 +259,19 @@ Get-Content "$env:USERPROFILE\.bunfig.toml"
 $env:npm_config_registry = "https://registry.npmmirror.com"
 bun install
 ```
+
+### Q8：`bun add -g xxx` 装成功了，但命令找不到？
+
+**原因**：Bun 的全局安装目录和 npm 不一样。npm 放在 `%APPDATA%\npm`，Bun 放在 `%USERPROFILE%\.bun\bin`，后者默认不在系统 PATH 里。
+
+**解决**：把 Bun 的全局目录加入 PATH：
+```powershell
+$bunGlobalBin = "$env:USERPROFILE\.bun\bin"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+[Environment]::SetEnvironmentVariable("Path", "$userPath;$bunGlobalBin", "User")
+```
+
+或新开一个 PowerShell 窗口（环境变量刷新后生效），一键脚本已内置此步骤。
 
 * * *
 
