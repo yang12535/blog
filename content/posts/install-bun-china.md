@@ -68,6 +68,11 @@ registry = "https://registry.npmmirror.com/"
 "@
 Set-Content -Path "$env:USERPROFILE\.bunfig.toml" -Value $bunfig -Encoding UTF8
 Write-Host ">>> 已写入 ~/.bunfig.toml，bun install 将走阿里云镜像" -ForegroundColor Green
+
+# --- 8. 删除 bun.ps1，避免 Windows PowerShell 5.1 执行策略拦截 ---
+Remove-Item -Path "$env:APPDATA\npm\bun.ps1" -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:APPDATA\npm\bunx.ps1" -ErrorAction SilentlyContinue
+Write-Host ">>> 已清理 bun.ps1 wrapper，Windows PowerShell 5.1 可直接使用 bun" -ForegroundColor Green
 ```
 
 > **提示**：脚本运行期间请不要关闭窗口。TUNA 镜像下载速度通常在 5~20MB/s，若卡住超过 3 分钟请检查网络。
@@ -176,20 +181,27 @@ registry = "https://registry.npmmirror.com/"
 
 **原因**：Windows 默认 PowerShell 执行策略为 `Restricted`，禁止运行 `.ps1` 脚本。npm 安装时生成了 `bun.ps1` 作为包装器，被系统拦截。
 
-**解决三选一**：
+**解决四选一**：
 
-**方案 A（推荐，不改全局策略）**：用 cmd 调用
+**方案 A（推荐，零副作用）**：删掉 npm 生成的 `bun.ps1`，让 PowerShell fallback 到 `bun.cmd`
+```powershell
+Remove-Item -Path "$env:APPDATA\npm\bun.ps1" -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:APPDATA\npm\bunx.ps1" -ErrorAction SilentlyContinue
+```
+PowerShell 找不到 `.ps1` 后，会按 `PATHEXT` 优先级匹配 `.CMD`，而 `.cmd` 不受执行策略限制。不改任何系统策略，一键脚本已内置此步骤。
+
+**方案 B（不改全局策略）**：用 cmd 调用
 ```powershell
 cmd /c bun --version
 cmd /c bun install
 ```
 
-**方案 B（直接调 exe）**：
+**方案 C（直接调 exe）**：
 ```powershell
 $env:APPDATA\npm\node_modules\bun\bin\bun.exe --version
 ```
 
-**方案 C（永久放宽策略）**：
+**方案 D（永久放宽策略）**：
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
