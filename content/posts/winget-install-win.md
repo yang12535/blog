@@ -46,8 +46,6 @@ tags: [winget, windows, powershell, github-proxy, 机房]
 在 PowerShell 里复制粘贴执行（支持 Windows PowerShell 5.1）：
 
 ```powershell
-#Requires -Version 5.1
-
 # ==================== 0. 初始化 ====================
 $temp = "$env:TEMP\winget-setup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null

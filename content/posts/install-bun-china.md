@@ -40,8 +40,6 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 **右键点击 PowerShell 图标 → "以管理员身份运行"**，然后复制粘贴以下脚本：
 
 ```powershell
-#Requires -Version 5.1
-
 # ==================== 0. 初始化 ====================
 $temp = "$env:TEMP\bunsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
