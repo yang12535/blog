@@ -22,8 +22,9 @@
 
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  // ── 2. Scroll-to-top button ──
+  // ── 2. Scroll-to-top button (desktop only) ──
   function createScrollTopBtn() {
+    if (window.innerWidth <= 1024) return null;
     var btn = document.createElement('div');
     btn.className = 'scroll-top';
     btn.setAttribute('role', 'button');
