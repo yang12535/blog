@@ -1071,7 +1071,7 @@ a:hover { color: var(--primary-dark); }
   right: 28px;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 9999px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-hover);

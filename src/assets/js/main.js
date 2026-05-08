@@ -24,15 +24,23 @@
 
   // ── 2. Scroll-to-top button ──
   function createScrollTopBtn() {
-    var btn = document.createElement('button');
-    btn.type = 'button';
+    var btn = document.createElement('div');
     btn.className = 'scroll-top';
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
     btn.setAttribute('aria-label', '回到顶部');
     btn.setAttribute('title', '回到顶部');
     btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
     var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    btn.addEventListener('click', function() {
+    function scrollToTop() {
       window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    }
+    btn.addEventListener('click', scrollToTop);
+    btn.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        scrollToTop();
+      }
     });
     document.body.appendChild(btn);
     return btn;
