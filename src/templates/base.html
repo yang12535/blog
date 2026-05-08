@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="{{ root }}favicon.svg">
-  <link rel="stylesheet" href="{{ root }}assets/css/style.css?v=3">
+  <link rel="stylesheet" href="{{ root }}assets/css/style.css?v=5">
   <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ root }}feed.xml">
 </head>
 <body>
@@ -31,6 +31,19 @@
     <main class="content-main">
       {% block content %}{% endblock %}
     </main>
+
+    {% if post and post.toc | length %}
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          {% for item in post.toc %}
+          <a class="toc-item level-{{ item.level }}" href="#{{ item.id }}">{{ item.text }}</a>
+          {% endfor %}
+        </nav>
+      </div>
+    </aside>
+    {% endif %}
   </div>
 
   <footer class="site-footer">
@@ -51,7 +64,7 @@
     </div>
     {% endif %}
   </footer>
-  <script src="{{ root }}assets/js/main.js?v=4"></script>
+  <script src="{{ root }}assets/js/main.js?v=5"></script>
   <script src="{{ root }}assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
 </body>
 </html>

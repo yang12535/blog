@@ -163,7 +163,15 @@ async function build() {
     // Auto-convert .md links to absolute article URLs before parsing
     text = text.replace(/\]\((\.?\/?)([^\)/]+)\.md\)/g, '](/posts/$2/)');
     const parsed = matter(text);
-    const html = marked.parse(parsed.content);
+    let html = marked.parse(parsed.content);
+    const toc = [];
+    let headingIndex = 0;
+    html = html.replace(/<h([23])>(.*?)<\/h\1>/g, (match, level, text) => {
+      const id = 'heading-' + headingIndex++;
+      const plainText = text.replace(/<[^>]+>/g, '');
+      toc.push({ id, text: plainText, level: parseInt(level) });
+      return `<h${level} id="${id}">${text}</h${level}>`;
+    });
     const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 200);
 
     const date = parsed.data.date ? new Date(parsed.data.date).toISOString() : new Date().toISOString();
@@ -178,6 +186,7 @@ async function build() {
       excerpt,
       content: html,
       draft: parsed.data.draft === true,
+      toc,
     });
   }
 

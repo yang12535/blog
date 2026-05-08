@@ -171,7 +171,37 @@
   renderMermaid();
   window.renderMermaidDiagrams = renderMermaid;
 
-  // ── 6. Card stagger animations (triggered on load) ──
+  // ── 6. TOC scroll spy ──
+  var tocItems = document.querySelectorAll('.toc-item');
+  if (tocItems.length > 0) {
+    var headingElements = [];
+    tocItems.forEach(function(link) {
+      var id = link.getAttribute('href');
+      if (id && id.startsWith('#')) {
+        var el = document.getElementById(id.slice(1));
+        if (el) headingElements.push({ link: link, el: el });
+      }
+    });
+
+    function updateTocActive() {
+      var scrollPos = window.pageYOffset + 120;
+      var active = null;
+      for (var i = headingElements.length - 1; i >= 0; i--) {
+        if (headingElements[i].el.offsetTop <= scrollPos) {
+          active = headingElements[i].link;
+          break;
+        }
+      }
+      tocItems.forEach(function(link) {
+        link.classList.toggle('active', link === active);
+      });
+    }
+
+    window.addEventListener('scroll', updateTocActive, { passive: true });
+    updateTocActive();
+  }
+
+  // ── 7. Card stagger animations (triggered on load) ──
   // Animations run on page load for simplicity and accessibility (no JS dependency).
   // IntersectionObserver removed per review: avoids invisible cards when JS is disabled.
 })();
