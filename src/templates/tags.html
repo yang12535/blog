@@ -14,7 +14,7 @@
 <div class="article-card"><div class="article-body">
   <div class="article-tags" style="margin-bottom:0;">
     {% for tag in tags %}
-    <a class="tag" href="{{ root }}tags/{{ tag.name }}/">{{ tag.name }} ({{ tag.count }})</a>
+    <a class="tag" href="{{ root }}tags/{{ tag.slug }}/">{{ tag.name }} ({{ tag.count }})</a>
     {% endfor %}
   </div>
 </div></div>

@@ -78,6 +78,13 @@ function toSlug(name) {
     .replace(/^-|-$/g, '');
 }
 
+function toTagLink(name) {
+  return {
+    name,
+    slug: toSlug(name),
+  };
+}
+
 function normalizeText(rawBuf) {
   // Detect encoding
   const det = jschardet.detect(rawBuf);
@@ -176,6 +183,7 @@ async function build() {
 
     const date = parsed.data.date ? new Date(parsed.data.date).toISOString() : new Date().toISOString();
     const tags = (parsed.data.tags || []).map(t => String(t).trim()).filter(Boolean);
+    const tagLinks = tags.map(toTagLink);
 
     posts.push({
       slug,
@@ -183,6 +191,7 @@ async function build() {
       date,
       dateDisplay: formatDate(date),
       tags,
+      tagLinks,
       excerpt,
       content: html,
       draft: parsed.data.draft === true,
@@ -224,11 +233,13 @@ async function build() {
   const tagMap = {};
   for (const post of published) {
     for (const tag of post.tags) {
-      if (!tagMap[tag]) tagMap[tag] = [];
-      tagMap[tag].push(post);
+      if (!tagMap[tag]) tagMap[tag] = { name: tag, slug: toSlug(tag), posts: [] };
+      tagMap[tag].posts.push(post);
     }
   }
-  const allTags = Object.keys(tagMap).sort().map(name => ({ name, count: tagMap[name].length }));
+  const allTags = Object.values(tagMap)
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+    .map(tag => ({ name: tag.name, slug: tag.slug, count: tag.posts.length }));
   const archiveYears = [...new Set(published.map(p => new Date(p.date).getFullYear()))].sort((a, b) => b - a);
 
   // --- Generate index pages ---
@@ -260,9 +271,9 @@ async function build() {
   ensureDir(tagsOut);
 
   // Tag cloud
-  const tagList = Object.keys(tagMap)
-    .sort()
-    .map(name => ({ name, count: tagMap[name].length }));
+  const tagList = Object.values(tagMap)
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+    .map(tag => ({ name: tag.name, slug: tag.slug, count: tag.posts.length }));
   fs.writeFileSync(
     path.join(tagsOut, 'index.html'),
     render('tags.html', { site: siteCtx, tags: tagList }, '../'),
@@ -270,12 +281,12 @@ async function build() {
   );
 
   // Individual tag pages
-  for (const [tag, tPosts] of Object.entries(tagMap)) {
-    const tDir = path.join(tagsOut, toSlug(tag));
+  for (const tagData of Object.values(tagMap)) {
+    const tDir = path.join(tagsOut, tagData.slug);
     ensureDir(tDir);
     fs.writeFileSync(
       path.join(tDir, 'index.html'),
-      render('tag.html', { site: siteCtx, tag, posts: tPosts }, '../../'),
+      render('tag.html', { site: siteCtx, tag: tagData.name, posts: tagData.posts }, '../../'),
       'utf-8'
     );
   }
