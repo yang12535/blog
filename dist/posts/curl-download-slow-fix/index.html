@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows 旧版 curl 下载慢的根治方案（自动代理 + UA 伪装 + aria2c 兜底） - Bogl Blog</title>
+  <meta name="description" content="
+浏览器下载 10 MB/s，curl 只有 1 Mbps？这不是你的网有问题，是 Windows 自带的 curl 太老了。
+本文提供从「临时缓解」到「彻底根治」的完整方案，含自动代理嗅探、UA 伪装、证书错误修复，以及 aria2c 多…">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=6">
+  <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
+      <a class="navbar-github" href="https://github.com/yang12535/blog" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      
+      <a class="menu-item" href="../../posts/install-bun-china/">→ 国内网络环境 Windows 安装 Bu…</a>
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">Windows 旧版 curl 下载慢的根治方案（自动代理 + UA 伪装 + aria2c 兜底）</h1>
+    <div class="article-page-meta">
+      <span>2026-05-08</span>
+      
+        
+        <a class="tag" href="../../tags/curl/">curl</a>
+        
+        <a class="tag" href="../../tags/windows/">windows</a>
+        
+        <a class="tag" href="../../tags/proxy/">proxy</a>
+        
+        <a class="tag" href="../../tags/aria2/">aria2</a>
+        
+        <a class="tag" href="../../tags/download/">download</a>
+        
+        <a class="tag" href="../../tags/国内镜像/">国内镜像</a>
+        
+      
+    </div>
+  </header>
+  <div class="article-content">
+    <blockquote>
+<p>浏览器下载 10 MB/s，curl 只有 1 Mbps？这不是你的网有问题，是 Windows 自带的 curl 太老了。</p>
+<p>本文提供从「临时缓解」到「彻底根治」的完整方案，含自动代理嗅探、UA 伪装、证书错误修复，以及 aria2c 多线程兜底。复制脚本 → 粘贴 → 回车即可。</p>
+</blockquote>
+<hr>
+<h2 id="heading-0">环境信息</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>系统</strong></td>
+<td>Windows 10 / Windows 11（64 位）</td>
+</tr>
+<tr>
+<td><strong>Shell</strong></td>
+<td>Windows PowerShell 5.1（系统默认）或 PowerShell 7</td>
+</tr>
+<tr>
+<td><strong>场景</strong></td>
+<td>国内网络、机房、校园网、已开启代理（Clash/V2Ray）</td>
+</tr>
+<tr>
+<td><strong>目标</strong></td>
+<td>让 curl 下载速度达到浏览器同等水平，或直接用 aria2c 跑满带宽</td>
+</tr>
+<tr>
+<td><strong>网络</strong></td>
+<td>可访问国内镜像站；境外站点走本地代理（127.0.0.1:10808 等）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="heading-1">问题现象</h2>
+<p>你在 PowerShell 里执行 <code>curl.exe</code> 下载时，可能遇到以下一种或多种症状：</p>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>典型表现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>速度被限速</strong></td>
+<td>国内镜像站浏览器下载 10 MB/s，curl 稳定 1 Mbps（约 125 KB/s）</td>
+</tr>
+<tr>
+<td><strong>证书错误</strong></td>
+<td>走代理访问 GitHub 时报 <code>schannel: next InitializeSecurityContext failed: Unknown error (0x80092013)</code></td>
+</tr>
+<tr>
+<td><strong>HTTP/2 不支持</strong></td>
+<td>旧版 curl 完全不支持 <code>--http2</code>，只能走 HTTP/1.1</td>
+</tr>
+<tr>
+<td><strong>TLS 握手慢</strong></td>
+<td>WinSSL（Schannel）老旧，部分 CDN 会降级连接</td>
+</tr>
+<tr>
+<td><strong>不读系统代理</strong></td>
+<td>浏览器自动走了 Clash/V2Ray，curl 全程直连，境外站点直接超时</td>
+</tr>
+</tbody></table>
+<p><strong>根本原因</strong>：Windows 系统自带的 <code>curl.exe</code> 版本为 <strong>7.55.1</strong>（发布于 2017 年），存在以下硬伤：</p>
+<ol>
+<li><strong>默认 UA 暴露身份</strong>：<code>User-Agent: curl/7.55.1</code> 极易被服务端识别并限速</li>
+<li><strong>不支持 HTTP/2</strong>：国内镜像站 HTTP/2 效率远高于 HTTP/1.1</li>
+<li><strong>WinSSL + 老旧 TLS</strong>：Schannel 证书吊销检查（CRL）在代理环境下几乎必失败</li>
+<li><strong>不感知系统代理</strong>：curl 不会自动读取 Windows 代理设置，必须手动指定 <code>-x</code></li>
+</ol>
+<hr>
+<h2 id="heading-2">诊断：你的 curl 是哪个版本？</h2>
+<pre><code class="language-powershell">curl.exe --version
+</code></pre>
+<p>期望输出（系统自带）：</p>
+<pre><code>curl 7.55.1 (Windows) libcurl/7.55.1 WinSSL
+Release-Date: 2017-11-14, security patched: 2019-11-05
+</code></pre>
+<p>如果看到 <code>WinSSL</code> 且版本号低于 7.80.0，说明你在用<strong>旧版系统 curl</strong>，本文的优化方案对你全部适用。</p>
+<hr>
+<h2 id="heading-3">方案一：不换工具，手动加参数（临时缓解）</h2>
+<p>如果你不想装任何新软件，每次下载时手动加上以下参数：</p>
+<pre><code class="language-powershell"># 国内镜像站（解决 UA 限速 + 提升 TCP 效率）
+curl.exe -L --tcp-nodelay `
+  -A &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36&quot; `
+  -o output.file `
+  &quot;https://下载地址&quot;
+
+# 境外站点（走代理 + 禁用证书吊销检查，解决 0x80092013）
+curl.exe -L --tcp-nodelay --ssl-no-revoke `
+  -A &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36&quot; `
+  -x http://127.0.0.1:10808 `
+  -o output.file `
+  &quot;https://github.com/...&quot;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-L</code></td>
+<td>跟随 302/301 跳转，国内镜像常重定向到就近节点</td>
+</tr>
+<tr>
+<td><code>--tcp-nodelay</code></td>
+<td>禁用 Nagle 算法，提升小包响应和吞吐量</td>
+</tr>
+<tr>
+<td><code>-A &quot;...&quot;</code></td>
+<td>伪装成 Chrome，绕过服务端对 curl UA 的限速策略</td>
+</tr>
+<tr>
+<td><code>--ssl-no-revoke</code></td>
+<td>禁用 Schannel 的证书吊销检查，根治代理环境下的 TLS 握手失败</td>
+</tr>
+<tr>
+<td><code>-x http://...</code></td>
+<td>显式指定代理地址（curl 不会自动读取 Windows 系统代理）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>坑点</strong>：<code>--ssl-no-revoke</code> 仅在 curl 7.44+ 可用，系统自带的 7.55.1 恰好支持，但再老的版本就不行了。</p>
+</blockquote>
+<hr>
+<h2 id="heading-4">方案二：PowerShell Profile 全局替换（一劳永逸）</h2>
+<p>将以下内容添加到 PowerShell <code>$Profile</code>，以后直接输入 <code>curl</code> 就会自动带优化参数：</p>
+<pre><code class="language-powershell"># 打开 Profile 文件
+notepad $PROFILE
+</code></pre>
+<p>粘贴以下内容：</p>
+<pre><code class="language-powershell">$BrowserUA = &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36&quot;
+
+# 移除 PowerShell 默认的 curl -&gt; Invoke-WebRequest 别名
+if (Get-Alias curl -ErrorAction SilentlyContinue) { Remove-Item Alias:\curl -Force }
+
+function global:curl {
+    [CmdletBinding()]
+    param([Parameter(ValueFromRemainingArguments=$true)]$PassThruArgs)
+
+    $curlExe = Get-Command curl.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $curlExe) {
+        Write-Error &quot;curl.exe not found in PATH&quot;
+        return
+    }
+
+    $hasUA = $PassThruArgs | Where-Object { $_ -match &#39;^(-A|--user-agent)$&#39; }
+    $inject = @()
+    if (-not $hasUA) {
+        $inject += @(&quot;-A&quot;, $BrowserUA)
+    }
+
+    $verLine = (&amp; $curlExe --version 2&gt;$null | Select-Object -First 1)
+    $isOld = $verLine -match &#39;curl\s+7\.(5[0-9]|6[0-9]|7[0-9]|8[0-9])&#39; -or $verLine -match &#39;curl\s+7\.4[0-9]&#39;
+    if ($isOld -and -not ($PassThruArgs -contains &#39;--tcp-nodelay&#39;)) {
+        $inject += &quot;--tcp-nodelay&quot;
+    }
+
+    &amp; $curlExe @inject @PassThruArgs
+}
+</code></pre>
+<p>保存后<strong>重新打开 PowerShell</strong>，输入 <code>curl --version</code> 测试。此时直接输入 <code>curl</code> 就是优化版，无需每次敲长参数。</p>
+<hr>
+<h2 id="heading-5">方案三：智能下载脚本（自动代理 + 多级 fallback）</h2>
+<p>如果你希望更省心，我提供了一个 <code>curl-fast.ps1</code> 脚本，自动完成以下事情：</p>
+<ol>
+<li><strong>自动嗅探代理</strong>：扫描 10808、7890、10809、1080 等常见代理端口</li>
+<li><strong>自动 UA 伪装</strong>：没有 <code>-A</code> 时自动注入 Chrome UA</li>
+<li><strong>旧版 curl + 代理自动加 <code>--ssl-no-revoke</code></strong>：避开证书错误</li>
+<li><strong>curl 失败自动 fallback 到 aria2c</strong>：多线程下载，直接跑满带宽</li>
+</ol>
+<h3 id="heading-6">使用方式</h3>
+<pre><code class="language-powershell"># 下载任意链接，全自动优化
+powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 &quot;https://你的下载链接&quot; -OutFile &quot;保存文件名&quot;
+
+# 指定代理（如果不自动识别）
+powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 &quot;https://...&quot; -Proxy &quot;socks5h://127.0.0.1:10808&quot;
+
+# 强制使用 aria2c 多线程（最快）
+powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 &quot;https://...&quot; -ForceAria2
+</code></pre>
+<h3 id="heading-7">脚本核心逻辑</h3>
+<pre><code class="language-powershell"># 伪代码展示判断逻辑
+if (检测到新版 curl &gt;= 7.80.0) {
+    使用 HTTP/2 + OpenSSL 现代模式
+} elseif (检测到旧版系统 curl) {
+    注入 --tcp-nodelay + 浏览器 UA
+    if (走了代理) { 额外注入 --ssl-no-revoke }
+    执行下载
+    if (失败) { fallback 到 aria2c }
+} else {
+    直接调用 aria2c 多线程下载
+}
+</code></pre>
+<hr>
+<h2 id="heading-8">方案四：彻底根治（推荐）</h2>
+<h3 id="heading-9">1. 安装新版 curl（OpenSSL + HTTP/2）</h3>
+<pre><code class="language-powershell"># 使用 winget（需先安装 winget，参见博客另一篇文章）
+winget install curl
+
+# 或使用 scoop
+scoop install curl
+</code></pre>
+<p>验证：</p>
+<pre><code class="language-powershell">curl --version
+# 期望看到 8.x.x，且 Features 包含 HTTP2、SSL (OpenSSL)
+</code></pre>
+<h3 id="heading-10">2. 安装 aria2c（终极多线程下载）</h3>
+<pre><code class="language-powershell">winget install aria2
+# 或
+scoop install aria2
+</code></pre>
+<p>aria2c 使用示例（8 线程，单文件分 8 段，走代理）：</p>
+<pre><code class="language-powershell">aria2c -x 8 -s 8 -k 1M `
+  --user-agent=&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36&quot; `
+  --all-proxy=&quot;http://127.0.0.1:10808&quot; `
+  &quot;https://github.com/...&quot;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>aria2c 参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-x 8</code></td>
+<td>单服务器最大连接数 8</td>
+</tr>
+<tr>
+<td><code>-s 8</code></td>
+<td>文件分 8 段并行下载</td>
+</tr>
+<tr>
+<td><code>-k 1M</code></td>
+<td>每段最小 1MB，避免分段过小导致开销过大</td>
+</tr>
+<tr>
+<td><code>--all-proxy</code></td>
+<td>全局代理设置</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="heading-11">实测对比</h2>
+<p>在同一网络环境下（代理节点带宽 100 Mbps），下载不同来源的文件：</p>
+<table>
+<thead>
+<tr>
+<th>下载源</th>
+<th>旧版 curl 默认</th>
+<th>旧版 curl + 优化参数</th>
+<th>新版 curl 8.x</th>
+<th>aria2c 8 线程</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>清华 TUNA</strong> (Ubuntu ISO)</td>
+<td>~5 MB/s</td>
+<td>~10 MB/s</td>
+<td>~12 MB/s</td>
+<td>~50 MB/s</td>
+</tr>
+<tr>
+<td><strong>华为云</strong> (docker tgz)</td>
+<td>~2 MB/s</td>
+<td>~10 MB/s</td>
+<td>~11 MB/s</td>
+<td>~45 MB/s</td>
+</tr>
+<tr>
+<td><strong>GitHub</strong> (ripgrep zip)</td>
+<td>❌ 超时/证书错误</td>
+<td>~1 MB/s</td>
+<td>~5 MB/s</td>
+<td>~15 MB/s</td>
+</tr>
+<tr>
+<td><strong>npmmirror</strong> (npm tarball)</td>
+<td>~7 MB/s</td>
+<td>~10 MB/s</td>
+<td>~11 MB/s</td>
+<td>~40 MB/s</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>结论</strong>：</p>
+<ul>
+<li>旧版 curl 加参数后<strong>国内源可翻倍</strong>，境外源从「完全不通」变成「可用」</li>
+<li>要<strong>跑满带宽</strong>，唯一答案是 <strong>aria2c 多线程</strong></li>
+<li>长期频繁下载，建议直接升级到新版 curl + aria2c</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="heading-12">常见问题 FAQ</h2>
+<h3 id="heading-13">Q1：为什么浏览器下载快，curl 慢？</h3>
+<p>浏览器会自动走系统代理、自动使用 HTTP/2、自带现代 TLS 栈，且 UA 不会被限速。curl 默认什么都不做，需要手动告诉它怎么做。</p>
+<h3 id="heading-14">Q2：加了代理还是报错 <code>0x80092013</code>？</h3>
+<p>这是 Windows Schannel（WinSSL）的证书吊销检查失败。<strong>必须加 <code>--ssl-no-revoke</code></strong>。旧版 curl 无解，彻底根治是升级到基于 OpenSSL 的新版 curl。</p>
+<h3 id="heading-15">Q3：我的代理端口不是 10808 怎么办？</h3>
+<p>手动指定：</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 &quot;https://...&quot; -Proxy &quot;http://127.0.0.1:7890&quot;
+</code></pre>
+<p>或在脚本中修改 <code>$commonProxies</code> 数组，添加你的端口。</p>
+<h3 id="heading-16">Q4：<code>curl-fast.ps1</code> 执行时提示「无法加载，因为在此系统上禁止运行脚本」？</h3>
+<p>这是 PowerShell 执行策略限制，显式加 <code>-ExecutionPolicy Bypass</code> 即可：</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 ...
+</code></pre>
+<h3 id="heading-17">Q5：如何判断 curl 有没有走代理？</h3>
+<p>加 <code>-v</code> 参数看 verbose 输出：</p>
+<pre><code class="language-powershell">curl.exe -v -x http://127.0.0.1:10808 https://httpbin.org/get
+</code></pre>
+<p>如果看到 <code>Proxy-Connection: keep-alive</code> 或 <code>CONNECT github.com:443</code>，说明代理已生效。</p>
+<h3 id="heading-18">Q6：aria2c 下载完成后文件损坏？</h3>
+<p>aria2c 默认会校验文件完整性。如果怀疑损坏，加 <code>--check-integrity=true</code> 参数重新下载。绝大多数情况下 aria2c 的分段合并是可靠的。</p>
+<h3 id="heading-19">Q7：不想全局替换 curl，只想临时用？</h3>
+<p>直接用 <code>curl.exe</code>（带 <code>.exe</code> 后缀）就会绕过 PowerShell Profile 里的 wrapper，调用系统原始 curl：</p>
+<pre><code class="language-powershell">curl.exe -o file.zip &quot;https://...&quot;
+</code></pre>
+<hr>
+<h2 id="heading-20">附录：常见代理端口速查</h2>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>默认 mixed-port</th>
+<th>HTTP 代理</th>
+<th>SOCKS5 代理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Clash Verge</strong></td>
+<td>7890</td>
+<td><code>http://127.0.0.1:7890</code></td>
+<td><code>socks5h://127.0.0.1:7890</code></td>
+</tr>
+<tr>
+<td><strong>Clash for Windows</strong></td>
+<td>7890</td>
+<td><code>http://127.0.0.1:7890</code></td>
+<td><code>socks5h://127.0.0.1:7890</code></td>
+</tr>
+<tr>
+<td><strong>v2rayN</strong></td>
+<td>10808</td>
+<td><code>http://127.0.0.1:10808</code></td>
+<td><code>socks5h://127.0.0.1:10808</code></td>
+</tr>
+<tr>
+<td><strong>v2rayN (旧版)</strong></td>
+<td>10809</td>
+<td><code>http://127.0.0.1:10809</code></td>
+<td><code>socks5h://127.0.0.1:10808</code></td>
+</tr>
+<tr>
+<td><strong>Shadowsocks</strong></td>
+<td>1080</td>
+<td><code>http://127.0.0.1:1080</code></td>
+<td><code>socks5h://127.0.0.1:1080</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：curl 的 SOCKS5 代理建议使用 <code>socks5h://</code> 前缀（h = host），表示让代理服务器做 DNS 解析，避免本地 DNS 污染导致的连接问题。</p>
+</blockquote>
+<hr>
+<h2 id="heading-21">参考链接</h2>
+<ul>
+<li><a href="https://bash.yang125.fun/posts/kimi-cli-install-win/">Windows 下安装 Kimi CLI，PowerShell 一键指令</a></li>
+<li><a href="https://bash.yang125.fun/posts/winget-install-win/">Windows 10 / 11 安装 winget</a></li>
+<li>curl 官方下载：<a href="https://curl.se/windows/">https://curl.se/windows/</a></li>
+<li>aria2 官方文档：<a href="https://aria2.github.io/">https://aria2.github.io/</a></li>
+<li>清华 TUNA 镜像站：<a href="https://mirrors.tuna.tsinghua.edu.cn/">https://mirrors.tuna.tsinghua.edu.cn/</a></li>
+</ul>
+
+  </div>
+</article>
+
+    </main>
+
+    
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          
+          <a class="toc-item level-2" href="#heading-0">环境信息</a>
+          
+          <a class="toc-item level-2" href="#heading-1">问题现象</a>
+          
+          <a class="toc-item level-2" href="#heading-2">诊断：你的 curl 是哪个版本？</a>
+          
+          <a class="toc-item level-2" href="#heading-3">方案一：不换工具，手动加参数（临时缓解）</a>
+          
+          <a class="toc-item level-2" href="#heading-4">方案二：PowerShell Profile 全局替换（一劳永逸）</a>
+          
+          <a class="toc-item level-2" href="#heading-5">方案三：智能下载脚本（自动代理 + 多级 fallback）</a>
+          
+          <a class="toc-item level-3" href="#heading-6">使用方式</a>
+          
+          <a class="toc-item level-3" href="#heading-7">脚本核心逻辑</a>
+          
+          <a class="toc-item level-2" href="#heading-8">方案四：彻底根治（推荐）</a>
+          
+          <a class="toc-item level-3" href="#heading-9">1. 安装新版 curl（OpenSSL + HTTP/2）</a>
+          
+          <a class="toc-item level-3" href="#heading-10">2. 安装 aria2c（终极多线程下载）</a>
+          
+          <a class="toc-item level-2" href="#heading-11">实测对比</a>
+          
+          <a class="toc-item level-2" href="#heading-12">常见问题 FAQ</a>
+          
+          <a class="toc-item level-3" href="#heading-13">Q1：为什么浏览器下载快，curl 慢？</a>
+          
+          <a class="toc-item level-3" href="#heading-14">Q2：加了代理还是报错 0x80092013？</a>
+          
+          <a class="toc-item level-3" href="#heading-15">Q3：我的代理端口不是 10808 怎么办？</a>
+          
+          <a class="toc-item level-3" href="#heading-16">Q4：curl-fast.ps1 执行时提示「无法加载，因为在此系统上禁止运行脚本」？</a>
+          
+          <a class="toc-item level-3" href="#heading-17">Q5：如何判断 curl 有没有走代理？</a>
+          
+          <a class="toc-item level-3" href="#heading-18">Q6：aria2c 下载完成后文件损坏？</a>
+          
+          <a class="toc-item level-3" href="#heading-19">Q7：不想全局替换 curl，只想临时用？</a>
+          
+          <a class="toc-item level-2" href="#heading-20">附录：常见代理端口速查</a>
+          
+          <a class="toc-item level-2" href="#heading-21">参考链接</a>
+          
+        </nav>
+      </div>
+    </aside>
+    
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+    
+    <div class="site-beian">
+      
+      <span>皖ICP备2025105642号-2</span>
+      <span class="beian-divider">|</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">工信部备案</a>
+      
+      
+      
+    </div>
+    
+  </footer>
+  <script src="../../assets/js/main.js?v=7"></script>
+  <script src="../../assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
+</body>
+</html>

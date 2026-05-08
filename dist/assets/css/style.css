@@ -263,6 +263,30 @@ a:hover { color: var(--primary-dark); }
   left: 20%;
 }
 
+/* GitHub icon in navbar */
+.navbar-github {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  color: var(--text);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+
+.navbar-github:hover {
+  color: var(--primary);
+  background: var(--bg);
+  transform: translateY(-1px);
+}
+
+.navbar-github svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 /* ── Main Layout ── */
 .main-wrapper {
   display: flex;
@@ -1047,7 +1071,7 @@ a:hover { color: var(--primary-dark); }
   right: 28px;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 9999px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-hover);
@@ -1185,6 +1209,7 @@ button:focus-visible,
 /* ── Mobile ── */
 @media (max-width: 1024px) {
   .sidebar-left { display: none; }
+  .toc-sidebar { display: none; }
   .main-wrapper { padding: 72px 16px 40px; }
 }
 
@@ -1223,7 +1248,108 @@ button:focus-visible,
   .scroll-top {
     width: 40px;
     height: 40px;
-    bottom: 20px;
-    right: 20px;
+    bottom: 32px;
+    right: 16px;
   }
+}
+
+/* ── TOC Sidebar ── */
+.toc-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.toc-sticky {
+  position: sticky;
+  top: 72px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-light);
+  padding: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.toc-header {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text);
+}
+
+.toc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toc-item {
+  display: block;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  color: var(--text-light);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  transition: all var(--transition);
+  border-left: 2px solid transparent;
+}
+
+.toc-item:hover {
+  background: var(--primary-ghost);
+  color: var(--primary);
+}
+
+.toc-item.active {
+  color: var(--primary);
+  background: var(--primary-ghost);
+  border-left-color: var(--primary);
+  font-weight: 500;
+}
+
+.toc-item.level-3 {
+  padding-left: 18px;
+  font-size: 0.8rem;
+}
+
+/* ── Scroll-to-top button ── */
+.scroll-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-hover);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all var(--transition);
+  z-index: 999;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.scroll-top:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-2px);
 }

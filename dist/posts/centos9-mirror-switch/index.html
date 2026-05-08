@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-  <link rel="stylesheet" href="../../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=6">
   <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
 </head>
 <body>
@@ -24,6 +24,9 @@
       <a class="navbar-item " href="../../">首页</a>
       <a class="navbar-item " href="../../archive">归档</a>
       <a class="navbar-item " href="../../tags">标签</a>
+      <a class="navbar-github" href="https://github.com/yang12535/blog" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </a>
     </div>
   </nav>
 
@@ -78,7 +81,7 @@
 <strong>生产服务器、有红帽订阅的机器、需要 RHEL 官方技术支持的环境请勿执行！</strong></p>
 </blockquote>
 <hr>
-<h2>两行命令</h2>
+<h2 id="heading-0">两行命令</h2>
 <pre><code class="language-bash"># 第一行：系统源换阿里云 + 禁用红帽订阅插件 + 处理 RHEL 9 身份冲突（不可逆！会改变系统身份为 CentOS Stream 9）
 sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-manager.conf 2&gt;/dev/null; mkdir -p /etc/yum.repos.d/backup &amp;&amp; mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2&gt;/dev/null; echo -e &quot;[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[crb]\nname=CentOS Stream 9 CRB\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/CRB/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official&quot; &gt; /etc/yum.repos.d/centos9.repo &amp;&amp; dnf clean all &amp;&amp; (rpm -e --nodeps redhat-release redhat-release-eula 2&gt;/dev/null; rm -rf /usr/share/redhat-release 2&gt;/dev/null; dnf install -y centos-stream-release 2&gt;/dev/null || true) &amp;&amp; dnf makecache
 
@@ -86,7 +89,7 @@ sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-mana
 mkdir -p ~/.pip &amp;&amp; echo -e &quot;[global]\nindex-url = https://pypi.tuna.tsinghua.edu.cn/simple\ntrusted-host = pypi.tuna.tsinghua.edu.cn\nextra-index-url = https://mirrors.aliyun.com/pypi/simple/&quot; &gt; ~/.pip/pip.conf
 </code></pre>
 <hr>
-<h2>第一行在干什么？</h2>
+<h2 id="heading-1">第一行在干什么？</h2>
 <table>
 <thead>
 <tr>
@@ -124,7 +127,7 @@ mkdir -p ~/.pip &amp;&amp; echo -e &quot;[global]\nindex-url = https://pypi.tuna
 这里手动修正为 <code>centos/RPM-GPG-KEY-CentOS-Official</code>，否则安装软件时公钥导入失败。</p>
 </blockquote>
 <hr>
-<h2>第二行在干什么？</h2>
+<h2 id="heading-2">第二行在干什么？</h2>
 <table>
 <thead>
 <tr>
@@ -147,7 +150,7 @@ mkdir -p ~/.pip &amp;&amp; echo -e &quot;[global]\nindex-url = https://pypi.tuna
 </tbody></table>
 <p>写入路径是 <code>~/.pip/pip.conf</code>，仅对当前用户生效，不影响系统全局或其他用户。</p>
 <hr>
-<h2>为什么吃百家饭？</h2>
+<h2 id="heading-3">为什么吃百家饭？</h2>
 <table>
 <thead>
 <tr>
@@ -179,14 +182,14 @@ mkdir -p ~/.pip &amp;&amp; echo -e &quot;[global]\nindex-url = https://pypi.tuna
 </tbody></table>
 <p><strong>没有一家镜像站能全包</strong>，所以系统源吃阿里、pip 吃清华、安装包吃华为、key 还得自己找路径——这就是国内源的&quot;百家饭&quot;现状。</p>
 <hr>
-<h2>只想装 kimi-cli，不想升级系统？</h2>
+<h2 id="heading-4">只想装 kimi-cli，不想升级系统？</h2>
 <p>如果你只是临时用（比如学校机房），<strong>不想也不必要跑 <code>yum update -y</code></strong>，建议直接用这篇脚本：</p>
 <ul>
 <li><a href="https://bash.yang125.fun/posts/kimi-cli-install-centos9/">CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI</a></li>
 </ul>
 <p>那个脚本<strong>只安装 <code>python3-pip</code>，不触发系统级身份冲突</strong>，换完源后直接装 kimi-cli 即可。</p>
 <hr>
-<h2>验证换源成功</h2>
+<h2 id="heading-5">验证换源成功</h2>
 <pre><code class="language-bash"># 查看系统源
 ls /etc/yum.repos.d/          # 应只剩 centos9.repo 和 backup 目录
 cat /etc/yum.repos.d/centos9.repo
@@ -201,7 +204,7 @@ cat ~/.pip/pip.conf
 pip config list
 </code></pre>
 <hr>
-<h2>回滚（后悔了）</h2>
+<h2 id="heading-6">回滚（后悔了）</h2>
 <pre><code class="language-bash"># 恢复原有 repo
 mv /etc/yum.repos.d/backup/*.repo /etc/yum.repos.d/ 2&gt;/dev/null
 rm -f /etc/yum.repos.d/centos9.repo
@@ -217,13 +220,48 @@ sed -i &#39;s/enabled=0/enabled=1/g&#39; /etc/yum/pluginconf.d/subscription-mana
 </article>
 
     </main>
+
+    
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          
+          <a class="toc-item level-2" href="#heading-0">两行命令</a>
+          
+          <a class="toc-item level-2" href="#heading-1">第一行在干什么？</a>
+          
+          <a class="toc-item level-2" href="#heading-2">第二行在干什么？</a>
+          
+          <a class="toc-item level-2" href="#heading-3">为什么吃百家饭？</a>
+          
+          <a class="toc-item level-2" href="#heading-4">只想装 kimi-cli，不想升级系统？</a>
+          
+          <a class="toc-item level-2" href="#heading-5">验证换源成功</a>
+          
+          <a class="toc-item level-2" href="#heading-6">回滚（后悔了）</a>
+          
+        </nav>
+      </div>
+    </aside>
+    
   </div>
 
   <footer class="site-footer">
     <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
     
+    <div class="site-beian">
+      
+      <span>皖ICP备2025105642号-2</span>
+      <span class="beian-divider">|</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">工信部备案</a>
+      
+      
+      
+    </div>
+    
   </footer>
-  <script src="../../assets/js/main.js?v=4"></script>
+  <script src="../../assets/js/main.js?v=7"></script>
   <script src="../../assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
 </body>
 </html>

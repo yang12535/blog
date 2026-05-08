@@ -22,17 +22,26 @@
 
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  // ── 2. Scroll-to-top button ──
+  // ── 2. Scroll-to-top button (desktop only) ──
   function createScrollTopBtn() {
-    var btn = document.createElement('button');
-    btn.type = 'button';
+    if (window.innerWidth <= 1024) return null;
+    var btn = document.createElement('div');
     btn.className = 'scroll-top';
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
     btn.setAttribute('aria-label', '回到顶部');
     btn.setAttribute('title', '回到顶部');
     btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
     var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    btn.addEventListener('click', function() {
+    function scrollToTop() {
       window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    }
+    btn.addEventListener('click', scrollToTop);
+    btn.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        scrollToTop();
+      }
     });
     document.body.appendChild(btn);
     return btn;
@@ -171,7 +180,37 @@
   renderMermaid();
   window.renderMermaidDiagrams = renderMermaid;
 
-  // ── 6. Card stagger animations (triggered on load) ──
+  // ── 6. TOC scroll spy ──
+  var tocItems = document.querySelectorAll('.toc-item');
+  if (tocItems.length > 0) {
+    var headingElements = [];
+    tocItems.forEach(function(link) {
+      var id = link.getAttribute('href');
+      if (id && id.startsWith('#')) {
+        var el = document.getElementById(id.slice(1));
+        if (el) headingElements.push({ link: link, el: el });
+      }
+    });
+
+    function updateTocActive() {
+      var scrollPos = window.pageYOffset + 120;
+      var active = null;
+      for (var i = headingElements.length - 1; i >= 0; i--) {
+        if (headingElements[i].el.offsetTop <= scrollPos) {
+          active = headingElements[i].link;
+          break;
+        }
+      }
+      tocItems.forEach(function(link) {
+        link.classList.toggle('active', link === active);
+      });
+    }
+
+    window.addEventListener('scroll', updateTocActive, { passive: true });
+    updateTocActive();
+  }
+
+  // ── 7. Card stagger animations (triggered on load) ──
   // Animations run on page load for simplicity and accessibility (no JS dependency).
   // IntersectionObserver removed per review: avoids invisible cards when JS is disabled.
 })();

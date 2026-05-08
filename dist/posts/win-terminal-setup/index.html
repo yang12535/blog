@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows Terminal + PowerShell 7 一键安装配置指南 - Bogl Blog</title>
+  <meta name="description" content="
+在 Windows 10/11 上零权限安装 Windows Terminal + PowerShell 7 + Oh My Posh，解决 GBK 乱码与默认终端难用的问题。适用于机房、还原卡、无管理员权限环境。
+复制脚本 → 粘贴 →…">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=6">
+  <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
+      <a class="navbar-github" href="https://github.com/yang12535/blog" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      <a class="menu-item" href="../../posts/winget-install-win/">← Windows 10 / 11 安装 w…</a>
+      <a class="menu-item" href="../../posts/kimi-cli-install-win/">→ Windows 一键安装 Kimi CL…</a>
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">Windows Terminal + PowerShell 7 一键安装配置指南</h1>
+    <div class="article-page-meta">
+      <span>2026-04-29</span>
+      
+        
+        <a class="tag" href="../../tags/windows/">windows</a>
+        
+        <a class="tag" href="../../tags/terminal/">terminal</a>
+        
+        <a class="tag" href="../../tags/powershell/">powershell</a>
+        
+        <a class="tag" href="../../tags/oh-my-posh/">oh-my-posh</a>
+        
+        <a class="tag" href="../../tags/nerd-font/">nerd-font</a>
+        
+        <a class="tag" href="../../tags/utf-8/">utf-8</a>
+        
+        <a class="tag" href="../../tags/github-proxy/">github-proxy</a>
+        
+      
+    </div>
+  </header>
+  <div class="article-content">
+    <blockquote>
+<p>在 Windows 10/11 上零权限安装 Windows Terminal + PowerShell 7 + Oh My Posh，解决 GBK 乱码与默认终端难用的问题。适用于机房、还原卡、无管理员权限环境。</p>
+<p>复制脚本 → 粘贴 → 回车，获得一个带毛玻璃、多标签页、UTF-8、Nerd Font 的现代化终端。</p>
+</blockquote>
+<hr>
+<h2 id="heading-0">更新日志</h2>
+<ul>
+<li><strong>2026-05-08</strong> 修复断点续传导致的安装失败：<ul>
+<li>增加临时文件大小校验函数 <code>Test-ValidFile</code>，不完整时自动删除重下</li>
+<li>覆盖 PowerShell 7 MSI、Windows Terminal msixbundle/zip、Oh My Posh、Nerd Font、主题文件等全部下载节点</li>
+<li>解决「执行到一半退出，再次运行时报文件损坏/安装包无法运行」的问题</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="heading-1">环境信息</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>系统</strong></td>
+<td>Windows 10 / Windows 11（64 位）</td>
+</tr>
+<tr>
+<td><strong>权限</strong></td>
+<td>普通用户即可（无需管理员，全程 0 弹窗）</td>
+</tr>
+<tr>
+<td><strong>场景</strong></td>
+<td>机房、OS-Easy 还原卡、域控锁死环境</td>
+</tr>
+<tr>
+<td><strong>目标</strong></td>
+<td>PowerShell 7 + Windows Terminal + Oh My Posh 美化 + 强制 UTF-8</td>
+</tr>
+<tr>
+<td><strong>网络</strong></td>
+<td>能访问 GitHub 即可（Release 直链）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="heading-2">一键脚本（复制即用）</h2>
+<p>在 PowerShell 里复制粘贴执行（支持 PowerShell 5.1 老窗口）：</p>
+<pre><code class="language-powershell"># 创建临时目录
+$temp = &quot;$env:TEMP\termsetup&quot;
+New-Item -ItemType Directory -Force -Path $temp | Out-Null
+
+# 校验临时文件是否完整（不完整则自动删除）
+function Test-ValidFile($Path, $MinBytes=1) {
+    if (Test-Path $Path) {
+        if ((Get-Item $Path).Length -ge $MinBytes) { return $true }
+        Remove-Item $Path -Force
+    }
+    return $false
+}
+
+# --- 1. 下载并安装 PowerShell 7.4 ---
+$ps7Url = &quot;https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi&quot;
+$ps7Out = &quot;$temp\PowerShell-7.4.6-win-x64.msi&quot;
+if (-not (Test-ValidFile $ps7Out 50MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 PowerShell 7.4...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing
+}
+Write-Host &quot;&gt;&gt;&gt; 安装 PowerShell 7.4...&quot; -ForegroundColor Cyan
+msiexec /i &quot;$ps7Out&quot; /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1
+
+# --- 2. 下载并安装 Windows Terminal ---
+$wtMsix = &quot;$temp\WindowsTerminal.msixbundle&quot;
+$wtZip  = &quot;$temp\WindowsTerminal_x64.zip&quot;
+if (-not (Test-ValidFile $wtMsix 10MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Windows Terminal (msixbundle)...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri &quot;https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle&quot; -OutFile $wtMsix -UseBasicParsing
+}
+# 先尝试 msixbundle 安装（依赖已存在时可直接装上）
+Add-AppxPackage -Path $wtMsix -ErrorAction SilentlyContinue
+
+# --- 3. 同时准备 Unpackaged 版（防 msix 无法启动）---
+if (-not (Test-ValidFile $wtZip 5MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Windows Terminal (Unpackaged 备用)...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri &quot;https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip&quot; -OutFile $wtZip -UseBasicParsing
+}
+$wtDest = &quot;$env:LOCALAPPDATA\WindowsTerminal&quot;
+Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
+
+# --- 4. 下载 Oh My Posh ---
+$ompDir = &quot;$env:LOCALAPPDATA\Programs\oh-my-posh&quot;
+New-Item -ItemType Directory -Force -Path $ompDir | Out-Null
+$ompExe = &quot;$ompDir\oh-my-posh.exe&quot;
+if (-not (Test-ValidFile $ompExe 5MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Oh My Posh...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri &quot;https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe&quot; -OutFile $ompExe -UseBasicParsing
+}
+
+# --- 5. 下载 Nerd Font ---
+$fontZip = &quot;$temp\JetBrainsMono.zip&quot;
+if (-not (Test-ValidFile $fontZip 10MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 JetBrainsMono Nerd Font...&quot; -ForegroundColor Cyan
+    Invoke-WebRequest -Uri &quot;https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip&quot; -OutFile $fontZip -UseBasicParsing
+}
+$fontDest = &quot;$env:LOCALAPPDATA\Microsoft\Windows\Fonts&quot;
+New-Item -ItemType Directory -Force -Path $fontDest | Out-Null
+Expand-Archive -Path $fontZip -DestinationPath &quot;$temp\JetBrainsMono&quot; -Force
+Get-ChildItem &quot;$temp\JetBrainsMono&quot; -Filter &quot;*.ttf&quot; | ForEach { Copy-Item $_.FullName -Destination $fontDest -Force }
+
+# --- 6. 注册字体到系统（让 Windows Terminal 能识别）---
+$shell = New-Object -ComObject Shell.Application
+$fontFolder = $shell.Namespace(0x14)
+Get-ChildItem $fontDest -Filter &quot;*JetBrains*&quot; | ForEach { $fontFolder.CopyHere($_.FullName, 0x10) }
+
+# --- 7. 下载 Oh My Posh 主题 ---
+$themeDir = &quot;$ompDir\themes&quot;
+New-Item -ItemType Directory -Force -Path $themeDir | Out-Null
+$themeFile = &quot;$themeDir\powerlevel10k_rainbow.omp.json&quot;
+if (-not (Test-ValidFile $themeFile 1KB)) {
+    Invoke-WebRequest -Uri &quot;https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/powerlevel10k_rainbow.omp.json&quot; -OutFile $themeFile -UseBasicParsing
+}
+
+# --- 8. 写 PowerShell 7 Profile（UTF-8 + OMP + PSReadLine）---
+$ps7ProfileDir = &quot;$env:USERPROFILE\Documents\PowerShell&quot;
+New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
+$profileContent = @&quot;
+# 强制 UTF-8，根治 GBK 乱码
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+`$OutputEncoding = [System.Text.Encoding]::UTF8
+`$PSDefaultParameterValues[&#39;Out-File:Encoding&#39;] = &#39;utf8&#39;
+
+# Oh My Posh 主题
+&amp; &quot;$ompExe&quot; init pwsh --config &quot;$themeFile&quot; | Invoke-Expression
+
+# 常用别名
+Set-Alias ll Get-ChildItem
+Set-Alias which Get-Command
+
+# 历史预测
+Set-PSReadLineOption -PredictionSource History
+Set-PSReadLineOption -PredictionViewStyle ListView
+&quot;@
+Set-Content -Path &quot;$ps7ProfileDir\Microsoft.PowerShell_profile.ps1&quot; -Value $profileContent -Encoding UTF8
+
+# --- 9. 写 Windows Terminal settings.json ---
+$wtSettingsDir = &quot;$env:LOCALAPPDATA\Microsoft\Windows Terminal&quot;
+New-Item -ItemType Directory -Force -Path $wtSettingsDir | Out-Null
+$settingsJson = @&#39;
+{
+  &quot;$help&quot;: &quot;https://aka.ms/terminal-documentation&quot;,
+  &quot;$schema&quot;: &quot;https://aka.ms/terminal-profiles-schema&quot;,
+  &quot;actions&quot;: [
+    { &quot;command&quot;: { &quot;action&quot;: &quot;copy&quot;, &quot;singleLine&quot;: false }, &quot;keys&quot;: &quot;ctrl+c&quot; },
+    { &quot;command&quot;: &quot;paste&quot;, &quot;keys&quot;: &quot;ctrl+v&quot; },
+    { &quot;command&quot;: &quot;find&quot;, &quot;keys&quot;: &quot;ctrl+shift+f&quot; },
+    { &quot;command&quot;: { &quot;action&quot;: &quot;splitPane&quot;, &quot;split&quot;: &quot;auto&quot;, &quot;splitMode&quot;: &quot;duplicate&quot; }, &quot;keys&quot;: &quot;alt+shift+d&quot; }
+  ],
+  &quot;copyFormatting&quot;: &quot;none&quot;,
+  &quot;defaultProfile&quot;: &quot;{574e775e-4f2a-5b96-ac1e-a2962a402336}&quot;,
+  &quot;newTabMenu&quot;: [ { &quot;type&quot;: &quot;remainingProfiles&quot; } ],
+  &quot;profiles&quot;: {
+    &quot;defaults&quot;: {
+      &quot;colorScheme&quot;: &quot;One Half Dark&quot;,
+      &quot;font&quot;: { &quot;face&quot;: &quot;JetBrainsMono NF&quot;, &quot;size&quot;: 12 },
+      &quot;opacity&quot;: 90,
+      &quot;useAcrylic&quot;: true,
+      &quot;padding&quot;: &quot;8, 8, 8, 8&quot;,
+      &quot;cursorShape&quot;: &quot;bar&quot;,
+      &quot;startingDirectory&quot;: &quot;%USERPROFILE%&quot;
+    },
+    &quot;list&quot;: [
+      {
+        &quot;guid&quot;: &quot;{574e775e-4f2a-5b96-ac1e-a2962a402336}&quot;,
+        &quot;hidden&quot;: false,
+        &quot;name&quot;: &quot;PowerShell 7&quot;,
+        &quot;source&quot;: &quot;Windows.Terminal.PowershellCore&quot;
+      },
+      {
+        &quot;guid&quot;: &quot;{61c54bbd-c2c6-5271-96e7-009a87ff44bf}&quot;,
+        &quot;name&quot;: &quot;Windows PowerShell&quot;
+      },
+      {
+        &quot;guid&quot;: &quot;{0caa0dad-35be-5f56-a8ff-afceeeaa6101}&quot;,
+        &quot;name&quot;: &quot;Command Prompt&quot;,
+        &quot;commandline&quot;: &quot;cmd.exe&quot;
+      }
+    ]
+  },
+  &quot;schemes&quot;: [
+    {
+      &quot;name&quot;: &quot;One Half Dark&quot;,
+      &quot;background&quot;: &quot;#282C34&quot;,
+      &quot;black&quot;: &quot;#282C34&quot;,
+      &quot;blue&quot;: &quot;#61AFEF&quot;,
+      &quot;brightBlack&quot;: &quot;#5A6374&quot;,
+      &quot;brightBlue&quot;: &quot;#61AFEF&quot;,
+      &quot;brightCyan&quot;: &quot;#56B6C2&quot;,
+      &quot;brightGreen&quot;: &quot;#98C379&quot;,
+      &quot;brightPurple&quot;: &quot;#C678DD&quot;,
+      &quot;brightRed&quot;: &quot;#E06C75&quot;,
+      &quot;brightWhite&quot;: &quot;#DCDFE4&quot;,
+      &quot;brightYellow&quot;: &quot;#E5C07B&quot;,
+      &quot;cursorColor&quot;: &quot;#A3B3CC&quot;,
+      &quot;cyan&quot;: &quot;#56B6C2&quot;,
+      &quot;foreground&quot;: &quot;#DCDFE4&quot;,
+      &quot;green&quot;: &quot;#98C379&quot;,
+      &quot;purple&quot;: &quot;#C678DD&quot;,
+      &quot;red&quot;: &quot;#E06C75&quot;,
+      &quot;selectionBackground&quot;: &quot;#474E5D&quot;,
+      &quot;white&quot;: &quot;#DCDFE4&quot;,
+      &quot;yellow&quot;: &quot;#E5C07B&quot;
+    }
+  ]
+}
+&#39;@
+Set-Content -Path &quot;$wtSettingsDir\settings.json&quot; -Value $settingsJson -Encoding UTF8
+
+# --- 10. 创建桌面快捷方式（Unpackaged 版，确保能点开）---
+$wtExe = &quot;$wtDest\terminal-1.21.3231.0\WindowsTerminal.exe&quot;
+$WshShell = New-Object -ComObject WScript.Shell
+$SC = $WshShell.CreateShortcut(&quot;$env:USERPROFILE\Desktop\Terminal.lnk&quot;)
+$SC.TargetPath = $wtExe
+$SC.WorkingDirectory = &quot;$wtDest\terminal-1.21.3231.0&quot;
+$SC.IconLocation = $wtExe
+$SC.Save()
+
+# --- 11. 可选：强制系统全局 UTF-8（需要重启，还原卡环境谨慎）---
+# Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;ACP&quot; -Value &quot;65001&quot;
+# Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;OEMCP&quot; -Value &quot;65001&quot;
+# Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;MACCP&quot; -Value &quot;65001&quot;
+
+Write-Host &quot;&gt;&gt;&gt; 完成！双击桌面的 &#39;Terminal&#39; 快捷方式即可使用。&quot; -ForegroundColor Green
+</code></pre>
+<blockquote>
+<p><strong>提示</strong>：脚本运行期间请不要关闭窗口。由于是从 GitHub 下载，若网络较慢请耐心等待。</p>
+</blockquote>
+<hr>
+<h2 id="heading-3">分步详解</h2>
+<h3 id="heading-4">1. 安装 PowerShell 7.4</h3>
+<p>Windows 自带的 PowerShell 5.1 是 2016 年的老东西，Unicode 支持差、换行逻辑诡异、很多新语法不支持。</p>
+<pre><code class="language-powershell">msiexec /i &quot;PowerShell-7.4.6-win-x64.msi&quot; /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/qn</code></td>
+<td>静默安装，无弹窗</td>
+</tr>
+<tr>
+<td><code>ADD_EXPLORER_CONTEXT_MENU=1</code></td>
+<td>在资源管理器右键菜单添加&quot;在此处打开 PowerShell 7&quot;</td>
+</tr>
+<tr>
+<td><code>REGISTER_MANIFEST=1</code></td>
+<td>注册事件日志清单</td>
+</tr>
+</tbody></table>
+<p>安装后本体位于 <code>C:\Program Files\PowerShell\7\pwsh.exe</code>，与系统自带的 5.1 互不冲突。</p>
+<h3 id="heading-5">2. 安装 Windows Terminal</h3>
+<p>Windows Terminal 是微软官方的现代终端，支持多标签页、GPU 加速、背景毛玻璃、自定义配色。</p>
+<p><strong>为什么装两份？</strong></p>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MSIX 版</strong></td>
+<td>正规安装包，点开始菜单能启动，但依赖 Windows 的 AppX 框架。某些精简系统或权限受限环境可能点不开。</td>
+</tr>
+<tr>
+<td><strong>Unpackaged 版</strong></td>
+<td>绿色免安装，解压后直接 <code>WindowsTerminal.exe</code> 启动，不依赖 AppX，作为保底方案。</td>
+</tr>
+</tbody></table>
+<p>一键脚本里两者都准备了：先尝试 msixbundle，同时把 unpackaged 解压到 <code>%LOCALAPPDATA%\WindowsTerminal</code>，最后桌面快捷方式指向的是 unpackaged 版，<strong>确保双击一定能打开</strong>。</p>
+<h3 id="heading-6">3. 安装 Oh My Posh</h3>
+<p>Oh My Posh 是一个跨平台的终端提示符美化引擎，用 Go 编写，单文件可执行，无需依赖。</p>
+<pre><code class="language-powershell"># 下载单文件 exe
+Invoke-WebRequest -Uri &quot;https://github.com/.../posh-windows-amd64.exe&quot; -OutFile &quot;$env:LOCALAPPDATA\Programs\oh-my-posh\oh-my-posh.exe&quot;
+
+# 在 PS7 Profile 里初始化
+&amp; &quot;$env:LOCALAPPDATA\Programs\oh-my-posh\oh-my-posh.exe&quot; init pwsh --config &quot;...\powerlevel10k_rainbow.omp.json&quot; | Invoke-Expression
+</code></pre>
+<blockquote>
+<p><strong>为什么用 <code>powerlevel10k_rainbow</code>？</strong></p>
+<p>这个主题在 Windows 上兼容性最好，颜色分段清晰，能显示 git 分支、执行时间、错误状态码，且不需要额外图标字体也能基本可用。</p>
+</blockquote>
+<h3 id="heading-7">4. 安装 JetBrainsMono Nerd Font</h3>
+<p>Windows Terminal 要正确显示 Oh My Posh 的图标（文件夹、git 分支、时钟等符号），必须使用 <strong>Nerd Font</strong>（在普通编程字体基础上补全了数千个图标字形）。</p>
+<pre><code class="language-powershell"># 下载并解压
+Expand-Archive -Path &quot;JetBrainsMono.zip&quot; -DestinationPath &quot;...&quot;
+
+# 复制到用户字体目录
+Copy-Item *.ttf -Destination &quot;$env:LOCALAPPDATA\Microsoft\Windows\Fonts&quot;
+
+# 用 Shell COM 对象真正注册到系统字体表
+$shell = New-Object -ComObject Shell.Application
+$fontFolder = $shell.Namespace(0x14)  # 0x14 = Fonts virtual folder
+$fontFolder.CopyHello($fontFile, 0x10) # 静默安装
+</code></pre>
+<blockquote>
+<p><strong>坑点：字体名称不是文件名</strong></p>
+<p>很多人会在 <code>settings.json</code> 里写 <code>&quot;face&quot;: &quot;JetBrainsMono Nerd Font&quot;</code>，但系统实际注册的字体家族名是 <code>&quot;JetBrainsMono NF&quot;</code>。写错会导致 Terminal 启动时弹窗报错&quot;找不到字体&quot;。</p>
+<p>正确写法：</p>
+<pre><code class="language-json">&quot;font&quot;: { &quot;face&quot;: &quot;JetBrainsMono NF&quot;, &quot;size&quot;: 12 }
+</code></pre>
+</blockquote>
+<h3 id="heading-8">5. 强制 UTF-8，根治 GBK 乱码</h3>
+<p>Windows 中文版默认代码页是 <strong>GBK (936)</strong>，这会导致：</p>
+<ul>
+<li><code>git log</code> 中文乱码</li>
+<li><code>python</code> 输出乱码</li>
+<li><code>npm</code>、<code>cargo</code> 等现代工具输出异常</li>
+<li>复制粘贴到剪贴板的内容编码错乱</li>
+</ul>
+<p><strong>方案 A：PowerShell 7 Profile 级（立即生效，推荐）</strong></p>
+<p>在 Profile 顶部加入：</p>
+<pre><code class="language-powershell">[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues[&#39;Out-File:Encoding&#39;] = &#39;utf8&#39;
+</code></pre>
+<p>这样每个新开的 Terminal 标签页内部都是 UTF-8，不影响系统其他程序。</p>
+<p><strong>方案 B：系统全局级（需重启，还原卡环境慎用）</strong></p>
+<pre><code class="language-powershell">Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;ACP&quot; -Value &quot;65001&quot;
+Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;OEMCP&quot; -Value &quot;65001&quot;
+Set-ItemProperty -Path &quot;HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage&quot; -Name &quot;MACCP&quot; -Value &quot;65001&quot;
+</code></pre>
+<p>改完后<strong>必须重启</strong>才能生效。若机房有 OS-Easy 等还原卡，重启后注册表会被还原，此方案仅对当前开机 session 有效。</p>
+<h3 id="heading-9">6. 配置文件位置速查</h3>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>路径</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Windows Terminal 设置</strong></td>
+<td><code>%LOCALAPPDATA%\Microsoft\Windows Terminal\settings.json</code></td>
+</tr>
+<tr>
+<td><strong>PowerShell 7 Profile</strong></td>
+<td><code>%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1</code></td>
+</tr>
+<tr>
+<td><strong>Oh My Posh 本体</strong></td>
+<td><code>%LOCALAPPDATA%\Programs\oh-my-posh\oh-my-posh.exe</code></td>
+</tr>
+<tr>
+<td><strong>字体文件</strong></td>
+<td><code>%LOCALAPPDATA%\Microsoft\Windows\Fonts\</code></td>
+</tr>
+<tr>
+<td><strong>Unpackaged Terminal</strong></td>
+<td><code>%LOCALAPPDATA%\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="heading-10">常见问题 FAQ</h2>
+<h3 id="heading-11">Q1：双击桌面 Terminal 没反应？</h3>
+<p><strong>原因</strong>：MSIX 版的 App Execution Alias 在部分系统上无法正常启动。</p>
+<p><strong>解决</strong>：一键脚本已经在桌面创建了指向 <strong>Unpackaged 版</strong> 的快捷方式（<code>Terminal.lnk</code>），该版本不依赖任何系统组件，双击必开。如果还是打不开，直接运行：</p>
+<pre><code class="language-powershell">&amp; &quot;$env:LOCALAPPDATA\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe&quot;
+</code></pre>
+<h3 id="heading-12">Q2：打开后提示&quot;找不到字体：JetBrainsMono NF&quot;？</h3>
+<p><strong>原因</strong>：字体没有正确注册到系统字体表，或者 <code>settings.json</code> 里的 <code>face</code> 写错了。</p>
+<p><strong>解决</strong>：</p>
+<ol>
+<li>确认 <code>settings.json</code> 中写的是 <code>&quot;face&quot;: &quot;JetBrainsMono NF&quot;</code>（不是 <code>Nerd Font</code>）。</li>
+<li>运行一键脚本里的字体注册代码（Shell COM 复制到 Fonts 文件夹）。</li>
+<li>若仍报错，注销再登录一次刷新字体缓存。</li>
+</ol>
+<h3 id="heading-13">Q3：PowerShell 7 里中文还是乱码？</h3>
+<p><strong>原因</strong>：当前 PowerShell 7 session 的 <code>[Console]::OutputEncoding</code> 仍是 GBK。</p>
+<p><strong>解决</strong>：检查 Profile 是否已加载。在 Terminal 里执行：</p>
+<pre><code class="language-powershell">[Console]::OutputEncoding
+</code></pre>
+<p>应输出 <code>System.Text.UTF8Encoding</code>。如果不是，说明 Profile 没生效，检查文件路径是否正确：</p>
+<pre><code>%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+</code></pre>
+<h3 id="heading-14">Q4：Oh My Posh 图标显示成方块 □？</h3>
+<p><strong>原因</strong>：虽然字体已安装，但 Terminal 没有使用该字体，或者使用的是普通版而非 Nerd Font 版。</p>
+<p><strong>解决</strong>：确认 <code>settings.json</code> 中 <code>defaults.font.face</code> 为 <code>JetBrainsMono NF</code>，且 <code>JetBrainsMonoNerdFont-Regular.ttf</code> 已存在于 <code>%LOCALAPPDATA%\Microsoft\Windows\Fonts</code>。</p>
+<h3 id="heading-15">Q5：重启后所有配置都消失了？</h3>
+<p><strong>原因</strong>：机房安装了 OS-Easy、联想硬盘保护卡、冰点还原等还原软件，关机/重启后 C 盘自动还原。</p>
+<p><strong>解决</strong>：</p>
+<ul>
+<li><strong>当前开机 session 内</strong>，所有配置都在内存和当前用户目录中，正常使用无影响。</li>
+<li><strong>如需永久保留</strong>，需要找机房管理员在还原卡软件里设置&quot;保存数据&quot;或开放写入白名单。</li>
+<li><strong>临时规避</strong>：每次开机后重新运行一遍一键脚本（约 2 分钟）。</li>
+</ul>
+<h3 id="heading-16">Q6：如何切换 Oh My Posh 主题？</h3>
+<ol>
+<li>从 <a href="https://ohmyposh.dev/docs/themes">官方主题库</a> 下载喜欢的 <code>.omp.json</code> 文件。</li>
+<li>修改 PS7 Profile 中的 <code>--config</code> 路径：</li>
+</ol>
+<pre><code class="language-powershell">&amp; &quot;$env:LOCALAPPDATA\Programs\oh-my-posh\oh-my-posh.exe&quot; init pwsh --config &quot;C:\Path\To\your-theme.omp.json&quot; | Invoke-Expression
+</code></pre>
+<ol start="3">
+<li>保存后，在 Terminal 中执行 <code>. $PROFILE</code> 立即生效。</li>
+</ol>
+<h3 id="heading-17">Q7：想换回默认的 Windows PowerShell 5.1？</h3>
+<p>在 Terminal 的标签页下拉菜单里可以直接选 <strong>Windows PowerShell</strong>，或者按 <code>Ctrl + Shift + 5</code> 打开新标签选择配置文件。</p>
+<hr>
+<h2 id="heading-18">效果预览</h2>
+<p>配置完成后，你的终端应该具备以下特征：</p>
+<ul>
+<li><strong>多标签页</strong>：<code>Ctrl + Shift + T</code> 新开标签，<code>Ctrl + Tab</code> 切换</li>
+<li><strong>毛玻璃背景</strong>：90% 透明度 + Acrylic 模糊效果</li>
+<li><strong>PowerShell 7.4</strong>：支持 <code>??</code>、<code>?.</code>、Pipeline Parallel 等新语法</li>
+<li><strong>Oh My Posh 提示符</strong>：显示当前路径、git 状态、管理员标识、上条命令执行时间</li>
+<li><strong>UTF-8 全程</strong>：<code>ls</code>、<code>git</code>、<code>python</code> 中文输出不再乱码</li>
+<li><strong>JetBrainsMono NF</strong>：等宽编程字体，带连字和图标支持</li>
+</ul>
+<hr>
+<blockquote>
+<p>如果还有问题，欢迎根据实际情况调整脚本中的下载链接和路径。</p>
+</blockquote>
+<hr>
+<h2 id="heading-19">附录：国内 GitHub 代理版脚本</h2>
+<p>如果上述脚本里的 GitHub 直链在你那边下载极慢或超时，使用此版本。<strong>内置多个代理站自动 fallback</strong>，走不通就换下一个，最后才尝试直连。</p>
+<blockquote>
+<p>目前测试可用的文件下载代理：<code>gh-proxy.org</code>（主站）、<code>mirror.ghproxy.com</code>、<code>ghproxy.net</code>、<code>ghp.ci</code>。用法均为在原链接前拼接代理域名，如：</p>
+<pre><code>https://gh-proxy.org/https://github.com/xxx/xxx/releases/download/...
+</code></pre>
+</blockquote>
+<h3 id="heading-20">代理版一键脚本（复制即用）</h3>
+<pre><code class="language-powershell"># 自动 fallback 下载函数
+function Get-WithProxy {
+    param([string]$Url, [string]$OutFile)
+    $proxies = @(
+        &quot;https://gh-proxy.org/&quot;,
+        &quot;https://mirror.ghproxy.com/&quot;,
+        &quot;https://ghproxy.net/&quot;,
+        &quot;https://ghp.ci/&quot;
+    )
+    foreach ($p in $proxies) {
+        $proxyUrl = &quot;$p$Url&quot;
+        Write-Host &quot;Trying $proxyUrl ...&quot; -ForegroundColor DarkGray
+        try {
+            Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120
+            if ((Get-Item $OutFile).Length -gt 1024) {
+                Write-Host &quot;Success via $p&quot; -ForegroundColor Green
+                return
+            }
+        } catch { Write-Host &quot;Failed via $p : $($_.Exception.Message)&quot; -ForegroundColor Red }
+    }
+    # 所有代理都失败，最后尝试直连
+    Write-Host &quot;Trying direct download...&quot; -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
+}
+
+# 创建临时目录
+$temp = &quot;$env:TEMP\termsetup&quot;
+New-Item -ItemType Directory -Force -Path $temp | Out-Null
+
+# 校验临时文件是否完整（不完整则自动删除）
+function Test-ValidFile($Path, $MinBytes=1) {
+    if (Test-Path $Path) {
+        if ((Get-Item $Path).Length -ge $MinBytes) { return $true }
+        Remove-Item $Path -Force
+    }
+    return $false
+}
+
+# --- 1. PowerShell 7.4 ---
+$ps7Url = &quot;https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi&quot;
+$ps7Out = &quot;$temp\PowerShell-7.4.6-win-x64.msi&quot;
+if (-not (Test-ValidFile $ps7Out 50MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 PowerShell 7.4...&quot; -ForegroundColor Cyan
+    Get-WithProxy -Url $ps7Url -OutFile $ps7Out
+}
+Write-Host &quot;&gt;&gt;&gt; 安装 PowerShell 7.4...&quot; -ForegroundColor Cyan
+msiexec /i &quot;$ps7Out&quot; /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1
+
+# --- 2. Windows Terminal (msixbundle + unpackaged zip) ---
+$wtMsix = &quot;$temp\WindowsTerminal.msixbundle&quot;
+if (-not (Test-ValidFile $wtMsix 10MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Windows Terminal msixbundle...&quot; -ForegroundColor Cyan
+    Get-WithProxy -Url &quot;https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle&quot; -OutFile $wtMsix
+}
+Add-AppxPackage -Path $wtMsix -ErrorAction SilentlyContinue
+
+$wtZip = &quot;$temp\WindowsTerminal_x64.zip&quot;
+if (-not (Test-ValidFile $wtZip 5MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Windows Terminal Unpackaged...&quot; -ForegroundColor Cyan
+    Get-WithProxy -Url &quot;https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip&quot; -OutFile $wtZip
+}
+$wtDest = &quot;$env:LOCALAPPDATA\WindowsTerminal&quot;
+Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
+
+# --- 3. Oh My Posh ---
+$ompDir = &quot;$env:LOCALAPPDATA\Programs\oh-my-posh&quot;
+New-Item -ItemType Directory -Force -Path $ompDir | Out-Null
+$ompExe = &quot;$ompDir\oh-my-posh.exe&quot;
+if (-not (Test-ValidFile $ompExe 5MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 Oh My Posh...&quot; -ForegroundColor Cyan
+    Get-WithProxy -Url &quot;https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe&quot; -OutFile $ompExe
+}
+
+# --- 4. JetBrainsMono Nerd Font ---
+$fontZip = &quot;$temp\JetBrainsMono.zip&quot;
+if (-not (Test-ValidFile $fontZip 10MB)) {
+    Write-Host &quot;&gt;&gt;&gt; 下载 JetBrainsMono Nerd Font...&quot; -ForegroundColor Cyan
+    Get-WithProxy -Url &quot;https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip&quot; -OutFile $fontZip
+}
+$fontDest = &quot;$env:LOCALAPPDATA\Microsoft\Windows\Fonts&quot;
+New-Item -ItemType Directory -Force -Path $fontDest | Out-Null
+Expand-Archive -Path $fontZip -DestinationPath &quot;$temp\JetBrainsMono&quot; -Force
+Get-ChildItem &quot;$temp\JetBrainsMono&quot; -Filter &quot;*.ttf&quot; | ForEach { Copy-Item $_.FullName -Destination $fontDest -Force }
+
+# 注册字体
+$shell = New-Object -ComObject Shell.Application
+$fontFolder = $shell.Namespace(0x14)
+Get-ChildItem $fontDest -Filter &quot;*JetBrains*&quot; | ForEach { $fontFolder.CopyHere($_.FullName, 0x10) }
+
+# --- 5. Oh My Posh 主题 ---
+$themeDir = &quot;$ompDir\themes&quot;
+New-Item -ItemType Directory -Force -Path $themeDir | Out-Null
+$themeFile = &quot;$themeDir\powerlevel10k_rainbow.omp.json&quot;
+if (-not (Test-ValidFile $themeFile 1KB)) {
+    Get-WithProxy -Url &quot;https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/powerlevel10k_rainbow.omp.json&quot; -OutFile $themeFile
+}
+
+# --- 6. PS7 Profile ---
+$ps7ProfileDir = &quot;$env:USERPROFILE\Documents\PowerShell&quot;
+New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
+$profileContent = @&quot;
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+`$OutputEncoding = [System.Text.Encoding]::UTF8
+`$PSDefaultParameterValues[&#39;Out-File:Encoding&#39;] = &#39;utf8&#39;
+&amp; &quot;$ompExe&quot; init pwsh --config &quot;$themeFile&quot; | Invoke-Expression
+Set-Alias ll Get-ChildItem
+Set-Alias which Get-Command
+Set-PSReadLineOption -PredictionSource History
+Set-PSReadLineOption -PredictionViewStyle ListView
+&quot;@
+Set-Content -Path &quot;$ps7ProfileDir\Microsoft.PowerShell_profile.ps1&quot; -Value $profileContent -Encoding UTF8
+
+# --- 7. Terminal settings.json ---
+$wtSettingsDir = &quot;$env:LOCALAPPDATA\Microsoft\Windows Terminal&quot;
+New-Item -ItemType Directory -Force -Path $wtSettingsDir | Out-Null
+$settingsJson = @&#39;
+{
+  &quot;$help&quot;: &quot;https://aka.ms/terminal-documentation&quot;,
+  &quot;$schema&quot;: &quot;https://aka.ms/terminal-profiles-schema&quot;,
+  &quot;actions&quot;: [
+    { &quot;command&quot;: { &quot;action&quot;: &quot;copy&quot;, &quot;singleLine&quot;: false }, &quot;keys&quot;: &quot;ctrl+c&quot; },
+    { &quot;command&quot;: &quot;paste&quot;, &quot;keys&quot;: &quot;ctrl+v&quot; },
+    { &quot;command&quot;: &quot;find&quot;, &quot;keys&quot;: &quot;ctrl+shift+f&quot; },
+    { &quot;command&quot;: { &quot;action&quot;: &quot;splitPane&quot;, &quot;split&quot;: &quot;auto&quot;, &quot;splitMode&quot;: &quot;duplicate&quot; }, &quot;keys&quot;: &quot;alt+shift+d&quot; }
+  ],
+  &quot;copyFormatting&quot;: &quot;none&quot;,
+  &quot;defaultProfile&quot;: &quot;{574e775e-4f2a-5b96-ac1e-a2962a402336}&quot;,
+  &quot;newTabMenu&quot;: [ { &quot;type&quot;: &quot;remainingProfiles&quot; } ],
+  &quot;profiles&quot;: {
+    &quot;defaults&quot;: {
+      &quot;colorScheme&quot;: &quot;One Half Dark&quot;,
+      &quot;font&quot;: { &quot;face&quot;: &quot;JetBrainsMono NF&quot;, &quot;size&quot;: 12 },
+      &quot;opacity&quot;: 90,
+      &quot;useAcrylic&quot;: true,
+      &quot;padding&quot;: &quot;8, 8, 8, 8&quot;,
+      &quot;cursorShape&quot;: &quot;bar&quot;,
+      &quot;startingDirectory&quot;: &quot;%USERPROFILE%&quot;
+    },
+    &quot;list&quot;: [
+      {
+        &quot;guid&quot;: &quot;{574e775e-4f2a-5b96-ac1e-a2962a402336}&quot;,
+        &quot;hidden&quot;: false,
+        &quot;name&quot;: &quot;PowerShell 7&quot;,
+        &quot;source&quot;: &quot;Windows.Terminal.PowershellCore&quot;
+      },
+      {
+        &quot;guid&quot;: &quot;{61c54bbd-c2c6-5271-96e7-009a87ff44bf}&quot;,
+        &quot;name&quot;: &quot;Windows PowerShell&quot;
+      },
+      {
+        &quot;guid&quot;: &quot;{0caa0dad-35be-5f56-a8ff-afceeeaa6101}&quot;,
+        &quot;name&quot;: &quot;Command Prompt&quot;,
+        &quot;commandline&quot;: &quot;cmd.exe&quot;
+      }
+    ]
+  },
+  &quot;schemes&quot;: [
+    {
+      &quot;name&quot;: &quot;One Half Dark&quot;,
+      &quot;background&quot;: &quot;#282C34&quot;,
+      &quot;black&quot;: &quot;#282C34&quot;,
+      &quot;blue&quot;: &quot;#61AFEF&quot;,
+      &quot;brightBlack&quot;: &quot;#5A6374&quot;,
+      &quot;brightBlue&quot;: &quot;#61AFEF&quot;,
+      &quot;brightCyan&quot;: &quot;#56B6C2&quot;,
+      &quot;brightGreen&quot;: &quot;#98C379&quot;,
+      &quot;brightPurple&quot;: &quot;#C678DD&quot;,
+      &quot;brightRed&quot;: &quot;#E06C75&quot;,
+      &quot;brightWhite&quot;: &quot;#DCDFE4&quot;,
+      &quot;brightYellow&quot;: &quot;#E5C07B&quot;,
+      &quot;cursorColor&quot;: &quot;#A3B3CC&quot;,
+      &quot;cyan&quot;: &quot;#56B6C2&quot;,
+      &quot;foreground&quot;: &quot;#DCDFE4&quot;,
+      &quot;green&quot;: &quot;#98C379&quot;,
+      &quot;purple&quot;: &quot;#C678DD&quot;,
+      &quot;red&quot;: &quot;#E06C75&quot;,
+      &quot;selectionBackground&quot;: &quot;#474E5D&quot;,
+      &quot;white&quot;: &quot;#DCDFE4&quot;,
+      &quot;yellow&quot;: &quot;#E5C07B&quot;
+    }
+  ]
+}
+&#39;@
+Set-Content -Path &quot;$wtSettingsDir\settings.json&quot; -Value $settingsJson -Encoding UTF8
+
+# --- 8. 桌面快捷方式 ---
+$wtExe = &quot;$wtDest\terminal-1.21.3231.0\WindowsTerminal.exe&quot;
+$WshShell = New-Object -ComObject WScript.Shell
+$SC = $WshShell.CreateShortcut(&quot;$env:USERPROFILE\Desktop\Terminal.lnk&quot;)
+$SC.TargetPath = $wtExe
+$SC.WorkingDirectory = &quot;$wtDest\terminal-1.21.3231.0&quot;
+$SC.IconLocation = $wtExe
+$SC.Save()
+
+Write-Host &quot;&gt;&gt;&gt; 完成！双击桌面 &#39;Terminal&#39; 即可使用。&quot; -ForegroundColor Green
+</code></pre>
+<blockquote>
+<p><strong>代理站优先级</strong>：默认先走 <code>gh-proxy.org</code>（目前最稳），失败自动切 <code>mirror.ghproxy.com</code> → <code>ghproxy.net</code> → <code>ghp.ci</code>，全部挂掉才走 GitHub 直连。</p>
+<p>如果你那边某个代理特别快，可以把 <code>Get-WithProxy</code> 函数里 <code>$proxies</code> 数组的顺序调一下，把最快的放第一。</p>
+</blockquote>
+
+  </div>
+</article>
+
+    </main>
+
+    
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          
+          <a class="toc-item level-2" href="#heading-0">更新日志</a>
+          
+          <a class="toc-item level-2" href="#heading-1">环境信息</a>
+          
+          <a class="toc-item level-2" href="#heading-2">一键脚本（复制即用）</a>
+          
+          <a class="toc-item level-2" href="#heading-3">分步详解</a>
+          
+          <a class="toc-item level-3" href="#heading-4">1. 安装 PowerShell 7.4</a>
+          
+          <a class="toc-item level-3" href="#heading-5">2. 安装 Windows Terminal</a>
+          
+          <a class="toc-item level-3" href="#heading-6">3. 安装 Oh My Posh</a>
+          
+          <a class="toc-item level-3" href="#heading-7">4. 安装 JetBrainsMono Nerd Font</a>
+          
+          <a class="toc-item level-3" href="#heading-8">5. 强制 UTF-8，根治 GBK 乱码</a>
+          
+          <a class="toc-item level-3" href="#heading-9">6. 配置文件位置速查</a>
+          
+          <a class="toc-item level-2" href="#heading-10">常见问题 FAQ</a>
+          
+          <a class="toc-item level-3" href="#heading-11">Q1：双击桌面 Terminal 没反应？</a>
+          
+          <a class="toc-item level-3" href="#heading-12">Q2：打开后提示&amp;quot;找不到字体：JetBrainsMono NF&amp;quot;？</a>
+          
+          <a class="toc-item level-3" href="#heading-13">Q3：PowerShell 7 里中文还是乱码？</a>
+          
+          <a class="toc-item level-3" href="#heading-14">Q4：Oh My Posh 图标显示成方块 □？</a>
+          
+          <a class="toc-item level-3" href="#heading-15">Q5：重启后所有配置都消失了？</a>
+          
+          <a class="toc-item level-3" href="#heading-16">Q6：如何切换 Oh My Posh 主题？</a>
+          
+          <a class="toc-item level-3" href="#heading-17">Q7：想换回默认的 Windows PowerShell 5.1？</a>
+          
+          <a class="toc-item level-2" href="#heading-18">效果预览</a>
+          
+          <a class="toc-item level-2" href="#heading-19">附录：国内 GitHub 代理版脚本</a>
+          
+          <a class="toc-item level-3" href="#heading-20">代理版一键脚本（复制即用）</a>
+          
+        </nav>
+      </div>
+    </aside>
+    
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+    
+    <div class="site-beian">
+      
+      <span>皖ICP备2025105642号-2</span>
+      <span class="beian-divider">|</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">工信部备案</a>
+      
+      
+      
+    </div>
+    
+  </footer>
+  <script src="../../assets/js/main.js?v=7"></script>
+  <script src="../../assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
+</body>
+</html>
