@@ -263,6 +263,30 @@ a:hover { color: var(--primary-dark); }
   left: 20%;
 }
 
+/* GitHub icon in navbar */
+.navbar-github {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  color: var(--text);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+
+.navbar-github:hover {
+  color: var(--primary);
+  background: var(--bg);
+  transform: translateY(-1px);
+}
+
+.navbar-github svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 /* ── Main Layout ── */
 .main-wrapper {
   display: flex;

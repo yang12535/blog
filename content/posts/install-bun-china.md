@@ -12,6 +12,10 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 
 ## 更新日志
 
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加 Node.js MSI 临时文件大小校验，不完整时自动删除重下
+  - 解决「执行到一半退出，再次运行时报 `node/npm 找不到`」的问题
+
 - **2026-05-06** 增强健壮性，全面适配 Windows PowerShell 5.1：
   - 修复 `Restricted` 执行策略下 `npm.ps1` 被拦截的问题，全程显式调用 `npm.cmd`
   - 增加 Node.js MSI 下载大小校验与 `msiexec` 退出码检查
@@ -67,6 +71,10 @@ if (-not $node -or -not $npm) {
     $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
     $nodeOut = Join-Path $temp $msiName
 
+    if ((Test-Path $nodeOut) -and ((Get-Item $nodeOut).Length -lt 10MB)) {
+        Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+        Remove-Item $nodeOut -Force
+    }
     if (-not (Test-Path $nodeOut)) {
         Write-Info "下载 $msiName 中，请稍候..."
         try {

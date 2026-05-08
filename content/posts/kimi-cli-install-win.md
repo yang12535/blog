@@ -9,6 +9,15 @@ tags: [kimi-cli, windows, uv, powershell]
 
 * * *
 
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
+  - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
+  - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
+
+* * *
+
 ## 环境信息
 
 | 项目 | 说明 |
@@ -25,7 +34,7 @@ tags: [kimi-cli, windows, uv, powershell]
 以管理员身份打开 PowerShell，复制粘贴执行：
 
 ```powershell
-[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue;$pyDir="$env:LOCALAPPDATA\Programs\Python\Python312";$pyExe="$pyDir\python.exe";if(-not(Test-Path $pyExe)){Write-Host ">>> 安装 Python 3.12 (华为云镜像)..." -ForegroundColor Cyan;$i="$env:TEMP\py.exe";if(-not(Test-Path $i)){Invoke-WebRequest -Uri "https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe" -OutFile $i -UseBasicParsing};Start-Process $i -ArgumentList "/quiet PrependPath=1 Include_test=0 InstallAllUsers=0" -Wait};$env:Path="$pyDir;$pyDir\Scripts;$env:Path";Write-Host ">>> 安装 uv (清华源)..." -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable("UV_INDEX_URL","https://pypi.tuna.tsinghua.edu.cn/simple/","User");[Environment]::SetEnvironmentVariable("UV_EXTRA_INDEX_URL","https://mirrors.aliyun.com/pypi/simple/","User");$env:UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple/";$env:UV_EXTRA_INDEX_URL="https://mirrors.aliyun.com/pypi/simple/";Write-Host ">>> 安装 kimi-cli..." -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable("Path","User");$uvUserBin="$env:APPDATA\Python\Python312\Scripts";$uvToolBin="$env:USERPROFILE\.local\bin";if($uPath -notlike "*$uvUserBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvUserBin","User")};if($uPath -notlike "*$uvToolBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvToolBin","User")};$env:Path="$env:Path;$uvUserBin;$uvToolBin";Write-Host ">>> 完成！" -ForegroundColor Green;python --version;python -m uv --version;kimi --version;Write-Host "`n✓ 环境变量已永久保存" -ForegroundColor Green;Read-Host "按回车退出"
+[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue;$pyDir="$env:LOCALAPPDATA\Programs\Python\Python312";$pyExe="$pyDir\python.exe";if(-not(Test-Path $pyExe)){Write-Host ">>> 安装 Python 3.12 (华为云镜像)..." -ForegroundColor Cyan;$i="$env:TEMP\py.exe";if((Test-Path $i)-and((Get-Item $i).Length -lt 25MB)){Remove-Item $i -Force};if(-not(Test-Path $i)){Invoke-WebRequest -Uri "https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe" -OutFile $i -UseBasicParsing};Start-Process $i -ArgumentList "/quiet PrependPath=1 Include_test=0 InstallAllUsers=0" -Wait;if(-not(Test-Path $pyExe)){Write-Host ">>> Python 安装失败，可能是安装包损坏。请手动删除 $i 后重试" -ForegroundColor Red;Read-Host "按回车退出";exit 1}};$env:Path="$pyDir;$pyDir\Scripts;$env:Path";Write-Host ">>> 安装 uv (清华源)..." -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable("UV_INDEX_URL","https://pypi.tuna.tsinghua.edu.cn/simple/","User");[Environment]::SetEnvironmentVariable("UV_EXTRA_INDEX_URL","https://mirrors.aliyun.com/pypi/simple/","User");$env:UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple/";$env:UV_EXTRA_INDEX_URL="https://mirrors.aliyun.com/pypi/simple/";Write-Host ">>> 安装 kimi-cli..." -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable("Path","User");$uvUserBin="$env:APPDATA\Python\Python312\Scripts";$uvToolBin="$env:USERPROFILE\.local\bin";if($uPath -notlike "*$uvUserBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvUserBin","User")};if($uPath -notlike "*$uvToolBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvToolBin","User")};$env:Path="$env:Path;$uvUserBin;$uvToolBin";Write-Host ">>> 完成！" -ForegroundColor Green;python --version;python -m uv --version;kimi --version;Write-Host "`n✓ 环境变量已永久保存" -ForegroundColor Green;Read-Host "按回车退出"
 ```
 
 > **提示**：脚本运行期间请不要关闭窗口，最后会打印版本号表示成功。
@@ -78,10 +87,18 @@ $pyExe="$pyDir\python.exe"
 if(-not(Test-Path $pyExe)){
     Write-Host ">>> 安装 Python 3.12 (华为云镜像)..." -ForegroundColor Cyan
     $i="$env:TEMP\py.exe"
+    if((Test-Path $i) -and ((Get-Item $i).Length -lt 25MB)){
+        Write-Host ">>> 检测到不完整的临时文件，删除后重新下载..." -ForegroundColor Yellow
+        Remove-Item $i -Force
+    }
     if(-not(Test-Path $i)){
         Invoke-WebRequest -Uri "https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe" -OutFile $i -UseBasicParsing
     }
     Start-Process $i -ArgumentList "/quiet PrependPath=1 Include_test=0 InstallAllUsers=0" -Wait
+    if(-not(Test-Path $pyExe)){
+        Write-Host ">>> Python 安装失败，可能是安装包损坏。请手动删除 $i 后重试。" -ForegroundColor Red
+        exit 1
+    }
 }
 ```
 

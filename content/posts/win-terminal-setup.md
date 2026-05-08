@@ -10,6 +10,15 @@ tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy
 
 * * *
 
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加临时文件大小校验函数 `Test-ValidFile`，不完整时自动删除重下
+  - 覆盖 PowerShell 7 MSI、Windows Terminal msixbundle/zip、Oh My Posh、Nerd Font、主题文件等全部下载节点
+  - 解决「执行到一半退出，再次运行时报文件损坏/安装包无法运行」的问题
+
+* * *
+
 ## 环境信息
 
 | 项目 | 说明 |
@@ -31,10 +40,19 @@ tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
+# 校验临时文件是否完整（不完整则自动删除）
+function Test-ValidFile($Path, $MinBytes=1) {
+    if (Test-Path $Path) {
+        if ((Get-Item $Path).Length -ge $MinBytes) { return $true }
+        Remove-Item $Path -Force
+    }
+    return $false
+}
+
 # --- 1. 下载并安装 PowerShell 7.4 ---
 $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi"
 $ps7Out = "$temp\PowerShell-7.4.6-win-x64.msi"
-if (-not (Test-Path $ps7Out)) {
+if (-not (Test-ValidFile $ps7Out 50MB)) {
     Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing
 }
@@ -44,7 +62,7 @@ msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTE
 # --- 2. 下载并安装 Windows Terminal ---
 $wtMsix = "$temp\WindowsTerminal.msixbundle"
 $wtZip  = "$temp\WindowsTerminal_x64.zip"
-if (-not (Test-Path $wtMsix)) {
+if (-not (Test-ValidFile $wtMsix 10MB)) {
     Write-Host ">>> 下载 Windows Terminal (msixbundle)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle" -OutFile $wtMsix -UseBasicParsing
 }
@@ -52,7 +70,7 @@ if (-not (Test-Path $wtMsix)) {
 Add-AppxPackage -Path $wtMsix -ErrorAction SilentlyContinue
 
 # --- 3. 同时准备 Unpackaged 版（防 msix 无法启动）---
-if (-not (Test-Path $wtZip)) {
+if (-not (Test-ValidFile $wtZip 5MB)) {
     Write-Host ">>> 下载 Windows Terminal (Unpackaged 备用)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip" -OutFile $wtZip -UseBasicParsing
 }
@@ -63,14 +81,14 @@ Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 $ompDir = "$env:LOCALAPPDATA\Programs\oh-my-posh"
 New-Item -ItemType Directory -Force -Path $ompDir | Out-Null
 $ompExe = "$ompDir\oh-my-posh.exe"
-if (-not (Test-Path $ompExe)) {
+if (-not (Test-ValidFile $ompExe 5MB)) {
     Write-Host ">>> 下载 Oh My Posh..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe" -OutFile $ompExe -UseBasicParsing
 }
 
 # --- 5. 下载 Nerd Font ---
 $fontZip = "$temp\JetBrainsMono.zip"
-if (-not (Test-Path $fontZip)) {
+if (-not (Test-ValidFile $fontZip 10MB)) {
     Write-Host ">>> 下载 JetBrainsMono Nerd Font..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip" -OutFile $fontZip -UseBasicParsing
 }
@@ -88,7 +106,7 @@ Get-ChildItem $fontDest -Filter "*JetBrains*" | ForEach { $fontFolder.CopyHere($
 $themeDir = "$ompDir\themes"
 New-Item -ItemType Directory -Force -Path $themeDir | Out-Null
 $themeFile = "$themeDir\powerlevel10k_rainbow.omp.json"
-if (-not (Test-Path $themeFile)) {
+if (-not (Test-ValidFile $themeFile 1KB)) {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/powerlevel10k_rainbow.omp.json" -OutFile $themeFile -UseBasicParsing
 }
 
@@ -450,10 +468,19 @@ function Get-WithProxy {
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
+# 校验临时文件是否完整（不完整则自动删除）
+function Test-ValidFile($Path, $MinBytes=1) {
+    if (Test-Path $Path) {
+        if ((Get-Item $Path).Length -ge $MinBytes) { return $true }
+        Remove-Item $Path -Force
+    }
+    return $false
+}
+
 # --- 1. PowerShell 7.4 ---
 $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi"
 $ps7Out = "$temp\PowerShell-7.4.6-win-x64.msi"
-if (-not (Test-Path $ps7Out)) {
+if (-not (Test-ValidFile $ps7Out 50MB)) {
     Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
     Get-WithProxy -Url $ps7Url -OutFile $ps7Out
 }
@@ -462,14 +489,14 @@ msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTE
 
 # --- 2. Windows Terminal (msixbundle + unpackaged zip) ---
 $wtMsix = "$temp\WindowsTerminal.msixbundle"
-if (-not (Test-Path $wtMsix)) {
+if (-not (Test-ValidFile $wtMsix 10MB)) {
     Write-Host ">>> 下载 Windows Terminal msixbundle..." -ForegroundColor Cyan
     Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle" -OutFile $wtMsix
 }
 Add-AppxPackage -Path $wtMsix -ErrorAction SilentlyContinue
 
 $wtZip = "$temp\WindowsTerminal_x64.zip"
-if (-not (Test-Path $wtZip)) {
+if (-not (Test-ValidFile $wtZip 5MB)) {
     Write-Host ">>> 下载 Windows Terminal Unpackaged..." -ForegroundColor Cyan
     Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip" -OutFile $wtZip
 }
@@ -480,14 +507,14 @@ Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 $ompDir = "$env:LOCALAPPDATA\Programs\oh-my-posh"
 New-Item -ItemType Directory -Force -Path $ompDir | Out-Null
 $ompExe = "$ompDir\oh-my-posh.exe"
-if (-not (Test-Path $ompExe)) {
+if (-not (Test-ValidFile $ompExe 5MB)) {
     Write-Host ">>> 下载 Oh My Posh..." -ForegroundColor Cyan
     Get-WithProxy -Url "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe" -OutFile $ompExe
 }
 
 # --- 4. JetBrainsMono Nerd Font ---
 $fontZip = "$temp\JetBrainsMono.zip"
-if (-not (Test-Path $fontZip)) {
+if (-not (Test-ValidFile $fontZip 10MB)) {
     Write-Host ">>> 下载 JetBrainsMono Nerd Font..." -ForegroundColor Cyan
     Get-WithProxy -Url "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip" -OutFile $fontZip
 }
@@ -505,7 +532,7 @@ Get-ChildItem $fontDest -Filter "*JetBrains*" | ForEach { $fontFolder.CopyHere($
 $themeDir = "$ompDir\themes"
 New-Item -ItemType Directory -Force -Path $themeDir | Out-Null
 $themeFile = "$themeDir\powerlevel10k_rainbow.omp.json"
-if (-not (Test-Path $themeFile)) {
+if (-not (Test-ValidFile $themeFile 1KB)) {
     Get-WithProxy -Url "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/powerlevel10k_rainbow.omp.json" -OutFile $themeFile
 }
 

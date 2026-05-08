@@ -161,4 +161,5 @@ const CONFIG = {
 
 ## License
 
-MIT
+- **代码**（build.js、模板、样式、脚本等）：[MIT License](LICENSE)
+- **文章/内容**（`content/` 目录下）：采用 [CC BY 4.0](content/LICENSE) 许可，转载需署名并附上原作者 GitHub 链接（https://github.com/yang12535）

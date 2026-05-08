@@ -8,6 +8,10 @@ tags: [winget, windows, powershell, github-proxy, 机房]
 
 ## 更新日志
 
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加 msixbundle / 依赖包 zip 的临时文件大小校验，不完整时自动删除重下
+  - 解决「执行到一半退出，再次运行时报文件损坏 / 0x80073CF3 部署失败」的问题
+
 - **2026-05-06** 增强健壮性，修复依赖安装失败问题：
   - 修复 `tar.exe -C` 解压失败（缺少目标目录），增加 `New-Item -Force` 预创建
   - 依赖包改用通配符匹配（`Microsoft.VCLibs.140.00_*.appx` 等），避免版本号漂移导致硬编码失效
@@ -107,6 +111,10 @@ function Download-WithRetry {
 $msixUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 $msixPath = "$temp\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 
+if ((Test-Path $msixPath) -and ((Get-Item $msixPath).Length -lt 50MB)) {
+    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+    Remove-Item $msixPath -Force
+}
 if (-not (Test-Path $msixPath)) {
     Write-Info "下载 winget msixbundle..."
     $ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
@@ -120,6 +128,10 @@ if (-not (Test-Path $msixPath)) {
 $depZipUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/DesktopAppInstaller_Dependencies.zip"
 $depZipPath = "$temp\DesktopAppInstaller_Dependencies.zip"
 
+if ((Test-Path $depZipPath) -and ((Get-Item $depZipPath).Length -lt 1MB)) {
+    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+    Remove-Item $depZipPath -Force
+}
 if (-not (Test-Path $depZipPath)) {
     Write-Info "下载依赖包..."
     $ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
