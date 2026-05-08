@@ -8,6 +8,8 @@ const {
   generateTagPages,
   generateArchive,
   generateRss,
+  generateSitemap,
+  generateRobots,
   copyAssets,
 } = require('./lib/generators');
 const { ensureDir } = require('./lib/utils');
@@ -79,6 +81,12 @@ async function build() {
     title: CONFIG.title,
     description: CONFIG.description,
   });
+  generateSitemap(published, {
+    outputDir: CONFIG.outputDir,
+    siteUrl: CONFIG.siteUrl,
+    allTags,
+  });
+  generateRobots({ outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl });
   copyAssets({ outputDir: CONFIG.outputDir, assetsDir: CONFIG.assetsDir });
 
   console.log(`✅ Build finished in ${Date.now() - startTime}ms.`);
