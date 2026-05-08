@@ -4,6 +4,16 @@ date: 2026-05-08
 tags: [curl, windows, proxy, aria2, download, 国内镜像]
 ---
 
+* * *
+
+## 更新日志
+
+- **2026-05-08** 初版发布，附完整 `curl-fast.ps1` 源码
+  - 自动嗅探常见代理端口（10808 / 7890 / 10809 / 1080）
+  - 旧版 curl + 代理自动注入 `--ssl-no-revoke`
+  - 浏览器 UA 伪装 + tcp-nodelay
+  - curl 失败自动 fallback 到 aria2c 多线程下载
+
 > 浏览器下载 10 MB/s，curl 只有 1 Mbps？这不是你的网有问题，是 Windows 自带的 curl 太老了。
 >
 > 本文提供从「临时缓解」到「彻底根治」的完整方案，含自动代理嗅探、UA 伪装、证书错误修复，以及 aria2c 多线程兜底。复制脚本 → 粘贴 → 回车即可。
@@ -297,6 +307,171 @@ curl.exe -o file.zip "https://..."
 | **Shadowsocks** | 1080 | `http://127.0.0.1:1080` | `socks5h://127.0.0.1:1080` |
 
 > **注意**：curl 的 SOCKS5 代理建议使用 `socks5h://` 前缀（h = host），表示让代理服务器做 DNS 解析，避免本地 DNS 污染导致的连接问题。
+
+---
+
+## 附录：curl-fast.ps1 完整源码
+
+将以下内容保存为 `curl-fast.ps1`，即可直接使用：
+
+```powershell
+#Requires -Version 5.1
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [string]$Url,
+    [Parameter(Position=1)]
+    [string]$OutFile,
+    [string]$Proxy,
+    [int]$Threads = 8,
+    [switch]$ForceAria2
+)
+
+$BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+if (-not $OutFile) {
+    $uri = [System.Uri]$Url
+    $OutFile = Split-Path -Leaf $uri.AbsolutePath
+    if (-not $OutFile -or $OutFile -eq "/") { $OutFile = "download.dat" }
+    $OutFile = Join-Path (Get-Location) $OutFile
+}
+
+$outDir = Split-Path -Parent $OutFile
+if ($outDir -and -not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
+
+# Auto-detect common proxy ports if not specified
+if (-not $Proxy) {
+    $commonProxies = @(
+        "http://127.0.0.1:10808",
+        "http://127.0.0.1:7890",
+        "http://127.0.0.1:10809",
+        "socks5h://127.0.0.1:10808",
+        "socks5h://127.0.0.1:7890",
+        "socks5h://127.0.0.1:1080"
+    )
+    foreach ($p in $commonProxies) {
+        $proto, $addr = $p -split "://", 2
+        $hostPort = $addr -split ":", 2
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        try {
+            $tcp.Connect($hostPort[0], [int]$hostPort[1])
+            if ($tcp.Connected) {
+                $Proxy = $p
+                break
+            }
+        } catch { } finally { $tcp.Close() }
+    }
+}
+
+function Find-BestCurl {
+    $candidates = @("curl.exe")
+    $candidates += @(
+        "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\curl*\curl-*-win64-mingw\bin\curl.exe",
+        "$env:ProgramFiles\curl\bin\curl.exe",
+        "$env:LOCALAPPDATA\curl\bin\curl.exe",
+        "$env:USERPROFILE\scoop\apps\curl\current\bin\curl.exe",
+        "$env:USERPROFILE\scoop\shims\curl.exe"
+    )
+    foreach ($c in $candidates) {
+        $found = Get-Command $c -ErrorAction SilentlyContinue
+        if ($found) { return $found.Source }
+    }
+    return $null
+}
+
+function Test-Aria2Available {
+    return [bool](Get-Command aria2c.exe -ErrorAction SilentlyContinue)
+}
+
+$curlPath = Find-BestCurl
+$curlVersion = $null
+if ($curlPath) {
+    $verLine = (& $curlPath --version 2>$null | Select-Object -First 1)
+    if ($verLine -match 'curl\s+(\d+\.\d+\.\d+)') { $curlVersion = $Matches[1] }
+}
+
+Write-Host "[INFO] URL: $Url" -ForegroundColor Cyan
+Write-Host "[INFO] Out: $OutFile" -ForegroundColor Cyan
+if ($Proxy) { Write-Host "[INFO] Proxy: $Proxy (auto-detected)" -ForegroundColor Cyan }
+
+if ($ForceAria2) {
+    if (-not (Test-Aria2Available)) {
+        Write-Host "[ERROR] aria2c not found. Install: winget install aria2  or  scoop install aria2" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[MODE] Forced aria2c multi-thread ($Threads threads)" -ForegroundColor Green
+    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", (Split-Path -Parent $OutFile))
+    if ($Proxy) { $ariaArgs += @("--all-proxy=$Proxy") }
+    & aria2c.exe @ariaArgs "$Url"
+    exit $LASTEXITCODE
+}
+
+$isOld = $false
+if ($curlVersion) {
+    $isOld = [version]$curlVersion -lt [version]"7.80.0"
+}
+
+if ($curlVersion -and (-not $isOld)) {
+    Write-Host "[MODE] Modern curl $curlVersion (HTTP/2 + modern TLS)" -ForegroundColor Green
+    $curlArgs = @("-L", "--fail-with-body", "--tcp-nodelay", "--compressed", "-A", $BrowserUA, "-o", $OutFile)
+    if ($Proxy) { $curlArgs += @("-x", $Proxy) }
+    $curlArgs += $Url
+    & $curlPath @curlArgs
+    exit $LASTEXITCODE
+}
+
+if ($curlVersion) {
+    Write-Host "[WARN] Legacy curl $curlVersion detected (no HTTP/2, likely throttled)" -ForegroundColor Yellow
+} else {
+    Write-Host "[WARN] No standalone curl.exe found, falling back to built-in legacy curl" -ForegroundColor Yellow
+}
+
+if ($curlPath) {
+    Write-Host "[MODE] Legacy curl optimized (fake UA + tcp-nodelay + retry + ssl-no-revoke if proxy)" -ForegroundColor Yellow
+    $curlArgs = @("-L", "--tcp-nodelay", "-A", $BrowserUA, "--retry", "3", "--retry-delay", "2", "-o", $OutFile)
+    if ($Proxy) {
+        $curlArgs += @("-x", $Proxy)
+        # Windows legacy curl (Schannel) fails CRL check through proxy; disable it
+        if ($isOld) { $curlArgs += "--ssl-no-revoke" }
+    }
+    $curlArgs += $Url
+    & $curlPath @curlArgs
+    $curlExit = $LASTEXITCODE
+
+    if ($curlExit -eq 0 -and (Test-Path $OutFile) -and (Get-Item $OutFile).Length -gt 0) {
+        Write-Host "[OK] Download complete: $OutFile" -ForegroundColor Green
+        exit 0
+    }
+}
+
+if (Test-Aria2Available) {
+    Write-Host "[MODE] curl failed/unavailable, fallback to aria2c multi-thread" -ForegroundColor Magenta
+    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", (Split-Path -Parent $OutFile))
+    if ($Proxy) { $ariaArgs += @("--all-proxy=$Proxy") }
+    & aria2c.exe @ariaArgs "$Url"
+    exit $LASTEXITCODE
+}
+
+Write-Host "[MODE] Final fallback: Invoke-WebRequest (slow, last resort)" -ForegroundColor Magenta
+$ProgressPreference = 'SilentlyContinue'
+try {
+    $iwrArgs = @{ Uri = $Url; OutFile = $OutFile; UserAgent = $BrowserUA; UseBasicParsing = $true }
+    if ($Proxy) {
+        $proxyUri = [System.Uri]$Proxy
+        $iwrArgs['Proxy'] = "$($proxyUri.Scheme)://$($proxyUri.Host):$($proxyUri.Port)"
+    }
+    Invoke-WebRequest @iwrArgs
+    Write-Host "[OK] Download complete: $OutFile" -ForegroundColor Green
+} catch {
+    Write-Host "[FATAL] All download methods failed: $_" -ForegroundColor Red
+    exit 1
+}
+```
+
+> 保存后用法：
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://下载链接"
+> ```
 
 ---
 
