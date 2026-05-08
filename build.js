@@ -58,7 +58,7 @@ const CONFIG = {
   assetsDir: path.join(__dirname, 'src', 'assets'),
   postsPerPage: 10,
   siteUrl: process.env.SITE_URL || 'https://example.com',
-  icp: process.env.SITE_ICP || '',
+  icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
   psb: process.env.SITE_PSB || '',
 };
 
