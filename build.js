@@ -181,7 +181,9 @@ async function build() {
     });
     const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 200);
 
-    const date = parsed.data.date ? new Date(parsed.data.date).toISOString() : new Date().toISOString();
+    const date = parsed.data.date
+      ? new Date(parsed.data.date).toISOString()
+      : fs.statSync(filePath).mtime.toISOString();
     const tags = (parsed.data.tags || []).map(t => String(t).trim()).filter(Boolean);
     const tagLinks = tags.map(toTagLink);
 
