@@ -28,9 +28,20 @@ tags: [tag1, tag2]
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `title` | string | ✅ | 文章标题 |
-| `date` | string | ❌ | 发布日期，`YYYY-MM-DD` 格式；未填写时默认使用文件修改时间 |
+| `date` | string | ❌ | 发布日期，`YYYY-MM-DD` 格式；未填写时默认使用文件修改时间（mtime） |
 | `tags` | string[] | ❌ | 标签数组 |
 | `draft` | boolean | ❌ | `true` 时不发布 |
+
+### 标签 slug 规则
+
+标签会按以下规则生成 URL slug：
+
+- 转为小写
+- 空格、下划线替换为 `-`
+- 保留中文字符
+- 移除其他特殊符号
+
+例如：`深度学习` → `/tags/深度学习/`，`Node.js` → `/tags/node-js/`。
 
 ## Markdown 语法
 
@@ -63,6 +74,19 @@ tags: [tag1, tag2]
 ```
 ```
 
+### Mermaid 图表
+
+支持 `mermaid` 代码块：
+
+````markdown
+```mermaid
+graph TD
+  A[开始] --> B{判断}
+  B -->|是| C[执行]
+  B -->|否| D[结束]
+```
+````
+
 ## 内部文章链接
 
 链接到站内其他文章时，直接使用 `.md` 文件路径：
@@ -83,7 +107,7 @@ tags: [tag1, tag2]
 
 ### 方式二：仓库内图片
 
-将图片放入 `src/assets/images/`，在 Markdown 中使用绝对路径：
+将图片放入 `src/assets/` 下的任意子目录（如 `src/assets/images/`），在 Markdown 中使用绝对路径：
 
 ```markdown
 ![alt](/assets/images/photo.png)

@@ -19,6 +19,8 @@
 | 安装命令 | `npm install` |
 | Node 版本 | 20.x 或更高 |
 
+> 框架预设、构建命令等可通过 `edgeone.json` 自动识别；环境变量需在 EdgeOne Pages 控制台手动配置。
+
 ### 环境变量（可选）
 
 | 变量名 | 说明 | 示例 |
@@ -26,8 +28,9 @@
 | `SITE_URL` | 站点 URL，用于 RSS feed | `https://blog.example.com` |
 | `SITE_ICP` | ICP 备案号，留空则不显示 | `京ICP备12345678号-1` |
 | `SITE_PSB` | 公网安备号，留空则不显示 | `京公网安备11010502012345号` |
-
-> 框架预设、构建命令等可通过 `edgeone.json` 自动识别；环境变量（`SITE_URL`、`SITE_ICP`、`SITE_PSB`）需在 EdgeOne Pages 控制台手动配置。
+| `CONTENT_REPO` | 外部内容仓库（内容分离部署） | `owner/posts-repo` |
+| `CONTENT_BRANCH` | 内容分支 | `main` |
+| `GITHUB_TOKEN` | GitHub 访问令牌（私有仓库必填） | `ghp_xxx` |
 
 ### 3. 自定义域名（可选）
 

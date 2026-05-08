@@ -1,5 +1,31 @@
 # 更新日志
 
+## 2026-05-08
+
+### 重构
+
+- `build.js` 拆分为 `lib/` 模块：`content.js`、`renderer.js`、`generators.js`、`utils.js`
+
+### 新增
+
+- 文章目录（TOC）自动生成与侧边栏导航
+- 回到顶部按钮及移动端适配
+- Mermaid 图表支持
+- ICP / 公网安备号配置（`SITE_ICP`、`SITE_PSB` 环境变量）
+
+### 变更
+
+- `edgeone.json` 更新：新增安全响应头（`X-Frame-Options`、`X-Content-Type-Options`）、边缘缓存策略
+- 标签 slug 行为统一：中文保留，空格/特殊符号转为 `-`
+- date fallback 统一使用文件修改时间（mtime）
+- `dist/` 移出版本控制，加入 `.gitignore`
+
+### 修复
+
+- 移动端回到顶部按钮被系统导航栏遮挡
+
+---
+
 ## 2026-04-08
 
 ### 新增

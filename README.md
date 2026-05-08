@@ -8,16 +8,23 @@
 - **自动编码转换**：GBK / GB2312 自动识别并转为 UTF-8
 - **换行规范化**：CRLF 自动转为 LF
 - **Markdown 支持**：YAML Frontmatter + 标准 Markdown 语法
+- **Mermaid 图表**：支持 `mermaid` 代码块渲染流程图等
 - **多页面生成**：首页、文章页、标签页、归档页、RSS
+- **文章目录**：自动生成 TOC 侧边栏导航
 - **主题系统**：基于 Nunjucks 模板引擎，易于定制
 
 ## 目录结构
 
 ```
 .
-├── build.js              # 核心构建脚本
+├── build.js              # 构建入口
 ├── edgeone.json          # EdgeOne Pages 配置
 ├── package.json          # 项目依赖
+├── lib/                  # 核心构建模块
+│   ├── content.js        # 内容拉取与 Markdown 解析
+│   ├── renderer.js       # Nunjucks 模板渲染
+│   ├── generators.js     # 页面生成器
+│   └── utils.js          # 工具函数
 ├── src/
 │   ├── templates/        # Nunjucks 模板
 │   │   ├── base.html
@@ -28,10 +35,10 @@
 │   │   └── archive.html
 │   └── assets/
 │       ├── css/style.css
-│       └── js/main.js
+│       ├── js/main.js
+│       └── vendor/mermaid.min.js
 ├── content/
 │   └── posts/            # Markdown 文章存放处
-│       └── hello-world.md
 └── dist/                 # 构建输出（部署目录）
 ```
 
@@ -47,6 +54,7 @@ npm install
 
 ```bash
 npm run build        # 构建到 dist/
+npm run dev          # 监听模式，文件变更自动重建
 npm run clean        # 清理 dist/
 ```
 
@@ -112,9 +120,13 @@ const CONFIG = {
   title: '你的博客标题',
   description: '博客描述',
   postsPerPage: 10,
-  siteUrl: 'https://your-domain.com',
+  siteUrl: process.env.SITE_URL || 'https://your-domain.com',
+  icp: process.env.SITE_ICP || '',
+  psb: process.env.SITE_PSB || '',
 };
 ```
+
+或通过环境变量覆盖：`SITE_URL`、`SITE_ICP`、`SITE_PSB`。
 
 ### 主题样式
 
@@ -122,22 +134,18 @@ const CONFIG = {
 
 模板文件位于 `src/templates/`，使用 [Nunjucks](https://mozilla.github.io/nunjucks/) 语法。
 
-### 缓存控制
+### 缓存与安全
 
-`edgeone.json` 中已预配置静态资源缓存策略：
+`edgeone.json` 中已预配置：
 
-```json
-{
-  "headers": [
-    { "source": "/assets/*", "headers": [{ "key": "Cache-Control", "value": "max-age=31536000, immutable" }] }
-  ]
-}
-```
+- 静态资源长期缓存：`/assets/*`（`max-age=31536000, immutable`）
+- 安全响应头：`X-Frame-Options: DENY`、`X-Content-Type-Options: nosniff`
+- 边缘缓存策略：文章页 1 天，RSS 0 秒
 
-如需更新 CSS/JS 并强制浏览器刷新，修改引用路径的版本号：
+如需更新 CSS/JS 并强制浏览器刷新，修改模板中引用路径的版本号：
 
 ```html
-<link rel="stylesheet" href="assets/css/style.css?v=3">
+<link rel="stylesheet" href="assets/css/style.css?v=6">
 ```
 
 ## 内容分离部署（可选）
@@ -161,5 +169,5 @@ const CONFIG = {
 
 ## License
 
-- **代码**（build.js、模板、样式、脚本等）：[MIT License](LICENSE)
+- **代码**（build.js、lib/、模板、样式、脚本等）：[MIT License](LICENSE)
 - **文章/内容**（`content/` 目录下）：采用 [CC BY 4.0](content/LICENSE) 许可，转载需署名并附上原作者 GitHub 链接（https://github.com/yang12535）
