@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国内网络环境 Windows 安装 Bun（TUNA + 阿里云） - Bogl Blog</title>
+  <meta name="description" content="
+在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。
+复制脚本 → 粘贴 → 回车，获得一个带国内镜像…">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=6">
+  <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="../../">Bogl Blog</a>
+    <div class="navbar-menu">
+      <a class="navbar-item " href="../../">首页</a>
+      <a class="navbar-item " href="../../archive">归档</a>
+      <a class="navbar-item " href="../../tags">标签</a>
+      <a class="navbar-github" href="https://github.com/yang12535/blog" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-body">
+      <a class="menu-item" href="../../">← 返回首页</a>
+      <a class="menu-item" href="../../posts/curl-download-slow-fix/">← Windows 旧版 curl 下载慢的…</a>
+      <a class="menu-item" href="../../posts/winget-install-win/">→ Windows 10 / 11 安装 w…</a>
+    </div>
+  </div>
+</aside>
+
+
+    <main class="content-main">
+      
+<article class="article-page">
+  <header class="article-page-header">
+    <h1 class="article-page-title">国内网络环境 Windows 安装 Bun（TUNA + 阿里云）</h1>
+    <div class="article-page-meta">
+      <span>2026-05-06</span>
+      
+        
+        <a class="tag" href="../../tags/bun/">bun</a>
+        
+        <a class="tag" href="../../tags/nodejs/">nodejs</a>
+        
+        <a class="tag" href="../../tags/windows/">windows</a>
+        
+        <a class="tag" href="../../tags/mirror/">mirror</a>
+        
+        <a class="tag" href="../../tags/npm/">npm</a>
+        
+        <a class="tag" href="../../tags/国内镜像/">国内镜像</a>
+        
+      
+    </div>
+  </header>
+  <div class="article-content">
+    <blockquote>
+<p>在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。</p>
+<p>复制脚本 → 粘贴 → 回车，获得一个带国内镜像加速的 Bun 运行时。</p>
+</blockquote>
+<hr>
+<h2 id="heading-0">更新日志</h2>
+<ul>
+<li><p><strong>2026-05-08</strong> 修复断点续传导致的安装失败：</p>
+<ul>
+<li>增加 Node.js MSI 临时文件大小校验，不完整时自动删除重下</li>
+<li>解决「执行到一半退出，再次运行时报 <code>node/npm 找不到</code>」的问题</li>
+</ul>
+</li>
+<li><p><strong>2026-05-06</strong> 增强健壮性，全面适配 Windows PowerShell 5.1：</p>
+<ul>
+<li>修复 <code>Restricted</code> 执行策略下 <code>npm.ps1</code> 被拦截的问题，全程显式调用 <code>npm.cmd</code></li>
+<li>增加 Node.js MSI 下载大小校验与 <code>msiexec</code> 退出码检查</li>
+<li>扩充 Node.js / npm 路径回退，新增 <code>NVM_SYMLINK</code>、<code>NVM_HOME</code>、<code>Program Files (x86)</code> 等扫描目录</li>
+<li>增加 <code>bun.exe</code> 多级定位（常规路径 → <code>LOCALAPPDATA</code> → 递归搜索）</li>
+<li>扩大 <code>bun.ps1</code> / <code>bunx.ps1</code> wrapper 清理范围至 <code>LOCALAPPDATA</code></li>
+<li>安装完成后即时追加 PATH 并执行 <code>bun --version</code> 验证</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="heading-1">环境信息</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>系统</strong></td>
+<td>Windows 10 / Windows 11（64 位）</td>
+</tr>
+<tr>
+<td><strong>Shell</strong></td>
+<td>Windows PowerShell 5.1（默认自带，无需额外安装）</td>
+</tr>
+<tr>
+<td><strong>权限</strong></td>
+<td>需要管理员权限（Node.js MSI 安装到 <code>C:\Program Files</code>，修改系统 PATH）</td>
+</tr>
+<tr>
+<td><strong>场景</strong></td>
+<td>校园网、机房、企业内网、无代理环境</td>
+</tr>
+<tr>
+<td><strong>目标</strong></td>
+<td>Bun 1.x 可运行，且后续 <code>bun install</code> 走国内源</td>
+</tr>
+<tr>
+<td><strong>网络</strong></td>
+<td>无法稳定访问 GitHub，但可访问国内镜像站</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="heading-2">一键脚本（复制即用）</h2>
+<p><strong>右键点击 PowerShell 图标 → &quot;以管理员身份运行&quot;</strong>，然后复制粘贴以下脚本：</p>
+<pre><code class="language-powershell"># ==================== 0. 初始化 ====================
+$temp = &quot;$env:TEMP\bunsetup&quot;
+New-Item -ItemType Directory -Force -Path $temp | Out-Null
+
+function Write-Info($msg)  { Write-Host &quot;&gt;&gt;&gt; $msg&quot; -ForegroundColor Cyan }
+function Write-Ok($msg)    { Write-Host &quot;&gt;&gt;&gt; $msg&quot; -ForegroundColor Green }
+function Write-Warn($msg)  { Write-Host &quot;&gt;&gt;&gt; $msg&quot; -ForegroundColor Yellow }
+function Write-Fail($msg)  { Write-Host &quot;&gt;&gt;&gt; $msg&quot; -ForegroundColor Red }
+
+function Refresh-EnvPath {
+    $env:Path = [System.Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;Machine&quot;) + &quot;;&quot; + `
+                [System.Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;User&quot;)
+}
+
+# ==================== 1. 检测 / 安装 Node.js ====================
+# 关键：显式查找 .cmd，避免 PowerShell 优先匹配到被策略拦截的 npm.ps1
+$node = Get-Command node.exe -ErrorAction SilentlyContinue
+$npm  = Get-Command npm.cmd  -ErrorAction SilentlyContinue
+
+if (-not $node -or -not $npm) {
+    Write-Info &quot;未检测到 Node.js，开始从清华 TUNA 镜像下载...&quot;
+
+    $nodeVer = &quot;v22.14.0&quot;
+    $msiName = &quot;node-$nodeVer-x64.msi&quot;
+    $nodeUrl = &quot;https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName&quot;
+    $nodeOut = Join-Path $temp $msiName
+
+    if ((Test-Path $nodeOut) -and ((Get-Item $nodeOut).Length -lt 10MB)) {
+        Write-Warn &quot;检测到不完整的临时文件，删除后重新下载...&quot;
+        Remove-Item $nodeOut -Force
+    }
+    if (-not (Test-Path $nodeOut)) {
+        Write-Info &quot;下载 $msiName 中，请稍候...&quot;
+        try {
+            Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
+            if ((Get-Item $nodeOut).Length -lt 10MB) {
+                throw &quot;下载文件异常过小，可能已被拦截或损坏。&quot;
+            }
+        } catch {
+            Write-Fail &quot;下载失败: $_&quot;
+            exit 1
+        }
+    }
+
+    Write-Info &quot;正在静默安装 Node.js（可能需要 1-2 分钟）...&quot;
+    $proc = Start-Process -FilePath &quot;msiexec.exe&quot; `
+             -ArgumentList &quot;/i `&quot;$nodeOut`&quot; /qn /norestart&quot; `
+             -Wait -PassThru
+
+    if ($proc.ExitCode -ne 0) {
+        Write-Fail &quot;Node.js 安装失败，msiexec 退出码: $($proc.ExitCode)&quot;
+        exit 1
+    }
+
+    # 刷新当前会话的 PATH
+    Refresh-EnvPath
+
+    # 重新定位 npm.cmd
+    $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
+}
+
+# 兜底：如果注册表刷新后仍找不到，扫描常见路径
+if (-not $npm) {
+    $fallbackPaths = @(
+        &quot;C:\Program Files\nodejs&quot;
+        &quot;C:\Program Files (x86)\nodejs&quot;
+        &quot;C:\nodejs&quot;
+        &quot;$env:NVM_SYMLINK&quot;
+        &quot;$env:NVM_HOME&quot;
+        &quot;C:\nvm4w\nodejs&quot;
+    ) | Where-Object { $_ }
+
+    foreach ($p in $fallbackPaths) {
+        $cmdPath = Join-Path $p &quot;npm.cmd&quot;
+        if (Test-Path $cmdPath) {
+            $env:Path += &quot;;$p&quot;
+            $npm = Get-Command $cmdPath
+            break
+        }
+    }
+}
+
+if (-not $npm) {
+    Write-Fail &quot;未能定位 npm.cmd。请确认 Node.js 已正确安装，或手动将其目录加入 PATH。&quot;
+    exit 1
+}
+
+$nodeVerStr = &amp; node.exe --version 2&gt;$null
+$npmVerStr  = &amp; $npm.Source --version 2&gt;$null
+Write-Ok &quot;环境就绪: Node.js $nodeVerStr | npm $npmVerStr&quot;
+
+# ==================== 2. 配置 npm 国内源 ====================
+Write-Info &quot;配置 npm 使用阿里云镜像...&quot;
+&amp; $npm.Source config set registry https://registry.npmmirror.com/ 2&gt;$null
+if (-not $?) { Write-Warn &quot;npm 源配置命令返回异常，继续执行...&quot; }
+
+# ==================== 3. 通过 npm 安装 Bun ====================
+Write-Info &quot;正在通过 npm 全局安装 Bun...&quot;
+&amp; $npm.Source install -g bun 2&gt;$null
+if (-not $?) {
+    Write-Fail &quot;npm 安装 bun 失败，请检查网络或 npm 日志。&quot;
+    exit 1
+}
+
+# ==================== 4. 定位 bun.exe ====================
+Refresh-EnvPath
+$env:Path += &quot;;$env:APPDATA\npm&quot;
+
+$bunCandidates = @(
+    &quot;$env:APPDATA\npm\node_modules\bun\bin\bun.exe&quot;
+    &quot;$env:LOCALAPPDATA\npm\node_modules\bun\bin\bun.exe&quot;
+    &quot;$env:USERPROFILE\.bun\bin\bun.exe&quot;
+)
+
+$bunExe = $null
+foreach ($c in $bunCandidates) {
+    if (Test-Path $c) {
+        $bunExe = $c
+        break
+    }
+}
+
+# 终极兜底：在常见父目录递归搜索（限制深度，避免过慢）
+if (-not $bunExe) {
+    Write-Warn &quot;常规路径未找到 bun.exe，执行搜索...&quot;
+    $found = Get-ChildItem -Path @(
+        &quot;$env:APPDATA\npm&quot;
+        &quot;$env:LOCALAPPDATA\npm&quot;
+        &quot;$env:USERPROFILE\.bun&quot;
+    ) -Filter &quot;bun.exe&quot; -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 1
+
+    if ($found) { $bunExe = $found.FullName }
+}
+
+if ($bunExe) {
+    $bunVer = &amp; $bunExe --version 2&gt;$null
+    Write-Ok &quot;Bun 安装完成: $bunVer&quot;
+} else {
+    Write-Warn &quot;未找到 bun.exe，但 npm 安装未报错。请尝试重新打开 PowerShell 窗口后再运行一次。&quot;
+}
+
+# ==================== 5. 清理 .ps1 wrapper（关键：避免 PowerShell 执行策略拦截） ====================
+$wrappers = @(
+    &quot;$env:APPDATA\npm\bun.ps1&quot;
+    &quot;$env:APPDATA\npm\bunx.ps1&quot;
+    &quot;$env:LOCALAPPDATA\npm\bun.ps1&quot;
+    &quot;$env:LOCALAPPDATA\npm\bunx.ps1&quot;
+)
+foreach ($w in $wrappers) {
+    if (Test-Path $w) {
+        Remove-Item -Path $w -Force -ErrorAction SilentlyContinue
+    }
+}
+Write-Ok &quot;已清理 bun.ps1 wrapper，PowerShell 将回退到 bun.cmd&quot;
+
+# ==================== 6. 写入 Bun 国内源配置 ====================
+$bunfig = @&quot;
+[install]
+registry = &quot;https://registry.npmmirror.com/&quot;
+&quot;@
+Set-Content -Path &quot;$env:USERPROFILE\.bunfig.toml&quot; -Value $bunfig -Encoding UTF8 -Force
+Write-Ok &quot;已写入 ~/.bunfig.toml，bun install 将默认走阿里云镜像&quot;
+
+# ==================== 7. 将 Bun 加入用户 PATH ====================
+$bunGlobalBin = &quot;$env:USERPROFILE\.bun\bin&quot;
+$userPath = [Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;User&quot;)
+if ($userPath -notlike &quot;*$bunGlobalBin*&quot;) {
+    [Environment]::SetEnvironmentVariable(&quot;Path&quot;, &quot;$userPath;$bunGlobalBin&quot;, &quot;User&quot;)
+    Write-Ok &quot;已将 Bun 目录加入用户 PATH: $bunGlobalBin&quot;
+}
+
+# ==================== 8. 最终验证 ====================
+Write-Info &quot;执行最终验证...&quot;
+if ($bunExe) {
+    $bunDir = Split-Path $bunExe -Parent
+    if ($env:Path -notlike &quot;*$bunDir*&quot;) { $env:Path += &quot;;$bunDir&quot; }
+}
+
+$bunCmd = Get-Command bun.cmd -ErrorAction SilentlyContinue
+if ($bunCmd -or $bunExe) {
+    $ver = if ($bunCmd) { &amp; bun.cmd --version } else { &amp; $bunExe --version }
+    Write-Ok &quot;全部完成！Bun $ver 已就绪。&quot;
+    Write-Host &quot;`n提示：请重新打开 PowerShell 窗口，以确保 PATH 完全生效。&quot; -ForegroundColor Green
+} else {
+    Write-Warn &quot;安装可能已完成，但当前会话无法调用 bun。请重新打开 PowerShell 窗口后再试。&quot;
+}
+</code></pre>
+<blockquote>
+<p><strong>提示</strong>：脚本运行期间请不要关闭窗口。TUNA 镜像下载速度通常在 5~20MB/s，若卡住超过 3 分钟请检查网络。</p>
+</blockquote>
+<hr>
+<h2 id="heading-3">分步详解</h2>
+<h3 id="heading-4">1. 从清华 TUNA 镜像下载 Node.js</h3>
+<p>Bun 官方推荐通过 <code>curl -fsSL https://bun.sh/install | bash</code> 安装，但这需要从 GitHub Releases 下载二进制，国内基本连不上。</p>
+<p><strong>曲线救国</strong>：先装 Node.js，获得 npm，再通过 npm 装 Bun。npm 包本身托管在 registry 上，国内有完整镜像同步。</p>
+<p>Node.js 官方二进制分发地址是 <code>https://nodejs.org/dist/</code>，清华 TUNA 做了完整镜像：</p>
+<pre><code>https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>镜像站</th>
+<th>地址</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>清华 TUNA</strong></td>
+<td><code>https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/</code></td>
+<td>全版本同步，推荐</td>
+</tr>
+<tr>
+<td><strong>华为云</strong></td>
+<td><code>https://repo.huaweicloud.com/nodejs/</code></td>
+<td>全版本同步，备用</td>
+</tr>
+<tr>
+<td><strong>阿里云</strong></td>
+<td><code>https://npm.taobao.org/mirrors/node/</code></td>
+<td>旧地址，会跳转到新域名</td>
+</tr>
+</tbody></table>
+<p>脚本中固定了 <code>v22.14.0</code>（LTS 长期支持版），如需其他版本，去镜像站目录里挑对应的 <code>node-vXX.XX.XX-x64.msi</code> 改 URL 即可。</p>
+<h3 id="heading-5">2. 静默安装 Node.js 并校验结果</h3>
+<pre><code class="language-powershell"># 错误：msiexec 默认异步返回，脚本会继续执行但安装还没完成
+msiexec /i &quot;node-v22.14.0-x64.msi&quot; /qn /norestart
+Start-Sleep -Seconds 15   # 瞎等 15 秒，不靠谱
+
+# 正确：用 Start-Process -Wait 阻塞到安装真正结束，并检查退出码
+$proc = Start-Process -FilePath &quot;msiexec&quot; -ArgumentList &quot;/i `&quot;...`&quot; /qn /norestart&quot; -Wait -PassThru
+if ($proc.ExitCode -ne 0) { throw &quot;安装失败&quot; }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/i</code></td>
+<td>安装模式</td>
+</tr>
+<tr>
+<td><code>/qn</code></td>
+<td>静默安装，无弹窗</td>
+</tr>
+<tr>
+<td><code>/norestart</code></td>
+<td>禁止自动重启</td>
+</tr>
+</tbody></table>
+<p><strong>坑点</strong>：<code>msiexec</code> 在 PowerShell 里直接调用会<strong>立即返回</strong>（后台异步），导致后面找 <code>npm</code> 时文件还没释放。必须用 <code>Start-Process -Wait</code> 等待安装完成，并用 <code>-PassThru</code> 获取退出码来判断是否真正成功。</p>
+<p>安装后本体通常位于 <code>C:\Program Files\nodejs\</code>，但如果你装了 **nvm-windows**，实际路径可能是 <code>C:\nvm4w\nodejs</code> 或 <code>C:\nodejs</code>，脚本里通过 <code>Get-Command</code> + 兜底路径自动检测，不再硬编码。</p>
+<h3 id="heading-6">3. 刷新环境变量</h3>
+<p>Node.js 安装程序会修改系统 PATH，但<strong>当前已打开的 PowerShell 窗口不会自动感知</strong>。脚本里通过读取注册表重新拼接 Path 来解决：</p>
+<pre><code class="language-powershell">function Refresh-EnvPath {
+    $env:Path = [System.Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;Machine&quot;) + &quot;;&quot; + `
+                [System.Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;User&quot;)
+}
+</code></pre>
+<p>如果刷新后仍找不到 npm（比如你之前装了 nvm-windows 或其他版本），脚本还会自动检测以下兜底路径：</p>
+<ul>
+<li><code>C:\Program Files\nodejs</code></li>
+<li><code>C:\Program Files (x86)\nodejs</code></li>
+<li><code>C:\nodejs</code></li>
+<li><code>$env:NVM_SYMLINK</code></li>
+<li><code>$env:NVM_HOME</code></li>
+<li><code>C:\nvm4w\nodejs</code></li>
+</ul>
+<blockquote>
+<p><strong>坑点：装完 node 后当前窗口仍提示找不到 npm</strong></p>
+<p>如果不刷新 Path，你会看到 <code>npm : 无法将 npm 识别为 cmdlet...</code>。新开一个 PowerShell 窗口也能解决，但脚本里直接刷新更方便。</p>
+</blockquote>
+<h3 id="heading-7">4. 用 <code>npm.cmd</code> 绕过执行策略（Windows PowerShell 5.1 关键适配）</h3>
+<p>Windows PowerShell 5.1 默认执行策略为 <code>Restricted</code>，会禁止运行任何 <code>.ps1</code> 脚本。npm 安装时会同时生成 <code>npm.cmd</code> 和 <code>npm.ps1</code>，而 <code>Get-Command npm</code> 在 PS 5.1 中<strong>优先匹配到 <code>npm.ps1</code></strong>，导致后续调用被系统拦截：</p>
+<pre><code class="language-powershell"># 错误：在 Restricted 策略下会报错 &quot;无法加载 npm.ps1&quot;
+$npm = Get-Command npm
+&amp; $npm.Source config set registry ...   # ❌ 失败
+
+# 正确：显式指定 .cmd，彻底绕过执行策略限制
+$npm = Get-Command npm.cmd
+&amp; $npm.Source config set registry ...   # ✅ 成功
+</code></pre>
+<p>脚本中<strong>所有 npm 调用均通过 <code>npm.cmd</code> 完成</strong>，无需用户修改系统执行策略，零副作用。</p>
+<h3 id="heading-8">5. npm 切到阿里云镜像</h3>
+<p>npm 官方源 <code>https://registry.npmjs.org/</code> 在国内访问缓慢且经常丢包。阿里云镜像（原淘宝 npm 域名）是目前最稳的国内源：</p>
+<pre><code class="language-powershell">npm.cmd config set registry https://registry.npmmirror.com/
+</code></pre>
+<blockquote>
+<p><strong>坑点：淘宝源旧域名已废弃</strong></p>
+<p>以前常用的 <code>https://registry.npm.taobao.org/</code> 虽然还能跳转，但官方已迁移到 <code>https://registry.npmmirror.com/</code>。建议直接写新域名，避免未来 301 失效。</p>
+</blockquote>
+<h3 id="heading-9">6. 通过 npm 安装 Bun</h3>
+<pre><code class="language-powershell">npm.cmd install -g bun
+</code></pre>
+<p>npm 全局安装时，会把 Bun 的二进制文件下载到 <code>%APPDATA%\npm\node_modules\bun\bin\bun.exe</code>。整个流程走的都是阿里云镜像，无需访问 GitHub。</p>
+<h3 id="heading-10">7. 定位 bun.exe 的多级回退</h3>
+<p>不同版本的 npm 或不同安装方式，bun.exe 的实际落盘位置可能不同。脚本内置了三级查找：</p>
+<ol>
+<li><strong>常规路径</strong>：<code>%APPDATA%\npm\node_modules\bun\bin\bun.exe</code></li>
+<li><strong>备用路径</strong>：<code>%LOCALAPPDATA%\npm\...</code> 和 <code>%USERPROFILE%\.bun\bin\bun.exe</code></li>
+<li><strong>递归搜索</strong>：在以上父目录下递归搜索（限制深度 3 层，避免过慢）</li>
+</ol>
+<h3 id="heading-11">8. 清理 <code>.ps1</code> wrapper（关键！）</h3>
+<p>npm 全局安装包时，会为每个命令生成 <code>.cmd</code> 和 <code>.ps1</code> 两个 wrapper。在 PS 5.1 默认策略下，<code>.ps1</code> 会被拦截，但 PowerShell 又优先解析 <code>.ps1</code>，导致用户直接输入 <code>bun</code> 时报错。</p>
+<p>脚本在安装完成后主动删除：</p>
+<pre><code class="language-powershell">Remove-Item -Path &quot;$env:APPDATA\npm\bun.ps1&quot;  -ErrorAction SilentlyContinue
+Remove-Item -Path &quot;$env:APPDATA\npm\bunx.ps1&quot; -ErrorAction SilentlyContinue
+</code></pre>
+<p>删除后，PowerShell 会按 <code>PATHEXT</code> 优先级回退到 <code>.cmd</code>，而 <code>.cmd</code> 不受执行策略限制。</p>
+<h3 id="heading-12">9. Bun 国内源配置</h3>
+<p>Bun 作为包管理器时，默认读取 npm 的配置，但为了确保万无一失，脚本额外写了一个 <code>~/.bunfig.toml</code>：</p>
+<pre><code class="language-toml">[install]
+registry = &quot;https://registry.npmmirror.com/&quot;
+</code></pre>
+<p>这样 <code>bun install</code> 会明确指向阿里云镜像。你也可以在项目根目录下放一个不带点的 <code>bunfig.toml</code> 来覆盖全局配置。</p>
+<hr>
+<h2 id="heading-13">常见问题 FAQ</h2>
+<h3 id="heading-14">Q1：为什么非要装 Node.js？不能直接装 Bun 吗？</h3>
+<p><strong>原因</strong>：Bun 官方安装脚本需要从 GitHub Releases 下载二进制，国内访问 GitHub 受限。</p>
+<p><strong>解决</strong>：本文走的是 &quot;Node.js → npm → Bun&quot; 的曲线救国路线。如果你不想装 Node.js，请看文末附录的 <strong>ghproxy 直装方案</strong>（直接从 GitHub 代理下载官方安装脚本）。</p>
+<h3 id="heading-15">Q2：我已有 Node.js（或 nvm-windows），脚本会重复安装吗？</h3>
+<p><strong>不会</strong>。脚本开头用 <code>Get-Command node.exe</code> 和 <code>Get-Command npm.cmd</code> 检测当前环境，如果已经能找到 <code>npm.cmd</code>，就会<strong>跳过 Node.js 下载和安装</strong>，直接走后续配置和装 Bun 的步骤。</p>
+<blockquote>
+<p>如果你通过 <strong>nvm-windows</strong> 管理 Node.js，npm 路径可能在 <code>C:\nvm4w\nodejs</code> 或 <code>C:\nodejs</code>。脚本在检测不到 npm 时会自动扫描这些常见路径，确保能正确调用。</p>
+</blockquote>
+<h3 id="heading-16">Q3：执行时提示 &quot;无法将 npm 识别为 cmdlet...&quot;？</h3>
+<p><strong>原因</strong>：Node.js 安装后 Path 未刷新，当前 PowerShell 会话找不到 npm。</p>
+<p><strong>解决</strong>：</p>
+<ul>
+<li>方案 A：关闭当前 PowerShell，重新开一个窗口再试。</li>
+<li>方案 B：运行脚本里的 Path 刷新命令（见分步详解第 3 节）。</li>
+<li>方案 C：直接用完整路径调用：先确认你的 npm 实际在哪，例如 <code>C:\nvm4w\nodejs\npm.cmd config get registry</code></li>
+</ul>
+<h3 id="heading-17">Q4：执行 <code>bun</code> 时提示 &quot;无法加载 bun.ps1，因为在此系统上禁止运行脚本&quot;？</h3>
+<p><strong>原因</strong>：Windows PowerShell 5.1 默认执行策略为 <code>Restricted</code>，禁止运行 <code>.ps1</code> 脚本。npm 安装时生成了 <code>bun.ps1</code> 作为包装器，被系统拦截。</p>
+<p><strong>解决</strong>：</p>
+<p>本文脚本已内置<strong>双重防护</strong>：</p>
+<ol>
+<li>安装完成后自动删除 <code>bun.ps1</code> / <code>bunx.ps1</code> wrapper</li>
+<li>验证阶段显式查找 <code>bun.cmd</code></li>
+</ol>
+<p>正常情况下你不会遇到此问题。如果你是在<strong>脚本之外</strong>手动遇到了这个报错，四选一解决：</p>
+<p><strong>方案 A（推荐，零副作用）</strong>：删掉 npm 生成的 <code>bun.ps1</code>，让 PowerShell fallback 到 <code>bun.cmd</code></p>
+<pre><code class="language-powershell">Remove-Item -Path &quot;$env:APPDATA\npm\bun.ps1&quot; -ErrorAction SilentlyContinue
+Remove-Item -Path &quot;$env:APPDATA\npm\bunx.ps1&quot; -ErrorAction SilentlyContinue
+</code></pre>
+<p><strong>方案 B（不改全局策略）</strong>：用 cmd 调用</p>
+<pre><code class="language-powershell">cmd /c bun --version
+cmd /c bun install
+</code></pre>
+<p><strong>方案 C（直接调 exe）</strong>：</p>
+<pre><code class="language-powershell">$env:APPDATA\npm\node_modules\bun\bin\bun.exe --version
+</code></pre>
+<p><strong>方案 D（永久放宽策略）</strong>：</p>
+<pre><code class="language-powershell">Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+</code></pre>
+<p>之后就可以直接使用 <code>bun</code> 命令。</p>
+<h3 id="heading-18">Q5：TUNA 镜像站有 Bun 的镜像吗？</h3>
+<p><strong>没有</strong>。TUNA 只提供了 npm registry 镜像（用来加速下载 JS 包），但 <strong>Bun 本身是一个预编译二进制文件</strong>，通过 GitHub Releases 分发，TUNA 没有同步 GitHub Releases 二进制文件。</p>
+<p>所以安装 Bun 本体只能通过：</p>
+<ul>
+<li>npm 安装（本文方案）</li>
+<li>或 GitHub 代理直链下载（附录方案）</li>
+</ul>
+<h3 id="heading-19">Q6：重启后 npm 或 Bun 找不到了？</h3>
+<p><strong>原因</strong>：Path 环境变量在用户级已写入，但部分还原卡/域控环境会在重启后还原注册表。</p>
+<p><strong>解决</strong>：</p>
+<ul>
+<li>检查 Path 是否包含 <code>C:\Program Files\nodejs</code> 和 <code>%APPDATA%\npm</code>。</li>
+<li>若被还原，把一键脚本保存为 <code>.ps1</code> 文件，每次开机后右键&quot;使用 PowerShell 运行&quot;一遍（约 30 秒，若已下载过安装包则更快）。</li>
+</ul>
+<h3 id="heading-20">Q7：如何升级 Bun？</h3>
+<pre><code class="language-powershell">npm.cmd update -g bun
+</code></pre>
+<p>走 npm 升级会自动使用已配置的阿里云镜像。</p>
+<blockquote>
+<p><strong>注意</strong>：不要用 <code>bun upgrade</code>，这会尝试从 GitHub 官方源下载，国内可能失败或极慢。</p>
+</blockquote>
+<h3 id="heading-21">Q8：安装完成后 <code>bun install</code> 还是走的官方源？</h3>
+<p><strong>原因</strong>：<code>~/.bunfig.toml</code> 未生效，或项目目录下有其他配置覆盖。</p>
+<p><strong>解决</strong>：</p>
+<ol>
+<li>检查全局配置是否存在：</li>
+</ol>
+<pre><code class="language-powershell">Get-Content &quot;$env:USERPROFILE\.bunfig.toml&quot;
+</code></pre>
+<ol start="2">
+<li><p>检查项目根目录是否有 <code>bunfig.toml</code>（不带点），它的优先级高于全局配置。</p>
+</li>
+<li><p>临时指定源验证：</p>
+</li>
+</ol>
+<pre><code class="language-powershell">$env:npm_config_registry = &quot;https://registry.npmmirror.com&quot;
+bun install
+</code></pre>
+<h3 id="heading-22">Q9：<code>bun add -g xxx</code> 装成功了，但命令找不到？</h3>
+<p><strong>原因</strong>：Bun 的全局安装目录和 npm 不一样。npm 放在 <code>%APPDATA%\npm</code>，Bun 放在 <code>%USERPROFILE%\.bun\bin</code>，后者默认不在系统 PATH 里。</p>
+<p><strong>解决</strong>：把 Bun 的全局目录加入 PATH：</p>
+<pre><code class="language-powershell">$bunGlobalBin = &quot;$env:USERPROFILE\.bun\bin&quot;
+$userPath = [Environment]::GetEnvironmentVariable(&quot;Path&quot;, &quot;User&quot;)
+[Environment]::SetEnvironmentVariable(&quot;Path&quot;, &quot;$userPath;$bunGlobalBin&quot;, &quot;User&quot;)
+</code></pre>
+<p>或新开一个 PowerShell 窗口（环境变量刷新后生效），一键脚本已内置此步骤。</p>
+<hr>
+<h2 id="heading-23">附录：无 Node.js 方案（ghproxy 直装）</h2>
+<p>如果你<strong>不想装 Node.js</strong>，可以直接通过 GitHub 代理安装官方 Bun。内置代理自动 fallback，走不通就换下一个。</p>
+<pre><code class="language-powershell"># 自动 fallback 下载函数
+function Get-WithProxy {
+    param([string]$Url, [string]$OutFile)
+    $proxies = @(
+        &quot;https://gh-proxy.org/&quot;,
+        &quot;https://mirror.ghproxy.com/&quot;,
+        &quot;https://ghproxy.net/&quot;,
+        &quot;https://ghp.ci/&quot;
+    )
+    foreach ($p in $proxies) {
+        $proxyUrl = &quot;$p$Url&quot;
+        Write-Host &quot;Trying $proxyUrl ...&quot; -ForegroundColor DarkGray
+        try {
+            Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120
+            if ((Get-Item $OutFile).Length -gt 1024) {
+                Write-Host &quot;Success via $p&quot; -ForegroundColor Green
+                return
+            }
+        } catch { Write-Host &quot;Failed via $p&quot; -ForegroundColor Red }
+    }
+    Write-Host &quot;Trying direct download...&quot; -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
+}
+
+# 下载官方安装脚本
+$temp = &quot;$env:TEMP\bunsetup&quot;
+New-Item -ItemType Directory -Force -Path $temp | Out-Null
+$installPs1 = &quot;$temp\install.ps1&quot;
+Get-WithProxy -Url &quot;https://github.com/oven-sh/bun/releases/latest/download/install.ps1&quot; -OutFile $installPs1
+
+# 执行安装（设置 GITHUB 环境变量让脚本走代理下载二进制）
+$env:GITHUB = &quot;https://gh-proxy.org/https://github.com&quot;
+&amp; $installPs1
+
+# 写入 Bun 国内源配置
+$bunfig = @&quot;
+[install]
+registry = &quot;https://registry.npmmirror.com/&quot;
+&quot;@
+Set-Content -Path &quot;$env:USERPROFILE\.bunfig.toml&quot; -Value $bunfig -Encoding UTF8
+Write-Host &quot;&gt;&gt;&gt; 完成！Bun 已安装且配置了国内源。&quot; -ForegroundColor Green
+</code></pre>
+<blockquote>
+<p><strong>代理站优先级</strong>：默认先走 <code>gh-proxy.org</code>，失败自动切 <code>mirror.ghproxy.com</code> → <code>ghproxy.net</code> → <code>ghp.ci</code>，全部挂掉才走 GitHub 直连。</p>
+<p>该方案<strong>不依赖 Node.js</strong>，但需要从 GitHub 下载安装脚本和二进制，如果代理站全部失效会安装失败。相比之下，主文的 &quot;Node.js → npm&quot; 方案更稳定可靠。</p>
+</blockquote>
+
+  </div>
+</article>
+
+    </main>
+
+    
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          
+          <a class="toc-item level-2" href="#heading-0">更新日志</a>
+          
+          <a class="toc-item level-2" href="#heading-1">环境信息</a>
+          
+          <a class="toc-item level-2" href="#heading-2">一键脚本（复制即用）</a>
+          
+          <a class="toc-item level-2" href="#heading-3">分步详解</a>
+          
+          <a class="toc-item level-3" href="#heading-4">1. 从清华 TUNA 镜像下载 Node.js</a>
+          
+          <a class="toc-item level-3" href="#heading-5">2. 静默安装 Node.js 并校验结果</a>
+          
+          <a class="toc-item level-3" href="#heading-6">3. 刷新环境变量</a>
+          
+          <a class="toc-item level-3" href="#heading-7">4. 用 npm.cmd 绕过执行策略（Windows PowerShell 5.1 关键适配）</a>
+          
+          <a class="toc-item level-3" href="#heading-8">5. npm 切到阿里云镜像</a>
+          
+          <a class="toc-item level-3" href="#heading-9">6. 通过 npm 安装 Bun</a>
+          
+          <a class="toc-item level-3" href="#heading-10">7. 定位 bun.exe 的多级回退</a>
+          
+          <a class="toc-item level-3" href="#heading-11">8. 清理 .ps1 wrapper（关键！）</a>
+          
+          <a class="toc-item level-3" href="#heading-12">9. Bun 国内源配置</a>
+          
+          <a class="toc-item level-2" href="#heading-13">常见问题 FAQ</a>
+          
+          <a class="toc-item level-3" href="#heading-14">Q1：为什么非要装 Node.js？不能直接装 Bun 吗？</a>
+          
+          <a class="toc-item level-3" href="#heading-15">Q2：我已有 Node.js（或 nvm-windows），脚本会重复安装吗？</a>
+          
+          <a class="toc-item level-3" href="#heading-16">Q3：执行时提示 &amp;quot;无法将 npm 识别为 cmdlet...&amp;quot;？</a>
+          
+          <a class="toc-item level-3" href="#heading-17">Q4：执行 bun 时提示 &amp;quot;无法加载 bun.ps1，因为在此系统上禁止运行脚本&amp;quot;？</a>
+          
+          <a class="toc-item level-3" href="#heading-18">Q5：TUNA 镜像站有 Bun 的镜像吗？</a>
+          
+          <a class="toc-item level-3" href="#heading-19">Q6：重启后 npm 或 Bun 找不到了？</a>
+          
+          <a class="toc-item level-3" href="#heading-20">Q7：如何升级 Bun？</a>
+          
+          <a class="toc-item level-3" href="#heading-21">Q8：安装完成后 bun install 还是走的官方源？</a>
+          
+          <a class="toc-item level-3" href="#heading-22">Q9：bun add -g xxx 装成功了，但命令找不到？</a>
+          
+          <a class="toc-item level-2" href="#heading-23">附录：无 Node.js 方案（ghproxy 直装）</a>
+          
+        </nav>
+      </div>
+    </aside>
+    
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
+    
+    <div class="site-beian">
+      
+      <span>皖ICP备2025105642号-2</span>
+      <span class="beian-divider">|</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">工信部备案</a>
+      
+      
+      
+    </div>
+    
+  </footer>
+  <script src="../../assets/js/main.js?v=7"></script>
+  <script src="../../assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
+</body>
+</html>

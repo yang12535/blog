@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-  <link rel="stylesheet" href="../../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=6">
   <link rel="alternate" type="application/rss+xml" title="Bogl Blog" href="../../feed.xml">
 </head>
 <body>
@@ -25,6 +25,9 @@
       <a class="navbar-item " href="../../">首页</a>
       <a class="navbar-item " href="../../archive">归档</a>
       <a class="navbar-item " href="../../tags">标签</a>
+      <a class="navbar-github" href="https://github.com/yang12535/blog" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </a>
     </div>
   </nav>
 
@@ -68,7 +71,7 @@
 <blockquote>
 <p>对应 Windows 版：<a href="https://bash.yang125.fun/posts/kimi-cli-install-win/">Windows 下安装 Kimi CLI，PowerShell 一键指令</a></p>
 </blockquote>
-<h2>环境信息</h2>
+<h2 id="heading-0">环境信息</h2>
 <ul>
 <li><strong>系统</strong>：CentOS Stream 9 / RHEL 9 / Rocky Linux 9 / AlmaLinux 9</li>
 <li><strong>场景</strong>：无红帽订阅（无 Subscription）</li>
@@ -76,7 +79,7 @@
 <li><strong>网络</strong>：国内环境，使用阿里云/清华镜像加速</li>
 </ul>
 <hr>
-<h2>为什么这玩意这么折腾？</h2>
+<h2 id="heading-1">为什么这玩意这么折腾？</h2>
 <table>
 <thead>
 <tr>
@@ -106,19 +109,19 @@
 </tr>
 </tbody></table>
 <hr>
-<h2>一键安装（单行版）</h2>
+<h2 id="heading-2">一键安装（单行版）</h2>
 <p>复制以下整行，在 <code>root</code> 权限下执行：</p>
 <pre><code class="language-bash">sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-manager.conf 2&gt;/dev/null; mkdir -p /etc/yum.repos.d/backup &amp;&amp; mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2&gt;/dev/null; echo -e &quot;[baseos]\nname=CentOS Stream 9 BaseOS\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/BaseOS/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official\n\n[appstream]\nname=CentOS Stream 9 AppStream\nbaseurl=https://mirrors.aliyun.com/centos-stream/9-stream/AppStream/x86_64/os/\ngpgcheck=1\nenabled=1\ngpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official&quot; &gt; /etc/yum.repos.d/centos9.repo &amp;&amp; dnf clean all &amp;&amp; dnf install -y python3-pip &amp;&amp; export UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple&quot; UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot; &amp;&amp; python3 -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple --user --quiet &amp;&amp; python3 -m uv tool install kimi-cli --force &amp;&amp; { grep -q &quot;.local/bin&quot; ~/.bashrc || echo &#39;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc; } &amp;&amp; export PATH=&quot;$HOME/.local/bin:$PATH&quot; &amp;&amp; python3 -m uv --version &amp;&amp; kimi --version
 </code></pre>
 <hr>
-<h2>分步详解</h2>
+<h2 id="heading-3">分步详解</h2>
 <p>如果你想知道上面那行命令到底干了什么，以下是逐段拆解：</p>
-<h3>1. 禁用 subscription-manager 插件</h3>
+<h3 id="heading-4">1. 禁用 subscription-manager 插件</h3>
 <pre><code class="language-bash">sed -i &#39;s/enabled=1/enabled=0/g&#39; /etc/yum/pluginconf.d/subscription-manager.conf 2&gt;/dev/null
 </code></pre>
 <p>RHEL/CentOS 默认启用 <code>subscription-manager</code>，每次执行 <code>dnf</code> 都会尝试连接红帽订阅服务器。
 无订阅环境下会报 <strong>&quot;无法读取客户身份&quot;</strong>，拖慢速度甚至导致命令失败。</p>
-<h3>2. 备份旧源并写入阿里云镜像</h3>
+<h3 id="heading-5">2. 备份旧源并写入阿里云镜像</h3>
 <pre><code class="language-bash">mkdir -p /etc/yum.repos.d/backup
 mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2&gt;/dev/null
 </code></pre>
@@ -142,7 +145,7 @@ gpgkey=https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official
 <p>⚠️ <strong>注意 GPG Key 路径</strong>：阿里云上 <code>centos-stream/RPM-GPG-KEY-CentOS-Official</code> 返回 404，
 必须改成 <code>centos/RPM-GPG-KEY-CentOS-Official</code> 才能正常导入公钥。</p>
 </blockquote>
-<h3>3. 安装 python3-pip</h3>
+<h3 id="heading-6">3. 安装 python3-pip</h3>
 <pre><code class="language-bash">dnf clean all
 dnf install -y python3-pip
 </code></pre>
@@ -150,7 +153,7 @@ dnf install -y python3-pip
 <li><code>dnf clean all</code>：清除旧缓存，避免元数据冲突</li>
 <li><code>python3-pip</code>：CentOS 最小化安装不带 pip，必须手动安装</li>
 </ul>
-<h3>4. 配置国内 PyPI 镜像并安装 uv</h3>
+<h3 id="heading-7">4. 配置国内 PyPI 镜像并安装 uv</h3>
 <pre><code class="language-bash">export UV_INDEX_URL=&quot;https://pypi.tuna.tsinghua.edu.cn/simple&quot;
 export UV_EXTRA_INDEX_URL=&quot;https://mirrors.aliyun.com/pypi/simple/&quot;
 python3 -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple --user --quiet
@@ -175,11 +178,11 @@ python3 -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple --user --q
 </tr>
 </tbody></table>
 <p><code>--user</code>：无需 root 权限即可安装 uv（当前已在 root 下，但养成好习惯）。</p>
-<h3>5. 安装 kimi-cli</h3>
+<h3 id="heading-8">5. 安装 kimi-cli</h3>
 <pre><code class="language-bash">python3 -m uv tool install kimi-cli --force
 </code></pre>
 <p>使用 <code>uv tool install</code> 将 <code>kimi-cli</code> 安装到 <code>~/.local/bin</code>，隔离依赖，避免污染系统 Python。</p>
-<h3>6. 配置 PATH</h3>
+<h3 id="heading-9">6. 配置 PATH</h3>
 <pre><code class="language-bash">{ grep -q &quot;.local/bin&quot; ~/.bashrc || echo &#39;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc; }
 export PATH=&quot;$HOME/.local/bin:$PATH&quot;
 </code></pre>
@@ -187,7 +190,7 @@ export PATH=&quot;$HOME/.local/bin:$PATH&quot;
 <li>写入 <code>~/.bashrc</code>：永久生效，下次登录自动加载</li>
 <li>当前会话 <code>export</code>：立即生效，无需重新登录</li>
 </ul>
-<h3>7. 验证安装</h3>
+<h3 id="heading-10">7. 验证安装</h3>
 <pre><code class="language-bash">python3 -m uv --version
 kimi --version
 </code></pre>
@@ -196,19 +199,19 @@ kimi --version
 kimi, version 1.30.0
 </code></pre>
 <hr>
-<h2>常见问题</h2>
-<h3>Q: 执行时提示 <code>bash: python3: command not found</code></h3>
+<h2 id="heading-11">常见问题</h2>
+<h3 id="heading-12">Q: 执行时提示 <code>bash: python3: command not found</code></h3>
 <p>A: 通常是复制粘贴时带了控制字符（如 <code>~[200~</code>）。建议手敲或右键粘贴<strong>纯文本</strong>。</p>
-<h3>Q: <code>Failed to download gpg key for repo &#39;baseos&#39;: Status code: 404</code></h3>
+<h3 id="heading-13">Q: <code>Failed to download gpg key for repo &#39;baseos&#39;: Status code: 404</code></h3>
 <p>A: GPG Key 路径错误。检查 <code>centos9.repo</code> 中的 <code>gpgkey</code> 是否为：</p>
 <pre><code>https://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-Official
 </code></pre>
 <p>而不是 <code>centos-stream/RPM-GPG-KEY-CentOS-Official</code>。</p>
-<h3>Q: <code>WARNING: Running pip as the &#39;root&#39; user...</code></h3>
+<h3 id="heading-14">Q: <code>WARNING: Running pip as the &#39;root&#39; user...</code></h3>
 <p>A: 正常提示，可忽略。已在命令中使用 <code>--user</code> 限制安装范围。
 如需更规范，可创建普通用户后在其 home 目录下执行。</p>
 <hr>
-<h2>对比 Windows 版</h2>
+<h2 id="heading-15">对比 Windows 版</h2>
 <table>
 <thead>
 <tr>
@@ -244,7 +247,7 @@ kimi, version 1.30.0
 </tr>
 </tbody></table>
 <hr>
-<h2>参考链接</h2>
+<h2 id="heading-16">参考链接</h2>
 <ul>
 <li>Windows 原版：<a href="https://bash.yang125.fun/posts/kimi-cli-install-win/">https://bash.yang125.fun/posts/kimi-cli-install-win/</a></li>
 <li>阿里云 CentOS 镜像：<a href="https://developer.aliyun.com/mirror/centos">https://developer.aliyun.com/mirror/centos</a></li>
@@ -256,13 +259,68 @@ kimi, version 1.30.0
 </article>
 
     </main>
+
+    
+    <aside class="toc-sidebar">
+      <div class="toc-sticky">
+        <div class="toc-header">目录</div>
+        <nav class="toc-nav">
+          
+          <a class="toc-item level-2" href="#heading-0">环境信息</a>
+          
+          <a class="toc-item level-2" href="#heading-1">为什么这玩意这么折腾？</a>
+          
+          <a class="toc-item level-2" href="#heading-2">一键安装（单行版）</a>
+          
+          <a class="toc-item level-2" href="#heading-3">分步详解</a>
+          
+          <a class="toc-item level-3" href="#heading-4">1. 禁用 subscription-manager 插件</a>
+          
+          <a class="toc-item level-3" href="#heading-5">2. 备份旧源并写入阿里云镜像</a>
+          
+          <a class="toc-item level-3" href="#heading-6">3. 安装 python3-pip</a>
+          
+          <a class="toc-item level-3" href="#heading-7">4. 配置国内 PyPI 镜像并安装 uv</a>
+          
+          <a class="toc-item level-3" href="#heading-8">5. 安装 kimi-cli</a>
+          
+          <a class="toc-item level-3" href="#heading-9">6. 配置 PATH</a>
+          
+          <a class="toc-item level-3" href="#heading-10">7. 验证安装</a>
+          
+          <a class="toc-item level-2" href="#heading-11">常见问题</a>
+          
+          <a class="toc-item level-3" href="#heading-12">Q: 执行时提示 bash: python3: command not found</a>
+          
+          <a class="toc-item level-3" href="#heading-13">Q: Failed to download gpg key for repo &amp;#39;baseos&amp;#39;: Status code: 404</a>
+          
+          <a class="toc-item level-3" href="#heading-14">Q: WARNING: Running pip as the &amp;#39;root&amp;#39; user...</a>
+          
+          <a class="toc-item level-2" href="#heading-15">对比 Windows 版</a>
+          
+          <a class="toc-item level-2" href="#heading-16">参考链接</a>
+          
+        </nav>
+      </div>
+    </aside>
+    
   </div>
 
   <footer class="site-footer">
     <p>&copy; 2026 Bogl Blog. Powered by Bogl.</p>
     
+    <div class="site-beian">
+      
+      <span>皖ICP备2025105642号-2</span>
+      <span class="beian-divider">|</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">工信部备案</a>
+      
+      
+      
+    </div>
+    
   </footer>
-  <script src="../../assets/js/main.js?v=4"></script>
+  <script src="../../assets/js/main.js?v=7"></script>
   <script src="../../assets/vendor/mermaid.min.js" onload="if(window.renderMermaidDiagrams)window.renderMermaidDiagrams()"></script>
 </body>
 </html>

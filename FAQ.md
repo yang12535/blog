@@ -36,9 +36,9 @@ A: 确保使用相对路径格式：
 
 构建时会自动转换为 `https://your-domain/posts/another-article/`。
 
-### Q: 代码块没有高亮
+### Q: 代码块为什么没有语法高亮
 
-A: 目前未集成语法高亮库。如需高亮，可引入 Prism.js 或 highlight.js，在 `base.html` 中添加对应 CDN。
+A: 当前主题已提供代码块样式、行号和复制按钮，但还没有集成 Prism.js、highlight.js 这类语法高亮库。如需高亮，可在 `base.html` 中按需引入。
 
 ### Q: 文章删除后页面还在
 
