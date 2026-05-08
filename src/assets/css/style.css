@@ -1248,7 +1248,7 @@ button:focus-visible,
   .scroll-top {
     width: 40px;
     height: 40px;
-    bottom: 16px;
+    bottom: 32px;
     right: 16px;
   }
 }
@@ -1335,6 +1335,10 @@ button:focus-visible,
   transform: translateY(10px);
   transition: all var(--transition);
   z-index: 999;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
 }
 
 .scroll-top.visible {
