@@ -180,6 +180,12 @@
   renderMermaid();
   window.renderMermaidDiagrams = renderMermaid;
 
+  // If mermaid script hasn't loaded yet, listen for it
+  var mermaidScript = document.querySelector('script[src*="mermaid.min.js"]');
+  if (mermaidScript) {
+    mermaidScript.addEventListener('load', renderMermaid);
+  }
+
   // ── 6. TOC scroll spy ──
   var tocItems = document.querySelectorAll('.toc-item');
   if (tocItems.length > 0) {

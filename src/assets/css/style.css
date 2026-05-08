@@ -1086,6 +1086,10 @@ a:hover { color: var(--primary-dark); }
   transform: translateY(12px);
   transition: all var(--transition);
   z-index: 999;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
 }
 
 .scroll-top.visible {
@@ -1095,7 +1099,8 @@ a:hover { color: var(--primary-dark); }
 }
 
 .scroll-top:hover {
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
   border-color: var(--primary);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(50, 115, 220, 0.2);
@@ -1314,42 +1319,4 @@ button:focus-visible,
   font-size: 0.8rem;
 }
 
-/* ── Scroll-to-top button ── */
-.scroll-top {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-light);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-hover);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(10px);
-  transition: all var(--transition);
-  z-index: 999;
-  overflow: hidden;
-  -webkit-appearance: none;
-  appearance: none;
-  padding: 0;
-}
 
-.scroll-top.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.scroll-top:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  transform: translateY(-2px);
-}

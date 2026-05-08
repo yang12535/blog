@@ -1,52 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
-
-// External deps (installed via npm)
-const nunjucks = require('nunjucks');
-const matter = require('gray-matter');
-const iconv = require('iconv-lite');
-const jschardet = require('jschardet');
-
-// Pull content from external repo if configured
-const CONTENT_REPO = process.env.CONTENT_REPO || '';
-const CONTENT_BRANCH = process.env.CONTENT_BRANCH || 'main';
-const CONTENT_TOKEN = process.env.GITHUB_TOKEN || process.env.GIT_TOKEN || '';
-
-function pullContent() {
-  if (!CONTENT_REPO) return;
-  const dest = path.join(__dirname, 'content', 'posts');
-  // Clean existing content/posts to avoid stale files
-  if (fs.existsSync(dest)) {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
-  ensureDir(dest);
-
-  let repoUrl = CONTENT_REPO;
-  if (!repoUrl.startsWith('http') && !repoUrl.startsWith('git@')) {
-    repoUrl = `https://github.com/${repoUrl}`;
-  }
-  if (CONTENT_TOKEN && repoUrl.includes('github.com')) {
-    repoUrl = repoUrl.replace('https://', `https://x-access-token:${CONTENT_TOKEN}@`);
-  }
-
-  const tmpDir = path.join(__dirname, '.content-tmp');
-  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
-
-  console.log(`📥 Pulling content from ${CONTENT_REPO}...`);
-  execSync(`git clone --depth 1 --branch ${CONTENT_BRANCH} "${repoUrl}" "${tmpDir}"`, { stdio: 'inherit' });
-
-  // Copy .md files from repo: prefer posts/ or content/posts/ subdir, fallback to root
-  const srcPosts = path.join(tmpDir, 'posts');
-  const srcContentPosts = path.join(tmpDir, 'content', 'posts');
-  const srcDir = fs.existsSync(srcPosts) ? srcPosts : (fs.existsSync(srcContentPosts) ? srcContentPosts : tmpDir);
-  const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.md'));
-  for (const f of files) {
-    fs.copyFileSync(path.join(srcDir, f), path.join(dest, f));
-  }
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  console.log(`  Copied ${files.length} markdown files.`);
-}
+const { pullContent, parsePosts } = require('./lib/content');
+const { createRenderer } = require('./lib/renderer');
+const {
+  generatePosts,
+  generateIndexPages,
+  generateTagPages,
+  generateArchive,
+  generateRss,
+  copyAssets,
+} = require('./lib/generators');
+const { ensureDir } = require('./lib/utils');
 
 // Config
 const CONFIG = {
@@ -62,155 +26,25 @@ const CONFIG = {
   psb: process.env.SITE_PSB || '',
 };
 
-// Setup Nunjucks
-const env = nunjucks.configure(CONFIG.templateDir, { autoescape: true });
-env.addFilter('safe', str => new nunjucks.runtime.SafeString(str));
-env.addFilter('striptags', str => str.replace(/<[^>]+>/g, ''));
-env.addFilter('truncate', (str, len) => (str.length > len ? str.slice(0, len) + '…' : str));
-
-// Utilities
-function toSlug(name) {
-  return name
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-function toTagLink(name) {
-  return {
-    name,
-    slug: toSlug(name),
-  };
-}
-
-function normalizeText(rawBuf) {
-  // Detect encoding
-  const det = jschardet.detect(rawBuf);
-  let encoding = (det && det.encoding) ? det.encoding.toLowerCase() : 'utf-8';
-  // Fix common detection issues
-  if (encoding === 'ascii') encoding = 'utf-8';
-
-  // Decode to string
-  let str;
-  if (encoding === 'utf-8' || encoding === 'utf8') {
-    str = rawBuf.toString('utf-8');
-  } else {
-    str = iconv.decode(rawBuf, encoding);
-  }
-
-  // Remove BOM
-  if (str.charCodeAt(0) === 0xFEFF) str = str.slice(1);
-
-  // CRLF -> LF
-  str = str.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-  return str;
-}
-
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function copyRecursive(src, dest) {
-  ensureDir(dest);
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyRecursive(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
-function formatDate(iso) {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function render(tpl, ctx, rootPath = '/') {
-  return env.render(tpl, { ...ctx, site: { ...ctx.site, year: new Date().getFullYear() }, root: rootPath });
-}
-
-// Build logic
 async function build() {
-  console.log('🔨 Bogl build started...');
   const startTime = Date.now();
+  console.log('🔨 Bogl build started...');
 
-  pullContent();
+  // Pull external content if configured
+  pullContent(CONFIG.postsDir);
 
-  const { marked } = await import('marked');
+  // Parse markdown posts
+  const published = await parsePosts(CONFIG.postsDir);
+  console.log(`  Found ${published.length} published posts.`);
 
-
-
-  // Clean and prepare output dir
+  // Clean output dir
   if (fs.existsSync(CONFIG.outputDir)) {
     fs.rmSync(CONFIG.outputDir, { recursive: true, force: true });
   }
   ensureDir(CONFIG.outputDir);
 
-  // Collect markdown files
-  const mdFiles = fs.existsSync(CONFIG.postsDir)
-    ? fs.readdirSync(CONFIG.postsDir).filter(f => f.endsWith('.md'))
-    : [];
-
-  const posts = [];
-
-  for (const filename of mdFiles) {
-    const filePath = path.join(CONFIG.postsDir, filename);
-    const raw = fs.readFileSync(filePath);
-    const slug = path.basename(filename, '.md');
-
-    // Parse
-    let text = normalizeText(raw);
-    // Auto-convert .md links to absolute article URLs before parsing
-    text = text.replace(/\]\((\.?\/?)([^\)/]+)\.md\)/g, '](/posts/$2/)');
-    const parsed = matter(text);
-    let html = marked.parse(parsed.content);
-    const toc = [];
-    let headingIndex = 0;
-    html = html.replace(/<h([23])>(.*?)<\/h\1>/g, (match, level, text) => {
-      const id = 'heading-' + headingIndex++;
-      const plainText = text.replace(/<[^>]+>/g, '');
-      toc.push({ id, text: plainText, level: parseInt(level) });
-      return `<h${level} id="${id}">${text}</h${level}>`;
-    });
-    const excerpt = html.replace(/<[^>]+>/g, '').slice(0, 200);
-
-    const date = parsed.data.date
-      ? new Date(parsed.data.date).toISOString()
-      : fs.statSync(filePath).mtime.toISOString();
-    const tags = (parsed.data.tags || []).map(t => String(t).trim()).filter(Boolean);
-    const tagLinks = tags.map(toTagLink);
-
-    posts.push({
-      slug,
-      title: parsed.data.title || slug,
-      date,
-      dateDisplay: formatDate(date),
-      tags,
-      tagLinks,
-      excerpt,
-      content: html,
-      draft: parsed.data.draft === true,
-      toc,
-    });
-  }
-
-  // Filter drafts & sort by date desc
-  const published = posts.filter(p => !p.draft).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  // Link prev/next
-  for (let i = 0; i < published.length; i++) {
-    published[i].prev = published[i - 1] || null;
-    published[i].next = published[i + 1] || null;
-  }
-
-  console.log(`  Found ${mdFiles.length} files, ${published.length} published.`);
+  // Setup renderer
+  const render = createRenderer(CONFIG.templateDir);
 
   // Site context
   const siteCtx = {
@@ -221,165 +55,48 @@ async function build() {
     psb: CONFIG.psb,
   };
 
-  // --- Generate posts ---
-  const postsOut = path.join(CONFIG.outputDir, 'posts');
-  for (const post of published) {
-    const outDir = path.join(postsOut, post.slug);
-    ensureDir(outDir);
-    const html = render('post.html', { site: siteCtx, post }, '../../');
-    fs.writeFileSync(path.join(outDir, 'index.html'), html, 'utf-8');
-  }
-  console.log(`  Generated ${published.length} post pages.`);
+  // Generate tag pages first (returns allTags + archiveYears for index)
+  const { allTags, archiveYears } = generateTagPages(published, {
+    outputDir: CONFIG.outputDir,
+    render,
+    siteCtx,
+  });
 
-  // Prepare tagMap and sidebar data
-  const tagMap = {};
-  for (const post of published) {
-    for (const tag of post.tags) {
-      if (!tagMap[tag]) tagMap[tag] = { name: tag, slug: toSlug(tag), posts: [] };
-      tagMap[tag].posts.push(post);
-    }
-  }
-  const allTags = Object.values(tagMap)
-    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
-    .map(tag => ({ name: tag.name, slug: tag.slug, count: tag.posts.length }));
-  const archiveYears = [...new Set(published.map(p => new Date(p.date).getFullYear()))].sort((a, b) => b - a);
-
-  // --- Generate index pages ---
-  const totalPages = Math.max(1, Math.ceil(published.length / CONFIG.postsPerPage));
-  for (let page = 1; page <= totalPages; page++) {
-    const slice = published.slice((page - 1) * CONFIG.postsPerPage, page * CONFIG.postsPerPage);
-    const ctx = {
-      site: siteCtx,
-      posts: slice,
-      currentPage: page,
-      totalPages,
-      prevPage: page > 1 ? page - 1 : null,
-      nextPage: page < totalPages ? page + 1 : null,
-      allTags,
-      archiveYears,
-    };
-    const html = render('index.html', ctx, page === 1 ? '' : '../');
-    if (page === 1) {
-      fs.writeFileSync(path.join(CONFIG.outputDir, 'index.html'), html, 'utf-8');
-    } else {
-      const pDir = path.join(CONFIG.outputDir, 'page', String(page));
-      ensureDir(pDir);
-      fs.writeFileSync(path.join(pDir, 'index.html'), html, 'utf-8');
-    }
-  }
-  console.log(`  Generated ${totalPages} index pages.`);
-
-  const tagsOut = path.join(CONFIG.outputDir, 'tags');
-  ensureDir(tagsOut);
-
-  // Tag cloud
-  const tagList = Object.values(tagMap)
-    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
-    .map(tag => ({ name: tag.name, slug: tag.slug, count: tag.posts.length }));
-  fs.writeFileSync(
-    path.join(tagsOut, 'index.html'),
-    render('tags.html', { site: siteCtx, tags: tagList }, '../'),
-    'utf-8'
-  );
-
-  // Individual tag pages
-  for (const tagData of Object.values(tagMap)) {
-    const tDir = path.join(tagsOut, tagData.slug);
-    ensureDir(tDir);
-    fs.writeFileSync(
-      path.join(tDir, 'index.html'),
-      render('tag.html', { site: siteCtx, tag: tagData.name, posts: tagData.posts }, '../../'),
-      'utf-8'
-    );
-  }
-  console.log(`  Generated ${tagList.length} tag pages.`);
-
-  // --- Generate archive ---
-  const archive = [];
-  const yearMap = {};
-  for (const post of published) {
-    const y = new Date(post.date).getFullYear();
-    if (!yearMap[y]) yearMap[y] = [];
-    yearMap[y].push(post);
-  }
-  for (const year of Object.keys(yearMap).sort((a, b) => b - a)) {
-    archive.push({ year, posts: yearMap[year] });
-  }
-  const archDir = path.join(CONFIG.outputDir, 'archive');
-  ensureDir(archDir);
-  fs.writeFileSync(
-    path.join(archDir, 'index.html'),
-    render('archive.html', { site: siteCtx, archive }, '../'),
-    'utf-8'
-  );
-  console.log('  Generated archive page.');
-
-  // --- Generate RSS ---
-  const latest10 = published.slice(0, 10);
-  const rssItems = latest10
-    .map(
-      p => `
-    <item>
-      <title>${escapeXml(p.title)}</title>
-      <link>${CONFIG.siteUrl}/posts/${p.slug}/</link>
-      <guid>${CONFIG.siteUrl}/posts/${p.slug}/</guid>
-      <pubDate>${new Date(p.date).toUTCString()}</pubDate>
-      <description>${escapeXml(p.excerpt)}</description>
-    </item>`
-    )
-    .join('');
-
-  const rss = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-  <channel>
-    <title>${escapeXml(CONFIG.title)}</title>
-    <link>${CONFIG.siteUrl}/</link>
-    <description>${escapeXml(CONFIG.description)}</description>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <language>zh-CN</language>
-    ${rssItems}
-  </channel>
-</rss>`;
-  fs.writeFileSync(path.join(CONFIG.outputDir, 'feed.xml'), rss, 'utf-8');
-  console.log('  Generated RSS feed.');
-
-  // --- Copy assets ---
-  const assetsOut = path.join(CONFIG.outputDir, 'assets');
-  if (fs.existsSync(CONFIG.assetsDir)) {
-    copyRecursive(CONFIG.assetsDir, assetsOut);
-    console.log('  Copied assets.');
-  }
-  // Copy favicon to root
-  const faviconSrc = path.join(CONFIG.assetsDir, 'favicon.svg');
-  const faviconDest = path.join(CONFIG.outputDir, 'favicon.svg');
-  if (fs.existsSync(faviconSrc)) {
-    fs.copyFileSync(faviconSrc, faviconDest);
-    console.log('  Copied favicon.');
-  }
+  // Generate all pages
+  generatePosts(published, { outputDir: CONFIG.outputDir, render, siteCtx });
+  generateIndexPages(published, {
+    outputDir: CONFIG.outputDir,
+    render,
+    siteCtx,
+    allTags,
+    archiveYears,
+    postsPerPage: CONFIG.postsPerPage,
+  });
+  generateArchive(published, { outputDir: CONFIG.outputDir, render, siteCtx });
+  generateRss(published, {
+    outputDir: CONFIG.outputDir,
+    siteUrl: CONFIG.siteUrl,
+    title: CONFIG.title,
+    description: CONFIG.description,
+  });
+  copyAssets({ outputDir: CONFIG.outputDir, assetsDir: CONFIG.assetsDir });
 
   console.log(`✅ Build finished in ${Date.now() - startTime}ms.`);
-}
-
-function escapeXml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 // CLI
 const args = process.argv.slice(2);
 if (args.includes('--watch')) {
-  build().catch(console.error);
+  build().catch(err => {
+    console.error(err);
+  });
   const chokidar = require('chokidar');
   chokidar
     .watch([CONFIG.postsDir, CONFIG.templateDir, CONFIG.assetsDir], { ignoreInitial: true })
     .on('all', () => build().catch(console.error));
 } else {
   build().catch(err => {
-    console.error(err);
+    console.error('❌ Build failed:', err.message);
     process.exit(1);
   });
 }
