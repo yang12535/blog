@@ -131,7 +131,9 @@ function global:curl {
     }
 
     $verLine = (& $curlExe --version 2>$null | Select-Object -First 1)
-    $isOld = $verLine -match 'curl\s+7\.(5[0-9]|6[0-9]|7[0-9]|8[0-9])' -or $verLine -match 'curl\s+7\.4[0-9]'
+    $verMatch = $verLine -match 'curl\s+(\d+\.\d+\.\d+)'
+    $curlVersion = if ($verMatch) { $matches[1] } else { $null }
+    $isOld = $curlVersion -and ([version]$curlVersion -lt [version]"7.80.0")
     if ($isOld -and -not ($PassThruArgs -contains '--tcp-nodelay')) {
         $inject += "--tcp-nodelay"
     }
