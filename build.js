@@ -26,6 +26,17 @@ const CONFIG = {
   siteUrl: process.env.SITE_URL || 'https://example.com',
   icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
   psb: process.env.SITE_PSB || '',
+  // Giscus (GitHub Discussions) 评论配置
+  giscus: {
+    repo: 'yang12535/blog',
+    repoId: 'R_kgDOR75DVQ',
+    category: 'Announcements',
+    categoryId: 'DIC_kwDOR75DVc4C8ot-',
+    mapping: 'pathname',
+    reactionsEnabled: '1',
+    theme: 'preferred_color_scheme',
+    lang: 'zh-CN',
+  },
 };
 
 async function build() {
@@ -55,6 +66,7 @@ async function build() {
     url: CONFIG.siteUrl,
     icp: CONFIG.icp,
     psb: CONFIG.psb,
+    giscus: CONFIG.giscus,
   };
 
   // Generate tag pages first (returns allTags + archiveYears for index)
