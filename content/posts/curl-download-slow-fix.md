@@ -225,7 +225,7 @@ scoop install aria2
 aria2c 使用示例（8 线程，单文件分 8 段，走代理）：
 ```powershell
 aria2c -x 8 -s 8 -k 1M `
-  --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" `
+  --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36" `
   --all-proxy="http://127.0.0.1:10808" `
   "https://github.com/..."
 ```
@@ -495,9 +495,12 @@ if ($curlVersion) {
 
 if ($curlVersion -and (-not $isOld)) {
     Write-Host "[MODE] Modern curl $curlVersion (HTTP/2 + modern TLS)" -ForegroundColor Green
-    $curlArgs = @("-L", "--fail-with-body", "--tcp-nodelay", "--compressed", "-o", $OutFile)
+    $hasOutput = $PassThruArgs | Where-Object { $_ -match '^(-o|--output)(=|$)' }
+    $hasProxyArg = $PassThruArgs | Where-Object { $_ -match '^(-x|--proxy)(=|$)' }
+    $curlArgs = @("-L", "--fail-with-body", "--tcp-nodelay", "--compressed")
+    if (-not $hasOutput) { $curlArgs += @("-o", $OutFile) }
     if (-not $hasUA) { $curlArgs += @("-A", $BrowserUA) }
-    if ($Proxy) { $curlArgs += @("-x", $Proxy) }
+    if ($Proxy -and -not $hasProxyArg) { $curlArgs += @("-x", $Proxy) }
     $curlArgs += $PassThruArgs
     $curlArgs += $Url
     & $curlPath @curlArgs
@@ -512,9 +515,12 @@ if ($curlVersion) {
 
 if ($curlPath) {
     Write-Host "[MODE] Legacy curl optimized (fake UA + tcp-nodelay + retry + ssl-no-revoke if proxy)" -ForegroundColor Yellow
-    $curlArgs = @("-L", "--tcp-nodelay", "--retry", "3", "--retry-delay", "2", "-o", $OutFile)
+    $hasOutput = $PassThruArgs | Where-Object { $_ -match '^(-o|--output)(=|$)' }
+    $hasProxyArg = $PassThruArgs | Where-Object { $_ -match '^(-x|--proxy)(=|$)' }
+    $curlArgs = @("-L", "--tcp-nodelay", "--retry", "3", "--retry-delay", "2")
+    if (-not $hasOutput) { $curlArgs += @("-o", $OutFile) }
     if (-not $hasUA) { $curlArgs += @("-A", $BrowserUA) }
-    if ($Proxy) {
+    if ($Proxy -and -not $hasProxyArg) {
         $curlArgs += @("-x", $Proxy)
         # Windows legacy curl (Schannel) fails CRL check through proxy; disable it
         if ($isOld) { $curlArgs += "--ssl-no-revoke" }
@@ -609,8 +615,8 @@ curl --version
 
 ## 参考链接
 
-- [Windows 下安装 Kimi CLI，PowerShell 一键指令](https://bash.yang125.fun/posts/kimi-cli-install-win/)
-- [Windows 10 / 11 安装 winget](https://bash.yang125.fun/posts/winget-install-win/)
+- [Windows 下安装 Kimi CLI，PowerShell 一键指令](/posts/kimi-cli-install-win/)
+- [Windows 10 / 11 安装 winget](/posts/winget-install-win/)
 - curl 官方下载：[https://curl.se/windows/](https://curl.se/windows/)
 - aria2 官方文档：[https://aria2.github.io/](https://aria2.github.io/)
 - 清华 TUNA 镜像站：[https://mirrors.tuna.tsinghua.edu.cn/](https://mirrors.tuna.tsinghua.edu.cn/)

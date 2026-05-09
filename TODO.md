@@ -29,15 +29,15 @@
 
 ---
 
-## 🟡 P1 — 链接/代码问题（会报错或404）
+## 🟡 P1 — 链接/代码问题（本轮 PR 中已全部修复）
 
 | 文章 | 问题 | 位置 |
 |------|------|------|
 | `virtualbox-powershell-download-stutter.md` | 参考链接中纯文本条目缺超链接 | 参考链接第 2 条 |
-| `curl-download-slow-fix.md` | 同站文章使用外部域名（应相对路径） | 参考链接 |
-| `install-bun-china.md` | PowerShell 代码缺少 `&` 运算符 | Q4 方案 C |
-| `curl-download-slow-fix.md` | aria2c UA 不完整（两处） | 方案四示例、curl-fast.ps1 |
-| `virtualbox-powershell-download-stutter.md` | aria2c UA 不完整 | 方案五示例 |
+| `curl-download-slow-fix.md` | 同站文章使用外部域名（已改为相对路径） | 参考链接 |
+| `install-bun-china.md` | PowerShell 代码缺少 `&` 运算符（已补全） | Q4 方案 C |
+| `curl-download-slow-fix.md` | aria2c UA 不完整（已补全） | 方案四示例 |
+| `virtualbox-powershell-download-stutter.md` | aria2c UA 不完整（已确认完整） | 方案五示例 |
 
 ---
 
