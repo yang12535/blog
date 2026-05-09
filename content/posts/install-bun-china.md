@@ -59,7 +59,8 @@ if (-not $node -or -not $npm) {
         Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
         $nodeHash = "2c0cc97ec64c1e4111362e1e32e0547fd870e4d9c79ec844c117da583f21b386"
         if ((Get-FileHash $nodeOut -Algorithm SHA256).Hash -ne $nodeHash) {
-            throw "下载文件 SHA256 校验失败，可能已被拦截或损坏。"
+            Remove-Item $nodeOut -Force -ErrorAction SilentlyContinue
+            throw "下载文件 SHA256 校验失败，可能已被拦截或损坏。已删除损坏文件，建议重试。"
         }
     } catch {
         Write-Fail "下载失败: $_"

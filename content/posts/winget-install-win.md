@@ -96,7 +96,12 @@ $msixPath = "$temp\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 
 if (Test-Path $msixPath) {
     Write-Warn "检测到旧的临时文件，删除后重新下载..."
-    Remove-Item $msixPath -Force
+    try {
+        Remove-Item $msixPath -Force -ErrorAction Stop
+    } catch {
+        Write-Fail "无法删除旧临时文件（可能被占用），请关闭占用进程后重试：$_"
+        exit 1
+    }
 }
 Write-Info "下载 winget msixbundle..."
 $ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
@@ -111,7 +116,12 @@ $depZipPath = "$temp\DesktopAppInstaller_Dependencies.zip"
 
 if (Test-Path $depZipPath) {
     Write-Warn "检测到旧的临时文件，删除后重新下载..."
-    Remove-Item $depZipPath -Force
+    try {
+        Remove-Item $depZipPath -Force -ErrorAction Stop
+    } catch {
+        Write-Fail "无法删除旧临时文件（可能被占用），请关闭占用进程后重试：$_"
+        exit 1
+    }
 }
 Write-Info "下载依赖包..."
 $ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
