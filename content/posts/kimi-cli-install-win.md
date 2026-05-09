@@ -1,22 +1,10 @@
----
+﻿---
 title: Windows 一键安装 Kimi CLI
 date: 2026-04-14
 tags: [kimi-cli, windows, uv, powershell]
+
+
 ---
-
-> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。  
-> 复制 → 粘贴 → 回车，等一分钟就能用 `kimi`。
-
-* * *
-
-## 更新日志
-
-- **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
-  - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
-  - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
-
-* * *
 
 ## 环境信息
 
@@ -292,3 +280,21 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 * * *
 
 > 如果还有问题，欢迎在评论区留言，或在 [GitHub](https://github.com/your-repo) 提 Issue。
+
+---
+
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
+  - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
+  - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
+
+* * *
+
+---
+
+> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。  
+> 复制 → 粘贴 → 回车，等一分钟就能用 `kimi`。
+
+---

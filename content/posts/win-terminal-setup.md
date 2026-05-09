@@ -1,23 +1,10 @@
----
+﻿---
 title: Windows Terminal + PowerShell 7 一键安装配置指南
 date: 2026-04-29
 tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy]
+
+
 ---
-
-> 在 Windows 10/11 上零权限安装 Windows Terminal + PowerShell 7 + Oh My Posh，解决 GBK 乱码与默认终端难用的问题。适用于机房、还原卡、无管理员权限环境。
->
-> 复制脚本 → 粘贴 → 回车，获得一个带毛玻璃、多标签页、UTF-8、Nerd Font 的现代化终端。
-
-* * *
-
-## 更新日志
-
-- **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加临时文件大小校验函数 `Test-ValidFile`，不完整时自动删除重下
-  - 覆盖 PowerShell 7 MSI、Windows Terminal msixbundle/zip、Oh My Posh、Nerd Font、主题文件等全部下载节点
-  - 解决「执行到一半退出，再次运行时报文件损坏/安装包无法运行」的问题
-
-* * *
 
 ## 环境信息
 
@@ -639,3 +626,22 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
 > **代理站优先级**：默认先走 `gh-proxy.org`（目前最稳），失败自动切 `mirror.ghproxy.com` → `ghproxy.net` → `ghp.ci`，全部挂掉才走 GitHub 直连。
 >
 > 如果你那边某个代理特别快，可以把 `Get-WithProxy` 函数里 `$proxies` 数组的顺序调一下，把最快的放第一。
+
+---
+
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加临时文件大小校验函数 `Test-ValidFile`，不完整时自动删除重下
+  - 覆盖 PowerShell 7 MSI、Windows Terminal msixbundle/zip、Oh My Posh、Nerd Font、主题文件等全部下载节点
+  - 解决「执行到一半退出，再次运行时报文件损坏/安装包无法运行」的问题
+
+* * *
+
+---
+
+> 在 Windows 10/11 上零权限安装 Windows Terminal + PowerShell 7 + Oh My Posh，解决 GBK 乱码与默认终端难用的问题。适用于机房、还原卡、无管理员权限环境。
+>
+> 复制脚本 → 粘贴 → 回车，获得一个带毛玻璃、多标签页、UTF-8、Nerd Font 的现代化终端。
+
+---

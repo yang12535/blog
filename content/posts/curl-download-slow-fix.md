@@ -6,17 +6,11 @@ tags: [curl, windows, proxy, aria2, download, 国内镜像]
 
 * * *
 
-## 更新日志
-
-- **2026-05-08** 初版发布，附完整 `curl-fast.ps1` 源码
-  - 自动嗅探常见代理端口（10808 / 7890 / 10809 / 1080）
-  - 旧版 curl + 代理自动注入 `--ssl-no-revoke`
-  - 浏览器 UA 伪装 + tcp-nodelay
-  - curl 失败自动 fallback 到 aria2c 多线程下载
-
 > 浏览器下载 10 MB/s，curl 只有 1 Mbps？这不是你的网有问题，是 Windows 自带的 curl 太老了。
 >
 > 本文提供从「临时缓解」到「彻底根治」的完整方案，含自动代理嗅探、UA 伪装、证书错误修复，以及 aria2c 多线程兜底。复制脚本 → 粘贴 → 回车即可。
+>
+> **注意**：不同镜像站对 UA 的检测策略不同。实测中科大镜像站对 Chrome 124 直接返回 403，更新为 Chrome 132 后可通过第一道检测（但部分站点仍有 JS 验证，curl 无法绕过）。
 
 * * *
 
@@ -76,13 +70,13 @@ Release-Date: 2017-11-14, security patched: 2019-11-05
 ```powershell
 # 国内镜像站（解决 UA 限速 + 提升 TCP 效率）
 curl.exe -L --tcp-nodelay `
-  -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" `
+  -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36" `
   -o output.file `
   "https://下载地址"
 
 # 境外站点（走代理 + 禁用证书吊销检查，解决 0x80092013）
 curl.exe -L --tcp-nodelay --ssl-no-revoke `
-  -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" `
+  -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36" `
   -x http://127.0.0.1:10808 `
   -o output.file `
   "https://github.com/..."
@@ -105,27 +99,30 @@ curl.exe -L --tcp-nodelay --ssl-no-revoke `
 将以下内容添加到 PowerShell `$Profile`，以后直接输入 `curl` 就会自动带优化参数：
 
 ```powershell
-# 打开 Profile 文件
+# Profile 文件默认不存在，先创建目录再打开
+$profileDir = Split-Path -Parent $PROFILE
+if (-not (Test-Path $profileDir)) {
+    New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
+}
 notepad $PROFILE
 ```
 
 粘贴以下内容：
 
 ```powershell
-$BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+$BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
 
 # 移除 PowerShell 默认的 curl -> Invoke-WebRequest 别名
 if (Get-Alias curl -ErrorAction SilentlyContinue) { Remove-Item Alias:\curl -Force }
 
 function global:curl {
-    [CmdletBinding()]
-    param([Parameter(ValueFromRemainingArguments=$true)]$PassThruArgs)
-
     $curlExe = Get-Command curl.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
     if (-not $curlExe) {
         Write-Error "curl.exe not found in PATH"
         return
     }
+
+    $PassThruArgs = $args
 
     $hasUA = $PassThruArgs | Where-Object { $_ -match '^(-A|--user-agent)$' }
     $inject = @()
@@ -143,7 +140,13 @@ function global:curl {
 }
 ```
 
-保存后**重新打开 PowerShell**，输入 `curl --version` 测试。此时直接输入 `curl` 就是优化版，无需每次敲长参数。
+保存后**关闭当前 PowerShell 窗口，重新打开一个新窗口**。如果打开时报错「禁止运行脚本」，先执行：
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+```
+
+然后**再重新打开**一个 PowerShell 窗口，输入 `curl --version` 测试。此时直接输入 `curl` 就是优化版，无需每次敲长参数。
 
 ---
 
@@ -294,6 +297,32 @@ aria2c 默认会校验文件完整性。如果怀疑损坏，加 `--check-integr
 curl.exe -o file.zip "https://..."
 ```
 
+### Q8：打开 PowerShell 报错「无法加载 Profile，禁止运行脚本」？
+
+Windows 默认执行策略为 `Restricted`，会阻止 Profile 和 `.ps1` 脚本运行。修改当前用户的执行策略即可：
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+```
+
+执行后**关闭窗口，重新打开**生效。若当前窗口急需使用，也可临时绕过：
+```powershell
+powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..."
+```
+
+### Q9：配置完 Profile 后，`curl -o file` 报错「参数名称 o 具有二义性」？
+
+早期版本使用了 `[CmdletBinding()] + ValueFromRemainingArguments`，导致 `-o` 被 PowerShell 误识别为 `-OutVariable` 的缩写。当前文章代码已修复：去掉 `[CmdletBinding()]`，改用简单函数 + `$args` 收集参数。如果你复制的是旧代码，请按本文最新代码重新粘贴。
+
+### Q10：中科大镜像站返回 403，清华 TUNA 却能正常下载？
+
+中科大镜像站使用了 Cloudflare WAF，对 UA 版本和浏览器环境有检测：
+- `curl/7.55.1`（原始 UA）→ **403** 直接拦截
+- Chrome 124 → **403** Cloudflare 拦截页
+- Chrome 132 → 200 但返回 JS 验证页（curl 无法执行 JavaScript）
+
+**这是服务端层面的限制**，和 curl 参数优化无关。遇到这种情况，**换镜像站即可**（清华 TUNA、华为云、阿里云等）。
+
 ---
 
 ## 附录：常见代理端口速查
@@ -318,7 +347,7 @@ curl.exe -o file.zip "https://..."
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Position=0)]
     [string]$Url,
     [Parameter(Position=1)]
     [string]$OutFile,
@@ -327,7 +356,26 @@ param(
     [switch]$ForceAria2
 )
 
-$BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+$BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+
+if (-not $Url) {
+    Write-Host ""
+    Write-Host "Usage: curl-fast.ps1 <Url> [-OutFile <path>] [-Proxy <proxy>] [-Threads <n>] [-ForceAria2]" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Url         Download URL (required)" -ForegroundColor White
+    Write-Host "  OutFile     Save path (optional, auto-detected from URL)" -ForegroundColor White
+    Write-Host "  Proxy       Proxy address (optional, auto-detect common ports)" -ForegroundColor White
+    Write-Host "  Threads     aria2c thread count (default: 8)" -ForegroundColor White
+    Write-Host "  ForceAria2  Force aria2c multi-thread download" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Example:" -ForegroundColor Yellow
+    Write-Host '  .\curl-fast.ps1 "https://example.com/file.zip"' -ForegroundColor Gray
+    Write-Host '  .\curl-fast.ps1 "https://example.com/file.zip" -OutFile "C:\Downloads\file.zip"' -ForegroundColor Gray
+    Write-Host '  .\curl-fast.ps1 "https://example.com/file.zip" -Proxy "http://127.0.0.1:7890"' -ForegroundColor Gray
+    Write-Host '  .\curl-fast.ps1 "https://example.com/file.zip" -ForceAria2' -ForegroundColor Gray
+    Write-Host ""
+    exit 0
+}
 
 if (-not $OutFile) {
     $uri = [System.Uri]$Url
@@ -472,6 +520,47 @@ try {
 > ```powershell
 > powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://下载链接"
 > ```
+
+---
+
+## 附录：本地验证
+
+配置完成后，在新开的 PowerShell 窗口里执行以下命令验证是否生效：
+
+```powershell
+# 1. 确认 curl 已解析为 Profile 函数
+Get-Command curl
+# 期望输出 CommandType 为 Function
+
+# 2. 确认 UA 已注入（看请求头里的 User-Agent）
+curl -v -o nul https://www.baidu.com 2>&1 | Select-String "User-Agent"
+# 期望包含 Chrome 的 UA，而不是 curl/7.55.1
+
+# 3. 确认 -o 参数不报错
+curl -o test.html https://www.baidu.com
+# 正常下载，不提示「参数名称 o 具有二义性」
+
+# 4. 确认 tcp-nodelay 已注入（旧版 curl）
+curl --version
+# 若版本低于 7.80，上述下载会自动附加 --tcp-nodelay
+```
+
+---
+
+## 更新日志
+
+- **2026-05-09** 兼容性修复（在全新 Windows 环境实测后修正）
+  - `$PROFILE` 目录默认不存在，补充自动创建步骤
+  - `curl-fast.ps1` 去掉 `Mandatory=$true`，右键运行无参数时显示用法而非卡住
+  - Profile 函数去掉 `[CmdletBinding()]`，修复 `-o` 参数被误识别为 `-OutVariable` 的问题
+  - 补充 PowerShell 执行策略修改指引
+  - 帮助信息改为英文（避免 PowerShell 5.1 GBK 编码下中文乱码）
+  - UA 版本更新为 Chrome 132（实测部分镜像站对旧版 UA 直接 403）
+- **2026-05-08** 初版发布，附完整 `curl-fast.ps1` 源码
+  - 自动嗅探常见代理端口（10808 / 7890 / 10809 / 1080）
+  - 旧版 curl + 代理自动注入 `--ssl-no-revoke`
+  - 浏览器 UA 伪装 + tcp-nodelay
+  - curl 失败自动 fallback 到 aria2c 多线程下载
 
 ---
 
