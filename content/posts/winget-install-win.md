@@ -4,8 +4,6 @@ date: 2026-05-06
 tags: [winget, windows, powershell, github-proxy, 机房]
 ---
 
-# Windows 10 / 11 安装 winget（无 Microsoft Store 方案）
-
 ## 环境信息
 
 - **系统**：Windows 10 19041+ / Windows 11（64 位）
@@ -20,7 +18,7 @@ tags: [winget, windows, powershell, github-proxy, 机房]
 ## 中间的坑
 
 | 坑 | 原因 |
-|---|---|
+| --- | --- |
 | **Microsoft Store 被移除** | 精简版系统、LTSC、ghost 封装版默认没有商店，winget 随商店一起消失 |
 | **AppX 依赖地狱** | msixbundle 安装需要 VCLibs + UWPDesktop + WindowsAppRuntime 三个框架包，缺一不可 |
 | **依赖版本号漂移** | 不同 winget 版本对应的 VCLibs/Runtime 版本号不同，硬编码文件名会导致找不到依赖 |
@@ -271,7 +269,7 @@ $version = $release.tag_name
 msixbundle 是 winget 的 AppX 分发包（约 200MB），依赖包是一个 zip（约 90MB）。脚本内置了**多级代理自动 fallback**：
 
 | 优先级 | 地址 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | 1 | GitHub 直链 | 网络通畅时速度最快 |
 | 2 | `gh-proxy.org` | 国内常用代理 |
 | 3 | `mirror.ghproxy.com` | 备用代理 |
@@ -400,8 +398,6 @@ winget list                                       # 查看已安装
 winget uninstall Microsoft.VisualStudioCode       # 卸载
 ```
 
-
-
 ---
 
 ## 参考链接
@@ -426,7 +422,5 @@ winget uninstall Microsoft.VisualStudioCode       # 卸载
   - `tar` 解压失败时自动 fallback 到 `Expand-Archive`
   - 完善 `Add-AppxPackage` 错误捕获，区分"已安装更高版本"与真正安装失败
   - 验证阶段增加 `WindowsApps` 绝对路径兜底扫描
-
----
 
 ---

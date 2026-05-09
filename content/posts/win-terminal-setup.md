@@ -3,7 +3,6 @@ title: Windows Terminal + PowerShell 7 一键安装配置指南
 date: 2026-04-29
 tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy]
 
-
 ---
 
 ## 环境信息
@@ -16,7 +15,7 @@ tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy
 | **目标** | PowerShell 7 + Windows Terminal + Oh My Posh 美化 + 强制 UTF-8 |
 | **网络** | 能访问 GitHub 即可（Release 直链） |
 
-* * *
+---
 
 ## 一键脚本（复制即用）
 
@@ -211,7 +210,7 @@ Write-Host ">>> 完成！双击桌面的 'Terminal' 快捷方式即可使用。"
 
 > **提示**：脚本运行期间请不要关闭窗口。由于是从 GitHub 下载，若网络较慢请耐心等待。
 
-* * *
+---
 
 ## 分步详解
 
@@ -257,7 +256,7 @@ Invoke-WebRequest -Uri "https://github.com/.../posh-windows-amd64.exe" -OutFile 
 ```
 
 > **为什么用 `powerlevel10k_rainbow`？**
-> 
+>
 > 这个主题在 Windows 上兼容性最好，颜色分段清晰，能显示 git 分支、执行时间、错误状态码，且不需要额外图标字体也能基本可用。
 
 ### 4. 安装 JetBrainsMono Nerd Font
@@ -326,7 +325,7 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Na
 | **字体文件** | `%LOCALAPPDATA%\Microsoft\Windows\Fonts\` |
 | **Unpackaged Terminal** | `%LOCALAPPDATA%\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe` |
 
-* * *
+---
 
 ## 常见问题 FAQ
 
@@ -395,7 +394,7 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Na
 
 在 Terminal 的标签页下拉菜单里可以直接选 **Windows PowerShell**，或者按 `Ctrl + Shift + 5` 打开新标签选择配置文件。
 
-* * *
+---
 
 ## 效果预览
 
@@ -408,11 +407,11 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Na
 - **UTF-8 全程**：`ls`、`git`、`python` 中文输出不再乱码
 - **JetBrainsMono NF**：等宽编程字体，带连字和图标支持
 
-* * *
+---
 
 > 如果还有问题，欢迎根据实际情况调整脚本中的下载链接和路径。
 
-* * *
+---
 
 ## 附录：国内 GitHub 代理版脚本
 
@@ -635,8 +634,6 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
   - 增加临时文件大小校验函数 `Test-ValidFile`，不完整时自动删除重下
   - 覆盖 PowerShell 7 MSI、Windows Terminal msixbundle/zip、Oh My Posh、Nerd Font、主题文件等全部下载节点
   - 解决「执行到一半退出，再次运行时报文件损坏/安装包无法运行」的问题
-
-* * *
 
 ---
 

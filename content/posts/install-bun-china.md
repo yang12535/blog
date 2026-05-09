@@ -3,7 +3,6 @@ title: 国内网络环境 Windows 安装 Bun（TUNA + 阿里云）
 date: 2026-05-06
 tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 
-
 ---
 
 ## 环境信息
@@ -17,7 +16,7 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 | **目标** | Bun 1.x 可运行，且后续 `bun install` 走国内源 |
 | **网络** | 无法稳定访问 GitHub，但可访问国内镜像站 |
 
-* * *
+---
 
 ## 一键脚本（复制即用）
 
@@ -214,7 +213,7 @@ if ($bunCmd -or $bunExe) {
 
 > **提示**：脚本运行期间请不要关闭窗口。TUNA 镜像下载速度通常在 5~20MB/s，若卡住超过 3 分钟请检查网络。
 
-* * *
+---
 
 ## 分步详解
 
@@ -351,7 +350,7 @@ registry = "https://registry.npmmirror.com/"
 
 这样 `bun install` 会明确指向阿里云镜像。你也可以在项目根目录下放一个不带点的 `bunfig.toml` 来覆盖全局配置。
 
-* * *
+---
 
 ## 常见问题 FAQ
 
@@ -469,7 +468,7 @@ $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
 或新开一个 PowerShell 窗口（环境变量刷新后生效），一键脚本已内置此步骤。
 
-* * *
+---
 
 ## 附录：无 Node.js 方案（ghproxy 直装）
 
@@ -538,8 +537,6 @@ Write-Host ">>> 完成！Bun 已安装且配置了国内源。" -ForegroundColor
   - 增加 `bun.exe` 多级定位（常规路径 → `LOCALAPPDATA` → 递归搜索）
   - 扩大 `bun.ps1` / `bunx.ps1` wrapper 清理范围至 `LOCALAPPDATA`
   - 安装完成后即时追加 PATH 并执行 `bun --version` 验证
-
-* * *
 
 ---
 
