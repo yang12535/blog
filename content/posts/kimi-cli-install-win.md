@@ -2,36 +2,23 @@
 title: Windows 一键安装 Kimi CLI
 date: 2026-04-14
 tags: [kimi-cli, windows, uv, powershell]
+
 ---
-
-> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。  
-> 复制 → 粘贴 → 回车，等一分钟就能用 `kimi`。
-
-* * *
-
-## 更新日志
-
-- **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
-  - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
-  - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
-
-* * *
 
 ## 环境信息
 
 | 项目 | 说明 |
-|------|------|
+| ------ | ------ |
 | **系统** | Windows 10 / Windows 11（64 位） |
 | **权限** | 普通用户即可（无需管理员，安装过程 0 弹窗） |
 | **目标** | 一行 PowerShell 完成 Python 3.12 + uv + kimi-cli 全套环境 |
 | **网络** | 国内环境，使用华为云 / 清华 TUNA / 阿里云镜像加速 |
 
-* * *
+---
 
 ## 完整命令（复制即用）
 
-以管理员身份打开 PowerShell，复制粘贴执行：
+以普通用户身份打开 PowerShell，复制粘贴执行：
 
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Set-ExecutionPolicy Bypass -Scope Process -Force;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue;Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue;$pyDir="$env:LOCALAPPDATA\Programs\Python\Python312";$pyExe="$pyDir\python.exe";if(-not(Test-Path $pyExe)){Write-Host ">>> 安装 Python 3.12 (华为云镜像)..." -ForegroundColor Cyan;$i="$env:TEMP\py.exe";if((Test-Path $i)-and((Get-Item $i).Length -lt 25MB)){Remove-Item $i -Force};if(-not(Test-Path $i)){Invoke-WebRequest -Uri "https://repo.huaweicloud.com/python/3.12.4/python-3.12.4-amd64.exe" -OutFile $i -UseBasicParsing};Start-Process $i -ArgumentList "/quiet PrependPath=1 Include_test=0 InstallAllUsers=0" -Wait;if(-not(Test-Path $pyExe)){Write-Host ">>> Python 安装失败，可能是安装包损坏。请手动删除 $i 后重试" -ForegroundColor Red;Read-Host "按回车退出";exit 1}};$env:Path="$pyDir;$pyDir\Scripts;$env:Path";Write-Host ">>> 安装 uv (清华源)..." -ForegroundColor Cyan;python -m pip install uv -i https://pypi.tuna.tsinghua.edu.cn/simple/ --user --quiet;[Environment]::SetEnvironmentVariable("UV_INDEX_URL","https://pypi.tuna.tsinghua.edu.cn/simple/","User");[Environment]::SetEnvironmentVariable("UV_EXTRA_INDEX_URL","https://mirrors.aliyun.com/pypi/simple/","User");$env:UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple/";$env:UV_EXTRA_INDEX_URL="https://mirrors.aliyun.com/pypi/simple/";Write-Host ">>> 安装 kimi-cli..." -ForegroundColor Cyan;python -m uv tool install kimi-cli --force;$uPath=[Environment]::GetEnvironmentVariable("Path","User");$uvUserBin="$env:APPDATA\Python\Python312\Scripts";$uvToolBin="$env:USERPROFILE\.local\bin";if($uPath -notlike "*$uvUserBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvUserBin","User")};if($uPath -notlike "*$uvToolBin*"){[Environment]::SetEnvironmentVariable("Path","$uPath;$uvToolBin","User")};$env:Path="$env:Path;$uvUserBin;$uvToolBin";Write-Host ">>> 完成！" -ForegroundColor Green;python --version;python -m uv --version;kimi --version;Write-Host "`n✓ 环境变量已永久保存" -ForegroundColor Green;Read-Host "按回车退出"
@@ -39,7 +26,7 @@ tags: [kimi-cli, windows, uv, powershell]
 
 > **提示**：脚本运行期间请不要关闭窗口，最后会打印版本号表示成功。
 
-* * *
+---
 
 ## 分步详解
 
@@ -103,7 +90,7 @@ if(-not(Test-Path $pyExe)){
 ```
 
 | 参数 | 含义 |
-|------|------|
+| ------ | ------ |
 | `/quiet` | 静默安装，全程无弹窗 |
 | `PrependPath=1` | 自动将 Python 加入用户 PATH |
 | `Include_test=0` | 不安装测试套件，节省空间与时间 |
@@ -146,7 +133,7 @@ $env:UV_EXTRA_INDEX_URL="https://mirrors.aliyun.com/pypi/simple/"
 ```
 
 | 变量 | 作用 |
-|------|------|
+| ------ | ------ |
 | `UV_INDEX_URL` | uv 默认 PyPI 主源 → **清华 TUNA** |
 | `UV_EXTRA_INDEX_URL` | uv 备用源 → **阿里云**，主源抽风时自动 fallback |
 
@@ -199,12 +186,12 @@ kimi --version            # kimi-cli x.x.x
 三条命令都输出版本号，说明全套环境已就绪。  
 **关闭当前 PowerShell，重新开一个普通窗口**，输入 `kimi` 即可开始使用。
 
-* * *
+---
 
 ## 装完后，文件都在哪？
 
 | 组件 | 实际路径 | 说明 |
-|------|----------|------|
+| ------ | ---------- | ------ |
 | **Python 3.12** | `C:\Users\<用户名>\AppData\Local\Programs\Python\Python312` | 用户级安装，无管理员也能用 |
 | **uv 本体** | `C:\Users\<用户名>\AppData\Roaming\Python\Python312\Scripts\uv.exe` | `pip install --user` 安装的位置 |
 | **kimi-cli** | `C:\Users\<用户名>\.local\bin\kimi.exe` | uv 工具链管理的二进制入口 |
@@ -212,7 +199,7 @@ kimi --version            # kimi-cli x.x.x
 
 > 想确认某个命令装到哪了？在 PowerShell 里用 `(Get-Command kimi).Source` 或 `where kimi` 查看。
 
-* * *
+---
 
 ## 常见问题 FAQ
 
@@ -263,7 +250,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 2. 查看是否在下载 Python 安装包（临时文件 `%TEMP%\py.exe`）。
 3. 如果是公司/校园网，确认代理是否影响了 PowerShell 的网络请求。
 
-* * *
+---
 
 ## 不想用一键脚本？手动安装也行
 
@@ -289,6 +276,22 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
    - `%USERPROFILE%\.local\bin`（kimi 等 uv 工具）
 7. **验证**：新开 PowerShell，输入 `kimi --version`。
 
-* * *
+---
 
 > 如果还有问题，欢迎在评论区留言，或在 [GitHub](https://github.com/your-repo) 提 Issue。
+
+---
+
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
+  - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
+  - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
+
+---
+
+> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。  
+> 复制 → 粘贴 → 回车，等一分钟就能用 `kimi`。
+
+---

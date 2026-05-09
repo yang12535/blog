@@ -4,23 +4,6 @@ date: 2026-05-06
 tags: [winget, windows, powershell, github-proxy, 机房]
 ---
 
-# Windows 10 / 11 安装 winget（无 Microsoft Store 方案）
-
-## 更新日志
-
-- **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加 msixbundle / 依赖包 zip 的临时文件大小校验，不完整时自动删除重下
-  - 解决「执行到一半退出，再次运行时报文件损坏 / 0x80073CF3 部署失败」的问题
-
-- **2026-05-06** 增强健壮性，修复依赖安装失败问题：
-  - 修复 `tar.exe -C` 解压失败（缺少目标目录），增加 `New-Item -Force` 预创建
-  - 依赖包改用通配符匹配（`Microsoft.VCLibs.140.00_*.appx` 等），避免版本号漂移导致硬编码失效
-  - 增加多级代理下载 fallback（`gh-proxy.org` → `mirror.ghproxy.com` → `ghproxy.net`）
-  - 增加下载文件大小校验，防止 CDN 返回错误页面导致安装包损坏
-  - `tar` 解压失败时自动 fallback 到 `Expand-Archive`
-  - 完善 `Add-AppxPackage` 错误捕获，区分"已安装更高版本"与真正安装失败
-  - 验证阶段增加 `WindowsApps` 绝对路径兜底扫描
-
 ## 环境信息
 
 - **系统**：Windows 10 19041+ / Windows 11（64 位）
@@ -35,7 +18,7 @@ tags: [winget, windows, powershell, github-proxy, 机房]
 ## 中间的坑
 
 | 坑 | 原因 |
-|---|---|
+| --- | --- |
 | **Microsoft Store 被移除** | 精简版系统、LTSC、ghost 封装版默认没有商店，winget 随商店一起消失 |
 | **AppX 依赖地狱** | msixbundle 安装需要 VCLibs + UWPDesktop + WindowsAppRuntime 三个框架包，缺一不可 |
 | **依赖版本号漂移** | 不同 winget 版本对应的 VCLibs/Runtime 版本号不同，硬编码文件名会导致找不到依赖 |
@@ -286,7 +269,7 @@ $version = $release.tag_name
 msixbundle 是 winget 的 AppX 分发包（约 200MB），依赖包是一个 zip（约 90MB）。脚本内置了**多级代理自动 fallback**：
 
 | 优先级 | 地址 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | 1 | GitHub 直链 | 网络通畅时速度最快 |
 | 2 | `gh-proxy.org` | 国内常用代理 |
 | 3 | `mirror.ghproxy.com` | 备用代理 |
@@ -422,3 +405,22 @@ winget uninstall Microsoft.VisualStudioCode       # 卸载
 - winget 官方仓库：[https://github.com/microsoft/winget-cli](https://github.com/microsoft/winget-cli)
 - gh-proxy.org（GitHub 代理）：[https://gh-proxy.org](https://gh-proxy.org)
 - Microsoft 文档 - 安装 winget：[https://learn.microsoft.com/zh-cn/windows/package-manager/winget/](https://learn.microsoft.com/zh-cn/windows/package-manager/winget/)
+
+---
+
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加 msixbundle / 依赖包 zip 的临时文件大小校验，不完整时自动删除重下
+  - 解决「执行到一半退出，再次运行时报文件损坏 / 0x80073CF3 部署失败」的问题
+
+- **2026-05-06** 增强健壮性，修复依赖安装失败问题：
+  - 修复 `tar.exe -C` 解压失败（缺少目标目录），增加 `New-Item -Force` 预创建
+  - 依赖包改用通配符匹配（`Microsoft.VCLibs.140.00_*.appx` 等），避免版本号漂移导致硬编码失效
+  - 增加多级代理下载 fallback（`gh-proxy.org` → `mirror.ghproxy.com` → `ghproxy.net`）
+  - 增加下载文件大小校验，防止 CDN 返回错误页面导致安装包损坏
+  - `tar` 解压失败时自动 fallback 到 `Expand-Archive`
+  - 完善 `Add-AppxPackage` 错误捕获，区分"已安装更高版本"与真正安装失败
+  - 验证阶段增加 `WindowsApps` 绝对路径兜底扫描
+
+---

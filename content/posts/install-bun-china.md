@@ -2,29 +2,8 @@
 title: 国内网络环境 Windows 安装 Bun（TUNA + 阿里云）
 date: 2026-05-06
 tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
+
 ---
-
-> 在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。
->
-> 复制脚本 → 粘贴 → 回车，获得一个带国内镜像加速的 Bun 运行时。
-
-* * *
-
-## 更新日志
-
-- **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加 Node.js MSI 临时文件大小校验，不完整时自动删除重下
-  - 解决「执行到一半退出，再次运行时报 `node/npm 找不到`」的问题
-
-- **2026-05-06** 增强健壮性，全面适配 Windows PowerShell 5.1：
-  - 修复 `Restricted` 执行策略下 `npm.ps1` 被拦截的问题，全程显式调用 `npm.cmd`
-  - 增加 Node.js MSI 下载大小校验与 `msiexec` 退出码检查
-  - 扩充 Node.js / npm 路径回退，新增 `NVM_SYMLINK`、`NVM_HOME`、`Program Files (x86)` 等扫描目录
-  - 增加 `bun.exe` 多级定位（常规路径 → `LOCALAPPDATA` → 递归搜索）
-  - 扩大 `bun.ps1` / `bunx.ps1` wrapper 清理范围至 `LOCALAPPDATA`
-  - 安装完成后即时追加 PATH 并执行 `bun --version` 验证
-
-* * *
 
 ## 环境信息
 
@@ -37,7 +16,7 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 | **目标** | Bun 1.x 可运行，且后续 `bun install` 走国内源 |
 | **网络** | 无法稳定访问 GitHub，但可访问国内镜像站 |
 
-* * *
+---
 
 ## 一键脚本（复制即用）
 
@@ -234,7 +213,7 @@ if ($bunCmd -or $bunExe) {
 
 > **提示**：脚本运行期间请不要关闭窗口。TUNA 镜像下载速度通常在 5~20MB/s，若卡住超过 3 分钟请检查网络。
 
-* * *
+---
 
 ## 分步详解
 
@@ -371,7 +350,7 @@ registry = "https://registry.npmmirror.com/"
 
 这样 `bun install` 会明确指向阿里云镜像。你也可以在项目根目录下放一个不带点的 `bunfig.toml` 来覆盖全局配置。
 
-* * *
+---
 
 ## 常见问题 FAQ
 
@@ -489,7 +468,7 @@ $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
 或新开一个 PowerShell 窗口（环境变量刷新后生效），一键脚本已内置此步骤。
 
-* * *
+---
 
 ## 附录：无 Node.js 方案（ghproxy 直装）
 
@@ -542,3 +521,27 @@ Write-Host ">>> 完成！Bun 已安装且配置了国内源。" -ForegroundColor
 > **代理站优先级**：默认先走 `gh-proxy.org`，失败自动切 `mirror.ghproxy.com` → `ghproxy.net` → `ghp.ci`，全部挂掉才走 GitHub 直连。
 >
 > 该方案**不依赖 Node.js**，但需要从 GitHub 下载安装脚本和二进制，如果代理站全部失效会安装失败。相比之下，主文的 "Node.js → npm" 方案更稳定可靠。
+
+---
+
+## 更新日志
+
+- **2026-05-08** 修复断点续传导致的安装失败：
+  - 增加 Node.js MSI 临时文件大小校验，不完整时自动删除重下
+  - 解决「执行到一半退出，再次运行时报 `node/npm 找不到`」的问题
+
+- **2026-05-06** 增强健壮性，全面适配 Windows PowerShell 5.1：
+  - 修复 `Restricted` 执行策略下 `npm.ps1` 被拦截的问题，全程显式调用 `npm.cmd`
+  - 增加 Node.js MSI 下载大小校验与 `msiexec` 退出码检查
+  - 扩充 Node.js / npm 路径回退，新增 `NVM_SYMLINK`、`NVM_HOME`、`Program Files (x86)` 等扫描目录
+  - 增加 `bun.exe` 多级定位（常规路径 → `LOCALAPPDATA` → 递归搜索）
+  - 扩大 `bun.ps1` / `bunx.ps1` wrapper 清理范围至 `LOCALAPPDATA`
+  - 安装完成后即时追加 PATH 并执行 `bun --version` 验证
+
+---
+
+> 在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。
+>
+> 复制脚本 → 粘贴 → 回车，获得一个带国内镜像加速的 Bun 运行时。
+
+---
