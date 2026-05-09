@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 
 {% block title %}标签 - {{ site.title }}{% endblock %}
+{% block desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
+{% block canonical %}{{ site.url }}/tags/{% endblock %}
+{% block og_title %}标签 - {{ site.title }}{% endblock %}
+{% block og_desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
+{% block og_url %}{{ site.url }}/tags/{% endblock %}
+{% block tw_title %}标签 - {{ site.title }}{% endblock %}
+{% block tw_desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
 
 {% block sidebar %}
 <aside class="sidebar-left">

@@ -11,6 +11,9 @@
   "keywords": ["blog", "ssg", "edgeone", "static"],
   "author": "",
   "license": "MIT",
+  "devDependencies": {
+    "chokidar": "^3.6.0"
+  },
   "dependencies": {
     "marked": "^14.1.2",
     "gray-matter": "^4.0.3",
