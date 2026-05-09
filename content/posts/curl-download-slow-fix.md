@@ -304,7 +304,7 @@ curl.exe -v -x http://127.0.0.1:10808 https://httpbin.org/get
 
 ### Q6：aria2c 下载完成后文件损坏？
 
-aria2c 默认会校验文件完整性。如果怀疑损坏，加 `--check-integrity=true` 参数重新下载。绝大多数情况下 aria2c 的分段合并是可靠的。
+aria2c **默认不校验**文件完整性（`--check-integrity` 默认值为 `false`，且对普通 HTTP(S) 下载无效）。如果怀疑损坏，可手动比对校验值，或使用 `--checksum=sha-256=<hash>` 在下载时自动校验。绝大多数情况下 aria2c 的分段合并是可靠的。
 
 ### Q7：不想全局替换 curl，只想临时用？
 

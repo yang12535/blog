@@ -169,7 +169,12 @@ Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' 
 Get-NetFirewallRule -Name "RemoteDesktop-UserMode-In-TCP", "RemoteDesktop-UserMode-In-UDP" -ErrorAction SilentlyContinue | Enable-NetFirewallRule
 ```
 
-然后在宿主机上用 `mstsc` 连接 `10.0.2.15`。RDP 的显示协议（RDP 10）有自己的压缩和缓存机制，控制台渲染效率远高于 VirtualBox 原生窗口。
+然后在宿主机上连接虚拟机。VirtualBox 默认 NAT 模式下，宿主机无法直接访问来宾机的 `10.0.2.15`，你需要先选择以下任一方式：
+
+- **方式 A（推荐）**：在 VirtualBox 设置 → 网络 → 高级 → 端口转发 中添加一条规则：`主机端口 13389 → 来宾 IP 10.0.2.15:3389`，然后在宿主机上用 `mstsc 127.0.0.1:13389` 连接。
+- **方式 B**：将虚拟机网卡改为**桥接网卡**，这样虚拟机会获得与宿主机同网段的独立 IP，直接用 `mstsc <虚拟机IP>` 连接。
+
+RDP 的显示协议（RDP 10）有自己的压缩和缓存机制，控制台渲染效率远高于 VirtualBox 原生窗口。
 
 实测：**同一台虚拟机，同一命令，通过 RDP 连接后 IWR 下载速度恢复正常（4+ MB/s）**，即使 `$ProgressPreference = 'Continue'`。
 

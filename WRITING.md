@@ -150,8 +150,7 @@ graph TD
 
 ### 4. 构建验证
 ```bash
-cd blog
-node build.js
+npm run build
 ```
 
 确保无报错，新文章正确生成 `dist/posts/<slug>/index.html`。
