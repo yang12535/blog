@@ -17,13 +17,13 @@ const { ensureDir } = require('./lib/utils');
 // Config
 const CONFIG = {
   title: 'Bogl Blog',
-  description: 'A lightweight static blog powered by Bogl.',
+  description: 'Bogl Blog - 分享 Windows、Linux、开发工具等实用技术教程与一键安装脚本。',
   postsDir: path.join(__dirname, 'content', 'posts'),
   outputDir: path.join(__dirname, 'dist'),
   templateDir: path.join(__dirname, 'src', 'templates'),
   assetsDir: path.join(__dirname, 'src', 'assets'),
   postsPerPage: 10,
-  siteUrl: process.env.SITE_URL || 'https://example.com',
+  siteUrl: (process.env.SITE_URL || 'https://bash.yang125.fun').replace(/\/+$/, ''),
   icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
   psb: process.env.SITE_PSB || '',
 };
