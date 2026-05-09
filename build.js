@@ -48,7 +48,8 @@ async function build() {
   pullContent(CONFIG.postsDir);
 
   // Parse markdown posts
-  const published = await parsePosts(CONFIG.postsDir);
+  const allPosts = await parsePosts(CONFIG.postsDir);
+  const published = allPosts.filter(p => !p.hidden);
   console.log(`  Found ${published.length} published posts.`);
 
   // Clean output dir
@@ -78,7 +79,7 @@ async function build() {
   });
 
   // Generate all pages
-  generatePosts(published, { outputDir: CONFIG.outputDir, render, siteCtx });
+  generatePosts(allPosts, { outputDir: CONFIG.outputDir, render, siteCtx });
   generateIndexPages(published, {
     outputDir: CONFIG.outputDir,
     render,
@@ -94,7 +95,7 @@ async function build() {
     title: CONFIG.title,
     description: CONFIG.description,
   });
-  generateSitemap(published, {
+  generateSitemap(allPosts, {
     outputDir: CONFIG.outputDir,
     siteUrl: CONFIG.siteUrl,
     allTags,
