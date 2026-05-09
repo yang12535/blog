@@ -96,10 +96,10 @@ if(-not(Test-Path $pyExe)){
 | `Include_test=0` | 不安装测试套件，节省空间与时间 |
 | `InstallAllUsers=0` | 仅安装到当前用户目录，无需管理员权限 |
 
-> **为什么用 `Test-Path` 而不是 `Get-Command python`？**
+> **为什么用 `Test-Path` 而不是 `Get-Command python`？**  
 > 因为 `Get-Command python` 在 Windows 上可能命中 Microsoft Store 的空壳 `python.exe`，造成"已安装"的误判，导致跳过安装，后续 `python -m pip` 直接报错。
 
-> **为什么用华为云？**
+> **为什么用华为云？**  
 > 国内下载 `python.org` 官方安装包极慢，华为云镜像同步了完整的 Python 发布目录，且支持直链下载，速度快且稳定。
 
 ### 4. 强制刷新当前会话的 PATH
@@ -291,7 +291,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 
 ---
 
-> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。
+> PowerShell 一键完成 Python + uv + kimi-cli 安装，含国内镜像加速与永久环境变量配置。  
 > 复制 → 粘贴 → 回车，等一分钟就能用 `kimi`。
 
 ---
