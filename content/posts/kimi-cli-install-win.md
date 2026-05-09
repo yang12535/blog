@@ -283,7 +283,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 ## 更新日志
 
 - **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加临时文件大小校验，检测到不完整的 `py.exe`（小于 25MB）时自动删除重下
+  - 改为无条件删除旧临时文件，确保每次运行都重新下载干净的 Python 安装包
   - Python 安装完成后增加 `Test-Path $pyExe` 验证，安装失败时立即报错退出，不再继续执行后续命令
   - 解决「执行到一半退出，再次运行时报 `python: CommandNotFoundException`」的问题
 
