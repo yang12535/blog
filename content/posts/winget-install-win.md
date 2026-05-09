@@ -94,34 +94,30 @@ function Download-WithRetry {
 $msixUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 $msixPath = "$temp\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 
-if ((Test-Path $msixPath) -and ((Get-Item $msixPath).Length -lt 50MB)) {
-    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+if (Test-Path $msixPath) {
+    Write-Warn "检测到旧的临时文件，删除后重新下载..."
     Remove-Item $msixPath -Force
 }
-if (-not (Test-Path $msixPath)) {
-    Write-Info "下载 winget msixbundle..."
-    $ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
-    if (-not $ok) {
-        Write-Fail "主安装包下载失败，所有镜像源均不可用。"
-        exit 1
-    }
+Write-Info "下载 winget msixbundle..."
+$ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
+if (-not $ok) {
+    Write-Fail "主安装包下载失败，所有镜像源均不可用。"
+    exit 1
 }
 
 # ==================== 4. 下载依赖包 ====================
 $depZipUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/DesktopAppInstaller_Dependencies.zip"
 $depZipPath = "$temp\DesktopAppInstaller_Dependencies.zip"
 
-if ((Test-Path $depZipPath) -and ((Get-Item $depZipPath).Length -lt 1MB)) {
-    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+if (Test-Path $depZipPath) {
+    Write-Warn "检测到旧的临时文件，删除后重新下载..."
     Remove-Item $depZipPath -Force
 }
-if (-not (Test-Path $depZipPath)) {
-    Write-Info "下载依赖包..."
-    $ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
-    if (-not $ok) {
-        Write-Fail "依赖包下载失败，所有镜像源均不可用。"
-        exit 1
-    }
+Write-Info "下载依赖包..."
+$ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
+if (-not $ok) {
+    Write-Fail "依赖包下载失败，所有镜像源均不可用。"
+    exit 1
 }
 
 # ==================== 5. 解压依赖 ====================

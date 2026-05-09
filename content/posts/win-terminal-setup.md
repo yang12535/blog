@@ -38,9 +38,15 @@ function Test-ValidFile($Path, $MinBytes=1) {
 # --- 1. 下载并安装 PowerShell 7.4 ---
 $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi"
 $ps7Out = "$temp\PowerShell-7.4.6-win-x64.msi"
-if (-not (Test-ValidFile $ps7Out 50MB)) {
-    Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing
+if (Test-Path $ps7Out) {
+    Write-Host ">>> 检测到旧的 PowerShell 7.4 安装包，删除后重新下载..." -ForegroundColor Yellow
+    Remove-Item $ps7Out -Force
+}
+Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing
+$ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
+if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
+    throw "PowerShell 7.4 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell 7.4..." -ForegroundColor Cyan
 msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1
@@ -48,17 +54,29 @@ msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 ENABLE_PSREMOTING=1 REGISTE
 # --- 2. 下载并安装 Windows Terminal ---
 $wtMsix = "$temp\WindowsTerminal.msixbundle"
 $wtZip  = "$temp\WindowsTerminal_x64.zip"
-if (-not (Test-ValidFile $wtMsix 10MB)) {
-    Write-Host ">>> 下载 Windows Terminal (msixbundle)..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle" -OutFile $wtMsix -UseBasicParsing
+if (Test-Path $wtMsix) {
+    Write-Host ">>> 检测到旧的 Windows Terminal 安装包，删除后重新下载..." -ForegroundColor Yellow
+    Remove-Item $wtMsix -Force
+}
+Write-Host ">>> 下载 Windows Terminal (msixbundle)..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_8wekyb3d8bbwe.msixbundle" -OutFile $wtMsix -UseBasicParsing
+$wtMsixHash = "C80BC461B22A17650A58BC5CAD743E1AD97E0A4EA92CCDCB514EE7D7AA134243"
+if ((Get-FileHash $wtMsix -Algorithm SHA256).Hash -ne $wtMsixHash) {
+    throw "Windows Terminal msixbundle SHA256 校验失败"
 }
 # 先尝试 msixbundle 安装（依赖已存在时可直接装上）
 Add-AppxPackage -Path $wtMsix -ErrorAction SilentlyContinue
 
 # --- 3. 同时准备 Unpackaged 版（防 msix 无法启动）---
-if (-not (Test-ValidFile $wtZip 5MB)) {
-    Write-Host ">>> 下载 Windows Terminal (Unpackaged 备用)..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip" -OutFile $wtZip -UseBasicParsing
+if (Test-Path $wtZip) {
+    Write-Host ">>> 检测到旧的 Windows Terminal 备用包，删除后重新下载..." -ForegroundColor Yellow
+    Remove-Item $wtZip -Force
+}
+Write-Host ">>> 下载 Windows Terminal (Unpackaged 备用)..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip" -OutFile $wtZip -UseBasicParsing
+$wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
+if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
+    throw "Windows Terminal zip SHA256 校验失败"
 }
 $wtDest = "$env:LOCALAPPDATA\WindowsTerminal"
 Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
@@ -67,17 +85,21 @@ Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 $ompDir = "$env:LOCALAPPDATA\Programs\oh-my-posh"
 New-Item -ItemType Directory -Force -Path $ompDir | Out-Null
 $ompExe = "$ompDir\oh-my-posh.exe"
-if (-not (Test-ValidFile $ompExe 5MB)) {
-    Write-Host ">>> 下载 Oh My Posh..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe" -OutFile $ompExe -UseBasicParsing
+if (Test-Path $ompExe) {
+    Write-Host ">>> 检测到旧的 Oh My Posh，删除后重新下载..." -ForegroundColor Yellow
+    Remove-Item $ompExe -Force
 }
+Write-Host ">>> 下载 Oh My Posh..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-windows-amd64.exe" -OutFile $ompExe -UseBasicParsing
 
 # --- 5. 下载 Nerd Font ---
 $fontZip = "$temp\JetBrainsMono.zip"
-if (-not (Test-ValidFile $fontZip 10MB)) {
-    Write-Host ">>> 下载 JetBrainsMono Nerd Font..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip" -OutFile $fontZip -UseBasicParsing
+if (Test-Path $fontZip) {
+    Write-Host ">>> 检测到旧的字体包，删除后重新下载..." -ForegroundColor Yellow
+    Remove-Item $fontZip -Force
 }
+Write-Host ">>> 下载 JetBrainsMono Nerd Font..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip" -OutFile $fontZip -UseBasicParsing
 $fontDest = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
 New-Item -ItemType Directory -Force -Path $fontDest | Out-Null
 Expand-Archive -Path $fontZip -DestinationPath "$temp\JetBrainsMono" -Force

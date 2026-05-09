@@ -50,21 +50,20 @@ if (-not $node -or -not $npm) {
     $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
     $nodeOut = Join-Path $temp $msiName
 
-    if ((Test-Path $nodeOut) -and ((Get-Item $nodeOut).Length -lt 10MB)) {
-        Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+    if (Test-Path $nodeOut) {
+        Write-Warn "检测到旧的临时文件，删除后重新下载..."
         Remove-Item $nodeOut -Force
     }
-    if (-not (Test-Path $nodeOut)) {
-        Write-Info "下载 $msiName 中，请稍候..."
-        try {
-            Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
-            if ((Get-Item $nodeOut).Length -lt 10MB) {
-                throw "下载文件异常过小，可能已被拦截或损坏。"
-            }
-        } catch {
-            Write-Fail "下载失败: $_"
-            exit 1
+    Write-Info "下载 $msiName 中，请稍候..."
+    try {
+        Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
+        $nodeHash = "2c0cc97ec64c1e4111362e1e32e0547fd870e4d9c79ec844c117da583f21b386"
+        if ((Get-FileHash $nodeOut -Algorithm SHA256).Hash -ne $nodeHash) {
+            throw "下载文件 SHA256 校验失败，可能已被拦截或损坏。"
         }
+    } catch {
+        Write-Fail "下载失败: $_"
+        exit 1
     }
 
     Write-Info "正在静默安装 Node.js（可能需要 1-2 分钟）..."
