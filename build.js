@@ -26,6 +26,18 @@ const CONFIG = {
   siteUrl: (process.env.SITE_URL || 'https://bash.yang125.fun').replace(/\/+$/, ''),
   icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
   psb: process.env.SITE_PSB || '',
+  // Giscus (GitHub Discussions) 评论配置
+  // 支持通过环境变量覆盖，方便 fork 后自定义
+  giscus: {
+    repo: process.env.GISCUS_REPO || 'yang12535/blog',
+    repoId: process.env.GISCUS_REPO_ID || 'R_kgDOR75DVQ',
+    category: process.env.GISCUS_CATEGORY || 'Announcements',
+    categoryId: process.env.GISCUS_CATEGORY_ID || 'DIC_kwDOR75DVc4C8ot-',
+    mapping: process.env.GISCUS_MAPPING || 'pathname',
+    reactionsEnabled: process.env.GISCUS_REACTIONS || '1',
+    theme: process.env.GISCUS_THEME || 'preferred_color_scheme',
+    lang: process.env.GISCUS_LANG || 'zh-CN',
+  },
 };
 
 async function build() {
@@ -55,6 +67,7 @@ async function build() {
     url: CONFIG.siteUrl,
     icp: CONFIG.icp,
     psb: CONFIG.psb,
+    giscus: CONFIG.giscus,
   };
 
   // Generate tag pages first (returns allTags + archiveYears for index)
