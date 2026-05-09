@@ -12,7 +12,7 @@ tags: [curl, windows, proxy, aria2, download, 国内镜像]
 >
 > **注意**：不同镜像站对 UA 的检测策略不同。实测中科大镜像站对 Chrome 124 直接返回 403，更新为 Chrome 132 后可通过第一道检测（但部分站点仍有 JS 验证，curl 无法绕过）。
 >
-> **扩展阅读**：如果你在 **VirtualBox 虚拟机** 中运行 PowerShell，即使按照本文优化了 curl，仍可能遇到 `Invoke-WebRequest` 下载时任务管理器显示**脉冲式波动**、速度暴跌到 100 Kbps 的情况。这不是网络或 curl 的问题，而是 PowerShell 控制台渲染与虚拟机显示层的交互瓶颈。根治方案请参考 [VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
+> **扩展阅读**：如果你在 **VirtualBox 虚拟机** 中运行 PowerShell，仍可能遇到 `Invoke-WebRequest` 下载时任务管理器显示**脉冲式波动**、速度暴跌到 100 Kbps 的情况。根治方案请参考 [VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
 >
 > **扩展阅读**：如果你在 **VirtualBox 虚拟机** 中运行 PowerShell，即使按照本文优化了 curl，仍可能遇到 `Invoke-WebRequest` 下载时任务管理器显示**脉冲式波动**、速度暴跌到 100 Kbps 的情况。这不是网络或 curl 的问题，而是 PowerShell 控制台渲染与虚拟机显示层的交互瓶颈。根治方案请参考 [VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
 
@@ -138,9 +138,10 @@ function global:curl {
     $verMatch = $verLine -match 'curl\s+(\d+\.\d+\.\d+)'
     $curlVersion = if ($verMatch) { $matches[1] } else { $null }
     $isOld = $curlVersion -and ([version]$curlVersion -lt [version]"7.80.0")
-    if ($isOld -and -not ($PassThruArgs -contains '--tcp-nodelay')) {
-        # curl 7.50.2+ 默认已启用 TCP_NODELAY，旧版显式加以防万一
-    $inject += "--tcp-nodelay"
+    $needsTcpNoDelay = $curlVersion -and ([version]$curlVersion -lt [version]"7.50.2")
+    if ($needsTcpNoDelay -and -not ($PassThruArgs -contains '--tcp-nodelay')) {
+        # 仅 7.50.2 之前的版本需要显式加（7.50.2+ 已默认启用）
+        $inject += "--tcp-nodelay"
     }
 
     & $curlExe @inject @PassThruArgs
@@ -447,7 +448,7 @@ function Find-BestCurl {
         "$env:USERPROFILE\scoop\shims\curl.exe"
     )
     foreach ($c in $candidates) {
-        if ($c -like '*`*') {
+        if ($c -like '*`**') {
             $resolved = Resolve-Path $c -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
             if ($resolved) { $c = $resolved }
         }

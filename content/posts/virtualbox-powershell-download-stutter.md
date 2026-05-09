@@ -1,4 +1,4 @@
-﻿---
+---
 title: VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案
 date: 2026-05-09
 tags: [virtualbox, powershell, windows, download, iwr, curl, 虚拟机]
@@ -133,15 +133,15 @@ $ProgressPreference = 'SilentlyContinue'
 
 ---
 
-### 方案二：用 `Start-Process -WindowStyle Hidden` 后台运行
+### 方案二：用 `Start-Job` 后台运行
 
-如果你**必须保留进度条**（比如给新手看的交互脚本），把下载任务放到**无窗口的后台进程**中执行：
+如果你**必须保留进度条**（比如给新手看的交互脚本），把下载任务放到**后台作业**中执行：
 
 ```powershell
 Start-Job { Invoke-WebRequest -Uri 'https://...' -OutFile 'C:\temp\file.exe' -UseBasicParsing } | Wait-Job | Receive-Job
 ```
 
-`-WindowStyle Hidden` 让子进程脱离 VirtualBox 控制台渲染路径，进度条在内存中更新但不会被显示到屏幕上，阻塞效应完全消失。
+后台作业脱离 VirtualBox 控制台渲染路径，进度条在内存中更新但不会被显示到屏幕上，阻塞效应完全消失。
 
 ---
 
