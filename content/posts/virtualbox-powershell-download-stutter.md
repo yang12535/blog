@@ -37,7 +37,7 @@ Invoke-WebRequest -Uri "https://mirrors.tuna.tsinghua.edu.cn/python/3.12.4/pytho
 - **实际速度**：平均只有 **112 Kbps**（约 14 KB/s），下载一个 25 MB 文件需要 30 分钟以上
 - **对比**：同一台虚拟机里用浏览器下载同一个文件，速度稳定在 5~10 MB/s
 
-> 关键观察：**curl.exe 下载 HTTP 链接速度正常（8+ MB/s），但 HTTPS + 控制台进度条时异常；`Invoke-WebRequest` 几乎必现。**
+> 关键观察：**`Invoke-WebRequest` 几乎必现脉冲式卡顿**；curl.exe 通常不受影响（其进度条输出到 stderr，非 PowerShell `Write-Progress` UI 组件）。若 curl HTTPS 慢，是另一个独立问题（Schannel CRL/代理），请参照 [姊妹篇排查](/posts/curl-download-slow-fix/)。
 
 ---
 
@@ -113,7 +113,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 | 模式 | 下载 25 MB 耗时 | 平均速度 |
 | --- | --- | --- |
-| `$ProgressPreference = 'Continue'`（默认） | 180+ 秒（超时） | ~112 Kbps |
+| `$ProgressPreference = 'Continue'`（默认） | 180+ 秒（超时） | ~112 Kbps（实际约 30 分钟） |
 | `$ProgressPreference = 'SilentlyContinue'` | ~3.5 秒 | ~4.9 MB/s |
 
 **永久生效**：把下面这行加到你的 PowerShell `$PROFILE` 里：
