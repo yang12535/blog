@@ -167,6 +167,8 @@ winget install Microsoft.PowerShell
 
 VirtualBox 自带控制台窗口的渲染性能是其最大瓶颈。如果你通过 **RDP（远程桌面）** 连接到虚拟机：
 
+> **注意**：以下命令需要修改注册表和防火墙规则，**必须以管理员身份运行 PowerShell**（右键开始菜单 → Windows PowerShell (管理员) / Terminal (管理员)）。
+
 ```powershell
 # 在虚拟机里开启远程桌面
 Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0

@@ -359,9 +359,9 @@ powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..."
 
 将以下内容保存为 `curl-fast.ps1`，即可直接使用：
 
-```powershell
 > **注意**：以下代码设计为**独立 `.ps1` 脚本文件**（使用 `param()` 块）。若你想将其放入 `$PROFILE` 作为函数，请移除 `[CmdletBinding()]` 和 `param()` 块，改为直接用 `$args` 接收参数，否则 `-o` 可能冲突。
 
+```powershell
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
