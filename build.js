@@ -103,6 +103,14 @@ async function build() {
   generateRobots({ outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl });
   copyAssets({ outputDir: CONFIG.outputDir, assetsDir: CONFIG.assetsDir });
 
+  // Copy ads.txt to root for AdSense
+  const adsTxtSrc = path.join(CONFIG.assetsDir, 'ads.txt');
+  const adsTxtDest = path.join(CONFIG.outputDir, 'ads.txt');
+  if (fs.existsSync(adsTxtSrc)) {
+    fs.copyFileSync(adsTxtSrc, adsTxtDest);
+    console.log('  Copied ads.txt to root.');
+  }
+
   console.log(`✅ Build finished in ${Date.now() - startTime}ms.`);
 }
 
