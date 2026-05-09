@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block title %}标签 - {{ site.title }}{% endblock %}
+{% block desc %}Bogl Blog 标签列表，浏览所有技术文章分类。{% endblock %}
+{% block canonical %}{{ site.url }}/tags/{% endblock %}
+{% block og_url %}{{ site.url }}/tags/{% endblock %}
 
 {% block sidebar %}
 <aside class="sidebar-left">

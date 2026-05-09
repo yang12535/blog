@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block desc %}{{ site.title }} - 分享 Windows、Linux、开发工具等实用技术教程与一键安装脚本。{% endblock %}
+
 {% block sidebar %}
 <aside class="sidebar-left">
   <div class="widget">
@@ -26,6 +28,7 @@
 {% endblock %}
 
 {% block content %}
+<h1 class="page-title" style="margin-bottom:20px;font-size:1.5rem;font-weight:600;color:var(--text);">{{ site.title }}</h1>
 {% if posts.length %}
   {% for post in posts %}
   <article class="article-card">
