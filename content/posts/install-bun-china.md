@@ -5,6 +5,12 @@ tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
 
 ---
 
+> 在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。
+>
+> 复制脚本 → 粘贴 → 回车，获得一个带国内镜像加速的 Bun 运行时。
+
+---
+
 ## 环境信息
 
 | 项目 | 说明 |
@@ -121,9 +127,11 @@ if (-not $?) { Write-Warn "npm 源配置命令返回异常，继续执行..." }
 
 # ==================== 3. 通过 npm 安装 Bun ====================
 Write-Info "正在通过 npm 全局安装 Bun..."
-& $npm.Source install -g bun 2>$null
+$npmLog = "$temp\npm-install-bun.log"
+& $npm.Source install -g bun 2>$npmLog
 if (-not $?) {
-    Write-Fail "npm 安装 bun 失败，请检查网络或 npm 日志。"
+    Write-Fail "npm 安装 bun 失败，日志如下："
+    if (Test-Path $npmLog) { Get-Content $npmLog | Write-Host }
     exit 1
 }
 
@@ -183,7 +191,8 @@ $bunfig = @"
 [install]
 registry = "https://registry.npmmirror.com/"
 "@
-Set-Content -Path "$env:USERPROFILE\.bunfig.toml" -Value $bunfig -Encoding UTF8 -Force
+$bunfigPath = "$env:USERPROFILE\.bunfig.toml"
+[System.IO.File]::WriteAllText($bunfigPath, $bunfig, [System.Text.UTF8Encoding]::new($false))
 Write-Ok "已写入 ~/.bunfig.toml，bun install 将默认走阿里云镜像"
 
 # ==================== 7. 将 Bun 加入用户 PATH ====================
@@ -401,7 +410,7 @@ cmd /c bun install
 
 **方案 C（直接调 exe）**：
 ```powershell
-$env:APPDATA\npm\node_modules\bun\bin\bun.exe --version
+& "$env:APPDATA\npm\node_modules\bun\bin\bun.exe" --version
 ```
 
 **方案 D（永久放宽策略）**：
@@ -507,14 +516,15 @@ Get-WithProxy -Url "https://github.com/oven-sh/bun/releases/latest/download/inst
 
 # 执行安装（设置 GITHUB 环境变量让脚本走代理下载二进制）
 $env:GITHUB = "https://gh-proxy.org/https://github.com"
-& $installPs1
+& "$installPs1"
 
 # 写入 Bun 国内源配置
 $bunfig = @"
 [install]
 registry = "https://registry.npmmirror.com/"
 "@
-Set-Content -Path "$env:USERPROFILE\.bunfig.toml" -Value $bunfig -Encoding UTF8
+$bunfigPath = "$env:USERPROFILE\.bunfig.toml"
+[System.IO.File]::WriteAllText($bunfigPath, $bunfig, [System.Text.UTF8Encoding]::new($false))
 Write-Host ">>> 完成！Bun 已安装且配置了国内源。" -ForegroundColor Green
 ```
 
@@ -537,11 +547,3 @@ Write-Host ">>> 完成！Bun 已安装且配置了国内源。" -ForegroundColor
   - 增加 `bun.exe` 多级定位（常规路径 → `LOCALAPPDATA` → 递归搜索）
   - 扩大 `bun.ps1` / `bunx.ps1` wrapper 清理范围至 `LOCALAPPDATA`
   - 安装完成后即时追加 PATH 并执行 `bun --version` 验证
-
----
-
-> 在 Windows 上绕过 GitHub 访问限制，通过清华 TUNA 镜像安装 Node.js，再走阿里云 npm 源安装 Bun，全程无需翻墙。适用于机房、校园网、企业内网等受限环境。
->
-> 复制脚本 → 粘贴 → 回车，获得一个带国内镜像加速的 Bun 运行时。
-
----

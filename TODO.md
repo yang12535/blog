@@ -1,0 +1,93 @@
+# Bogl Blog 待办事项
+
+> 由质量审查生成。风格不必模板化，重点修复技术错误和事实硬伤。
+
+---
+
+## ✅ 已修复（本轮 PR 中解决）
+
+### `curl-download-slow-fix.md`
+
+| # | 问题 | 位置 | 修复方式 |
+|---|------|------|----------|
+| 1 | **`--tcp-nodelay` 对 curl 7.55.1 完全无效** — curl 7.50.2+ 默认已启用 TCP_NODELAY | 参数说明表、Profile wrapper、curl-fast.ps1 | 删除该参数或改为说明"7.50.2+ 已默认启用，此处显式写出仅为兼容" |
+| 2 | **aria2c 默认不校验文件完整性** — `--check-integrity` 默认是 `false`，对普通 HTTP(S) 无效 | FAQ Q6 | 改为"默认不做校验，如需校验用 `--checksum=...` 或手动比对" |
+| 3 | **HTTP/2 描述过于绝对** — curl 7.55.1 `--help` 里有 `--http2`，只是未编译 nghttp2 | 问题现象表 | 改为"编译时未启用 HTTP/2，指定 `--http2` 会报 Unsupported protocol" |
+| 4 | **`winget install curl` 可能装到非官方包** — 精确 ID 是 `curl.curl` | 方案四 | 改为 `winget install curl.curl` |
+| 5 | **curl-fast.ps1 与 Profile 函数未做区分警告** — 直接复制到 `$PROFILE` 会导致 `-o` 二义性 | 附录源码 | 在源码前加说明：独立脚本用 `param()`，Profile 函数需去掉 `[CmdletBinding()]` |
+
+### `virtualbox-powershell-download-stutter.md`
+
+| # | 问题 | 位置 | 修复方式 |
+|---|------|------|----------|
+| 1 | **aria2c 示例 URL 含空格** — `https:// mirrors...` 会导致命令失败 | 方案五 | 删除空格 |
+| 2 | **curl HTTPS 慢被错误关联到本文根因** — curl 的 stderr 进度条与 IWR 的 Write-Progress 本质不同 | 问题现象/关键观察 | 删除或修改该观察，明确 curl 不受此问题影响 |
+| 3 | **"本质"论断过于绝对** — 脉冲可能是多种因素叠加，不能唯一归因于 TCP 反压 | 根因分析第三层 | 改为"这是最主要/最可能的解释" |
+| 4 | **"重写"Write-Progress 表述不准确** — PS 7 是优化而非重写，且 7.0 基于 .NET Core 3.1 非 .NET 6 | 方案三 | 改为"PS 7 优化了渲染性能，开销远低于 5.1" |
+| 5 | **RDP 防火墙规则中文硬编码** — 英文系统上 `"远程桌面"` 匹配失败 | 方案四 | 改用 `Enable-NetFirewallRule -Group "@FirewallAPI.dll,-28752"` 或加注释提示 |
+| 6 | **帧率估计偏高** — 文本控制台刷新率远低于 30 FPS | 根因分析第二层 | 改为"刷新率远低于物理机直连" |
+
+---
+
+## 🟡 P1 — 链接/代码问题（本轮 PR 中已全部修复）
+
+| 文章 | 问题 | 位置 |
+|------|------|------|
+| `virtualbox-powershell-download-stutter.md` | 参考链接中纯文本条目缺超链接 | 参考链接第 2 条 |
+| `curl-download-slow-fix.md` | 同站文章使用外部域名（已改为相对路径） | 参考链接 |
+| `install-bun-china.md` | PowerShell 代码缺少 `&` 运算符（已补全） | Q4 方案 C |
+| `curl-download-slow-fix.md` | aria2c UA 不完整（已补全） | 方案四示例 |
+| `virtualbox-powershell-download-stutter.md` | aria2c UA 不完整（已确认完整） | 方案五示例 |
+
+---
+
+## 🟢 P2 — 风格/排版（可选，不强制统一）
+
+> 文章风格不必模板化。以下问题记录备查，不强制修复。
+
+| 文章 | 问题 | 备注 |
+|------|------|------|
+| `virtualbox-powershell-download-stutter.md` | UTF-8 BOM | 部分解析器可能不兼容 |
+| `virtualbox-powershell-download-stutter.md` | 缺少更新日志 | 可选补充 |
+| `curl-download-slow-fix.md` | curl-fast.ps1 完整源码占正文 30% | 可选拆分为独立文件 |
+| `curl-download-slow-fix.md` | 更新日志在参考链接之前 | 可选调换 |
+| `install-bun-china.md` | 缺少参考链接章节 | 可选补充 |
+| 三篇文章 | 表格分隔线长度不统一 | 纯视觉问题 |
+| `install-bun-china.md` | `> **坑点：**` 整句加粗 | 与参考文章风格不一致，但可读性无影响 |
+
+---
+
+## 🟡 项目规范缺陷（长期改进）
+
+### 代码质量
+- [ ] 缺少 ESLint / Prettier 配置
+- [ ] 缺少 TypeScript 类型定义
+- [ ] 缺少测试框架
+- [ ] 缺少 `.editorconfig`
+- [ ] `build.js` 错误处理不完善
+
+### 工程化
+- [ ] 缺少 CI/CD 配置
+- [ ] 缺少 pre-commit hook
+- [ ] `package.json` 缺少 `lint`、`test`、`format` 脚本
+- [ ] 缺少 `CONTRIBUTING.md`
+
+### 文章规范
+- [ ] 无 frontmatter 校验规则
+- [ ] 无链接有效性检查
+- [ ] 无 UTF-8 BOM 自动检测
+
+---
+
+## ✅ 已完成的审查任务
+
+- [x] 链接与交叉引用审查（发现 6 处问题）
+- [x] 行文结构与风格一致性审查（发现 20+ 处问题，风格类不强制修复）
+- [x] 技术准确性审查（发现 11 处问题，含 5 处严重错误）
+- [x] 生成 `changed.md`（133 行，43 条 commit）
+- [ ] 代码可执行性审查（进行中）
+
+---
+
+> 生成时间：2026-05-09
+> 原则：风格不必模板化，重点修技术错误。
