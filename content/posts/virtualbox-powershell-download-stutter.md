@@ -113,12 +113,17 @@ $ProgressPreference = 'SilentlyContinue'
 
 | 模式 | 下载 25 MB 耗时 | 平均速度 |
 | --- | --- | --- |
-| `$ProgressPreference = 'Continue'`（默认） | 180+ 秒（超时） | ~112 Kbps（实际约 30 分钟） |
+| `$ProgressPreference = 'Continue'`（默认） | 1800+ 秒（约 30 分钟） | ~112 Kbps |
 | `$ProgressPreference = 'SilentlyContinue'` | ~3.5 秒 | ~4.9 MB/s |
 
 **永久生效**：把下面这行加到你的 PowerShell `$PROFILE` 里：
 
 ```powershell
+# Profile 文件默认不存在，先创建目录再打开
+$profileDir = Split-Path -Parent $PROFILE
+if (-not (Test-Path $profileDir)) {
+    New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
+}
 notepad $PROFILE
 # 粘贴：
 $ProgressPreference = 'SilentlyContinue'
@@ -241,6 +246,6 @@ VirtualBox 的控制台在 WHP 兼容模式下的显示性能是其已知短板�
 ## 参考链接
 
 - [Windows 旧版 curl 下载慢的根治方案](/posts/curl-download-slow-fix/) — 本文的姊妹篇，解决 curl 本身的 UA 限速、Schannel CRL 卡死、代理不生效等问题
-- [PowerShell 执行策略与 Profile 配置指南](/posts/curl-download-slow-fix/)（本文同系列）
+- [Windows 下安装 Kimi CLI，PowerShell 一键指令](/posts/kimi-cli-install-win/) — 含 PowerShell 执行策略与 PATH 配置说明
 - VirtualBox 官方文档：[Chapter 6. Virtual Networking](https://www.virtualbox.org/manual/ch06.html)
 - PowerShell 7 安装：[https://github.com/PowerShell/PowerShell](https://github.com/PowerShell/PowerShell)

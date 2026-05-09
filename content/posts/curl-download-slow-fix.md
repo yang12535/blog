@@ -328,7 +328,7 @@ powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..."
 
 ### Q9：配置完 Profile 后，`curl -o file` 报错「参数名称 o 具有二义性」？
 
-早期版本使用了 `[CmdletBinding()] + ValueFromRemainingArguments`，导致 `-o` 被 PowerShell 误识别为 `-OutVariable` 的缩写。当前文章代码已修复：去掉 `[CmdletBinding()]`，改用简单函数 + `$args` 收集参数。如果你复制的是旧代码，请按本文最新代码重新粘贴。
+早期版本使用了 `[CmdletBinding()] + ValueFromRemainingArguments`，导致 `-o` 被 PowerShell 误识别为 `-OutVariable` 的缩写。**本文方案二（Profile 函数）已修复**：去掉 `[CmdletBinding()]`，改用简单函数 + `$args` 收集参数。附录中的 `curl-fast.ps1` 是**独立脚本文件**，保留 `[CmdletBinding()]` 和 `param()` 是正确的设计（脚本需要命名参数），请勿将其直接复制到 `$PROFILE` 中。
 
 ### Q10：中科大镜像站返回 403，清华 TUNA 却能正常下载？
 
@@ -446,7 +446,7 @@ function Find-BestCurl {
         "$env:USERPROFILE\scoop\shims\curl.exe"
     )
     foreach ($c in $candidates) {
-        if ($c -like '*`**') {
+        if ($c -match '[*?]') {
             $resolved = Resolve-Path $c -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
             if ($resolved) { $c = $resolved }
         }
