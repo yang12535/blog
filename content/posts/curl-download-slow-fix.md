@@ -11,6 +11,10 @@ tags: [curl, windows, proxy, aria2, download, 国内镜像]
 > 本文提供从「临时缓解」到「彻底根治」的完整方案，含自动代理嗅探、UA 伪装、证书错误修复，以及 aria2c 多线程兜底。复制脚本 → 粘贴 → 回车即可。
 >
 > **注意**：不同镜像站对 UA 的检测策略不同。实测中科大镜像站对 Chrome 124 直接返回 403，更新为 Chrome 132 后可通过第一道检测（但部分站点仍有 JS 验证，curl 无法绕过）。
+>
+> **扩展阅读**：如果你在 **VirtualBox 虚拟机** 中运行 PowerShell，即使按照本文优化了 curl，仍可能遇到 `Invoke-WebRequest` 下载时任务管理器显示**脉冲式波动**、速度暴跌到 100 Kbps 的情况。这不是网络或 curl 的问题，而是 PowerShell 控制台渲染与虚拟机显示层的交互瓶颈。根治方案请参考 [VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
+>
+> **扩展阅读**：如果你在 **VirtualBox 虚拟机** 中运行 PowerShell，即使按照本文优化了 curl，仍可能遇到 `Invoke-WebRequest` 下载时任务管理器显示**脉冲式波动**、速度暴跌到 100 Kbps 的情况。这不是网络或 curl 的问题，而是 PowerShell 控制台渲染与虚拟机显示层的交互瓶颈。根治方案请参考 [VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
 
 ---
 
@@ -34,7 +38,7 @@ tags: [curl, windows, proxy, aria2, download, 国内镜像]
 | ------ | ---------- |
 | **速度被限速** | 国内镜像站浏览器下载 10 MB/s，curl 稳定 1 Mbps（约 125 KB/s） |
 | **证书错误** | 走代理访问 GitHub 时报 `schannel: next InitializeSecurityContext failed: Unknown error (0x80092013)` |
-| **HTTP/2 不支持** | 旧版 curl 完全不支持 `--http2`，只能走 HTTP/1.1 |
+| **HTTP/2 未编译** | 系统自带 curl 编译时未启用 HTTP/2（nghttp2），指定 `--http2` 会报 `Unsupported protocol` |
 | **TLS 握手慢** | WinSSL（Schannel）老旧，部分 CDN 会降级连接 |
 | **不读系统代理** | 浏览器自动走了 Clash/V2Ray，curl 全程直连，境外站点直接超时 |
 
@@ -85,12 +89,12 @@ curl.exe -L --tcp-nodelay --ssl-no-revoke `
 | 参数 | 作用 |
 | ------ | ------ |
 | `-L` | 跟随 302/301 跳转，国内镜像常重定向到就近节点 |
-| `--tcp-nodelay` | 禁用 Nagle 算法，提升小包响应和吞吐量 |
+| `--tcp-nodelay` | 显式禁用 Nagle 算法（curl 7.50.2+ 已默认启用，旧版需手动加） |
 | `-A "..."` | 伪装成 Chrome，绕过服务端对 curl UA 的限速策略 |
 | `--ssl-no-revoke` | 禁用 Schannel 的证书吊销检查，根治代理环境下的 TLS 握手失败 |
 | `-x http://...` | 显式指定代理地址（curl 不会自动读取 Windows 系统代理） |
 
-> **坑点**：`--ssl-no-revoke` 仅在 curl 7.44+ 可用，系统自带的 7.55.1 恰好支持，但再老的版本就不行了。
+> **坑点**：`--ssl-no-revoke` 仅在 curl 7.44+ 可用，系统自带的 7.55.1 恰好支持，但再老的版本就不行了。`--tcp-nodelay` 在 curl 7.50.2+ 已默认启用，对 7.55.1 无额外增益。
 
 ---
 
@@ -135,7 +139,8 @@ function global:curl {
     $curlVersion = if ($verMatch) { $matches[1] } else { $null }
     $isOld = $curlVersion -and ([version]$curlVersion -lt [version]"7.80.0")
     if ($isOld -and -not ($PassThruArgs -contains '--tcp-nodelay')) {
-        $inject += "--tcp-nodelay"
+        # curl 7.50.2+ 默认已启用 TCP_NODELAY，旧版显式加以防万一
+    $inject += "--tcp-nodelay"
     }
 
     & $curlExe @inject @PassThruArgs
@@ -158,7 +163,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 
 1. **自动嗅探代理**：扫描 10808、7890、10809、1080 等常见代理端口
 2. **自动 UA 伪装**：没有 `-A` 时自动注入 Chrome UA
-3. **旧版 curl + 代理自动加 `--ssl-no-revoke`**：避开证书错误
+3. **旧版 curl + 代理自动加 `--ssl-no-revoke`（`--tcp-nodelay` 在 7.50.2+ 已默认启用，此处保留仅为兼容明示）**：避开证书错误
 4. **curl 失败自动 fallback 到 aria2c**：多线程下载，直接跑满带宽
 
 ### 使用方式
@@ -198,7 +203,7 @@ if (检测到新版 curl >= 7.80.0) {
 
 ```powershell
 # 使用 winget（需先安装 winget，参见博客另一篇文章）
-winget install curl
+winget install curl.curl
 
 # 或使用 scoop
 scoop install curl
@@ -356,6 +361,8 @@ powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..."
 将以下内容保存为 `curl-fast.ps1`，即可直接使用：
 
 ```powershell
+> **注意**：以下代码设计为**独立 `.ps1` 脚本文件**（使用 `param()` 块）。若你想将其放入 `$PROFILE` 作为函数，请移除 `[CmdletBinding()]` 和 `param()` 块，改为直接用 `$args` 接收参数，否则 `-o` 可能冲突。
+
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
@@ -365,10 +372,14 @@ param(
     [string]$OutFile,
     [string]$Proxy,
     [int]$Threads = 8,
-    [switch]$ForceAria2
+    [switch]$ForceAria2,
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$PassThruArgs
 )
 
 $BrowserUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+
+$hasUA = $PassThruArgs | Where-Object { $_ -match '^(-A|--user-agent)(=|$)' }
 
 if (-not $Url) {
     Write-Host ""
@@ -392,7 +403,7 @@ if (-not $Url) {
 if (-not $OutFile) {
     $uri = [System.Uri]$Url
     $OutFile = Split-Path -Leaf $uri.AbsolutePath
-    if (-not $OutFile -or $OutFile -eq "/") { $OutFile = "download.dat" }
+    if (-not $OutFile -or $OutFile -eq "/" -or $OutFile -eq "\") { $OutFile = "download.dat" }
     $OutFile = Join-Path (Get-Location) $OutFile
 }
 
@@ -414,10 +425,13 @@ if (-not $Proxy) {
         $hostPort = $addr -split ":", 2
         $tcp = New-Object System.Net.Sockets.TcpClient
         try {
-            $tcp.Connect($hostPort[0], [int]$hostPort[1])
-            if ($tcp.Connected) {
-                $Proxy = $p
-                break
+            $connect = $tcp.BeginConnect($hostPort[0], [int]$hostPort[1], $null, $null)
+            if ($connect.AsyncWaitHandle.WaitOne(500, $false)) {
+                $tcp.EndConnect($connect)
+                if ($tcp.Connected) {
+                    $Proxy = $p
+                    break
+                }
             }
         } catch { } finally { $tcp.Close() }
     }
@@ -433,6 +447,10 @@ function Find-BestCurl {
         "$env:USERPROFILE\scoop\shims\curl.exe"
     )
     foreach ($c in $candidates) {
+        if ($c -like '*`*') {
+            $resolved = Resolve-Path $c -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
+            if ($resolved) { $c = $resolved }
+        }
         $found = Get-Command $c -ErrorAction SilentlyContinue
         if ($found) { return $found.Source }
     }
@@ -460,8 +478,13 @@ if ($ForceAria2) {
         exit 1
     }
     Write-Host "[MODE] Forced aria2c multi-thread ($Threads threads)" -ForegroundColor Green
-    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", (Split-Path -Parent $OutFile))
-    if ($Proxy) { $ariaArgs += @("--all-proxy=$Proxy") }
+    $outDir = Split-Path -Parent $OutFile
+    if (-not $outDir) { $outDir = "." }
+    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", $outDir)
+    if ($Proxy) {
+        $ariaProxy = $Proxy -replace '^socks5h://', 'socks5://'
+        $ariaArgs += @("--all-proxy=$ariaProxy")
+    }
     & aria2c.exe @ariaArgs "$Url"
     exit $LASTEXITCODE
 }
@@ -473,8 +496,10 @@ if ($curlVersion) {
 
 if ($curlVersion -and (-not $isOld)) {
     Write-Host "[MODE] Modern curl $curlVersion (HTTP/2 + modern TLS)" -ForegroundColor Green
-    $curlArgs = @("-L", "--fail-with-body", "--tcp-nodelay", "--compressed", "-A", $BrowserUA, "-o", $OutFile)
+    $curlArgs = @("-L", "--fail-with-body", "--tcp-nodelay", "--compressed", "-o", $OutFile)
+    if (-not $hasUA) { $curlArgs += @("-A", $BrowserUA) }
     if ($Proxy) { $curlArgs += @("-x", $Proxy) }
+    $curlArgs += $PassThruArgs
     $curlArgs += $Url
     & $curlPath @curlArgs
     exit $LASTEXITCODE
@@ -488,12 +513,14 @@ if ($curlVersion) {
 
 if ($curlPath) {
     Write-Host "[MODE] Legacy curl optimized (fake UA + tcp-nodelay + retry + ssl-no-revoke if proxy)" -ForegroundColor Yellow
-    $curlArgs = @("-L", "--tcp-nodelay", "-A", $BrowserUA, "--retry", "3", "--retry-delay", "2", "-o", $OutFile)
+    $curlArgs = @("-L", "--tcp-nodelay", "--retry", "3", "--retry-delay", "2", "-o", $OutFile)
+    if (-not $hasUA) { $curlArgs += @("-A", $BrowserUA) }
     if ($Proxy) {
         $curlArgs += @("-x", $Proxy)
         # Windows legacy curl (Schannel) fails CRL check through proxy; disable it
         if ($isOld) { $curlArgs += "--ssl-no-revoke" }
     }
+    $curlArgs += $PassThruArgs
     $curlArgs += $Url
     & $curlPath @curlArgs
     $curlExit = $LASTEXITCODE
@@ -506,8 +533,13 @@ if ($curlPath) {
 
 if (Test-Aria2Available) {
     Write-Host "[MODE] curl failed/unavailable, fallback to aria2c multi-thread" -ForegroundColor Magenta
-    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", (Split-Path -Parent $OutFile))
-    if ($Proxy) { $ariaArgs += @("--all-proxy=$Proxy") }
+    $outDir = Split-Path -Parent $OutFile
+    if (-not $outDir) { $outDir = "." }
+    $ariaArgs = @("-x", $Threads, "-s", $Threads, "-k", "1M", "--user-agent=$BrowserUA", "-o", (Split-Path -Leaf $OutFile), "-d", $outDir)
+    if ($Proxy) {
+        $ariaProxy = $Proxy -replace '^socks5h://', 'socks5://'
+        $ariaArgs += @("--all-proxy=$ariaProxy")
+    }
     & aria2c.exe @ariaArgs "$Url"
     exit $LASTEXITCODE
 }
@@ -516,7 +548,7 @@ Write-Host "[MODE] Final fallback: Invoke-WebRequest (slow, last resort)" -Foreg
 $ProgressPreference = 'SilentlyContinue'
 try {
     $iwrArgs = @{ Uri = $Url; OutFile = $OutFile; UserAgent = $BrowserUA; UseBasicParsing = $true }
-    if ($Proxy) {
+    if ($Proxy -and $Proxy -notmatch '^socks5') {
         $proxyUri = [System.Uri]$Proxy
         $iwrArgs['Proxy'] = "$($proxyUri.Scheme)://$($proxyUri.Host):$($proxyUri.Port)"
     }
