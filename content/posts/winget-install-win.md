@@ -94,34 +94,40 @@ function Download-WithRetry {
 $msixUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 $msixPath = "$temp\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 
-if ((Test-Path $msixPath) -and ((Get-Item $msixPath).Length -lt 50MB)) {
-    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
-    Remove-Item $msixPath -Force
-}
-if (-not (Test-Path $msixPath)) {
-    Write-Info "下载 winget msixbundle..."
-    $ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
-    if (-not $ok) {
-        Write-Fail "主安装包下载失败，所有镜像源均不可用。"
+if (Test-Path $msixPath) {
+    Write-Warn "检测到旧的临时文件，删除后重新下载..."
+    try {
+        Remove-Item $msixPath -Force -ErrorAction Stop
+    } catch {
+        Write-Fail "无法删除旧临时文件（可能被占用），请关闭占用进程后重试：$_"
         exit 1
     }
+}
+Write-Info "下载 winget msixbundle..."
+$ok = Download-WithRetry -Url $msixUrl -OutFile $msixPath -MinSizeBytes 50MB
+if (-not $ok) {
+    Write-Fail "主安装包下载失败，所有镜像源均不可用。"
+    exit 1
 }
 
 # ==================== 4. 下载依赖包 ====================
 $depZipUrl = "https://github.com/microsoft/winget-cli/releases/download/$version/DesktopAppInstaller_Dependencies.zip"
 $depZipPath = "$temp\DesktopAppInstaller_Dependencies.zip"
 
-if ((Test-Path $depZipPath) -and ((Get-Item $depZipPath).Length -lt 1MB)) {
-    Write-Warn "检测到不完整的临时文件，删除后重新下载..."
-    Remove-Item $depZipPath -Force
-}
-if (-not (Test-Path $depZipPath)) {
-    Write-Info "下载依赖包..."
-    $ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
-    if (-not $ok) {
-        Write-Fail "依赖包下载失败，所有镜像源均不可用。"
+if (Test-Path $depZipPath) {
+    Write-Warn "检测到旧的临时文件，删除后重新下载..."
+    try {
+        Remove-Item $depZipPath -Force -ErrorAction Stop
+    } catch {
+        Write-Fail "无法删除旧临时文件（可能被占用），请关闭占用进程后重试：$_"
         exit 1
     }
+}
+Write-Info "下载依赖包..."
+$ok = Download-WithRetry -Url $depZipUrl -OutFile $depZipPath -MinSizeBytes 1MB
+if (-not $ok) {
+    Write-Fail "依赖包下载失败，所有镜像源均不可用。"
+    exit 1
 }
 
 # ==================== 5. 解压依赖 ====================
@@ -411,7 +417,7 @@ winget uninstall Microsoft.VisualStudioCode       # 卸载
 ## 更新日志
 
 - **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加 msixbundle / 依赖包 zip 的临时文件大小校验，不完整时自动删除重下
+  - 改为无条件删除旧临时文件，确保每次运行都重新下载干净的安装包
   - 解决「执行到一半退出，再次运行时报文件损坏 / 0x80073CF3 部署失败」的问题
 
 - **2026-05-06** 增强健壮性，修复依赖安装失败问题：

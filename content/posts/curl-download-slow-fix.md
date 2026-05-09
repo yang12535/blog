@@ -274,10 +274,20 @@ powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..." -Proxy "h
 
 ### Q4：`curl-fast.ps1` 执行时提示「无法加载，因为在此系统上禁止运行脚本」？
 
-这是 PowerShell 执行策略限制，显式加 `-ExecutionPolicy Bypass` 即可：
+这是 PowerShell 执行策略限制。有两种解决方式：
+
+**方式一：临时绕过（仅本次执行）**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 ...
 ```
+
+**方式二：一劳永逸（推荐）**
+修改当前用户的执行策略为 `RemoteSigned`，允许本地脚本运行：
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+```
+
+修改后，无需再加 `-ExecutionPolicy Bypass`，可在 PowerShell 中直接运行 `./curl-fast.ps1`，或右键 `.ps1` 文件选择「使用 PowerShell 运行」。
 
 ### Q5：如何判断 curl 有没有走代理？
 

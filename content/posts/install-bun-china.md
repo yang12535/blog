@@ -50,21 +50,21 @@ if (-not $node -or -not $npm) {
     $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
     $nodeOut = Join-Path $temp $msiName
 
-    if ((Test-Path $nodeOut) -and ((Get-Item $nodeOut).Length -lt 10MB)) {
-        Write-Warn "检测到不完整的临时文件，删除后重新下载..."
+    if (Test-Path $nodeOut) {
+        Write-Warn "检测到旧的临时文件，删除后重新下载..."
         Remove-Item $nodeOut -Force
     }
-    if (-not (Test-Path $nodeOut)) {
-        Write-Info "下载 $msiName 中，请稍候..."
-        try {
-            Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
-            if ((Get-Item $nodeOut).Length -lt 10MB) {
-                throw "下载文件异常过小，可能已被拦截或损坏。"
-            }
-        } catch {
-            Write-Fail "下载失败: $_"
-            exit 1
+    Write-Info "下载 $msiName 中，请稍候..."
+    try {
+        Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
+        $nodeHash = "2c0cc97ec64c1e4111362e1e32e0547fd870e4d9c79ec844c117da583f21b386"
+        if ((Get-FileHash $nodeOut -Algorithm SHA256).Hash -ne $nodeHash) {
+            Remove-Item $nodeOut -Force -ErrorAction SilentlyContinue
+            throw "下载文件 SHA256 校验失败，可能已被拦截或损坏。已删除损坏文件，建议重试。"
         }
+    } catch {
+        Write-Fail "下载失败: $_"
+        exit 1
     }
 
     Write-Info "正在静默安装 Node.js（可能需要 1-2 分钟）..."
@@ -527,7 +527,7 @@ Write-Host ">>> 完成！Bun 已安装且配置了国内源。" -ForegroundColor
 ## 更新日志
 
 - **2026-05-08** 修复断点续传导致的安装失败：
-  - 增加 Node.js MSI 临时文件大小校验，不完整时自动删除重下
+  - 改为无条件删除旧临时文件，下载后增加 SHA256 校验，防止被拦截或损坏
   - 解决「执行到一半退出，再次运行时报 `node/npm 找不到`」的问题
 
 - **2026-05-06** 增强健壮性，全面适配 Windows PowerShell 5.1：
