@@ -5,6 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site.title }}{% endblock %}</title>
   <meta name="description" content="{% block desc %}{{ site.description }}{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}{{ site.url }}/{% endblock %}">
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ site.title }}{% endblock %}">
+  <meta property="og:description" content="{% block og_desc %}{{ site.description }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ site.url }}/{% endblock %}">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{% block tw_title %}{{ site.title }}{% endblock %}">
+  <meta name="twitter:description" content="{% block tw_desc %}{{ site.description }}{% endblock %}">
+
+  <!-- JSON-LD: WebSite -->
+  {% set siteLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": site.title,
+    "url": site.url + '/',
+    "description": site.description
+  } %}
+  <script type="application/ld+json">{{ siteLd | json }}</script>
+
+  {% block extra_head %}{% endblock %}
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -64,7 +91,7 @@
     </div>
     {% endif %}
   </footer>
-  <script src="{{ root }}assets/js/main.js?v=7"></script>
-  <script src="{{ root }}assets/vendor/mermaid.min.js"></script>
+  <script src="{{ root }}assets/js/main.js?v=7" defer></script>
+  <script src="{{ root }}assets/vendor/mermaid.min.js" defer></script>
 </body>
 </html>
