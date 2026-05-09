@@ -1,4 +1,4 @@
-﻿---
+---
 title: Windows 一键安装 Kimi CLI
 date: 2026-04-14
 tags: [kimi-cli, windows, uv, powershell]

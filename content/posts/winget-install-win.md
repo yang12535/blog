@@ -1,4 +1,4 @@
-﻿---
+---
 title: Windows 10 / 11 安装 winget（无 Microsoft Store 方案）
 date: 2026-05-06
 tags: [winget, windows, powershell, github-proxy, 机房]

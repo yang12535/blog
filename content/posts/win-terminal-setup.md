@@ -1,4 +1,4 @@
-﻿---
+---
 title: Windows Terminal + PowerShell 7 一键安装配置指南
 date: 2026-04-29
 tags: [windows, terminal, powershell, oh-my-posh, nerd-font, utf-8, github-proxy]
