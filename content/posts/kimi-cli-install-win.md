@@ -47,7 +47,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue
 ```
 
-Windows 10/11 会在 `WindowsApps` 目录放一个 **App Execution Alias**（空壳 `python.exe`）。
+Windows 10/11 会在 `WindowsApps` 目录放一个 **App Execution Alias**（空壳 `python.exe`）。  
 即使你的 PATH 里已经有真正的 Python，执行 `python` 时仍可能被它劫持到 Microsoft Store。脚本在安装前先删掉这两个假入口，防止后续命令被截胡。
 
 **进阶说明：Microsoft Store 假 `python` 劫持流程**
@@ -108,8 +108,8 @@ if(-not(Test-Path $pyExe)){
 $env:Path="$pyDir;$pyDir\Scripts;$env:Path"
 ```
 
-Python 安装程序修改的是**注册表里的永久 PATH**，但**正在运行的 PowerShell 窗口不会自动感知**。
-如果不把这行加上，后续所有 `python` 命令都会报 `无法将“python”项识别为 cmdlet...`。
+Python 安装程序修改的是**注册表里的永久 PATH**，但**正在运行的 PowerShell 窗口不会自动感知**。  
+如果不把这行加上，后续所有 `python` 命令都会报 `无法将“python”项识别为 cmdlet...`。  
 我们通过将真实 Python 目录 prepend 到当前会话的 `$env:Path` 最前面，确保本窗口内立即生效，同时绕过 WindowsApps 的优先级干扰。
 
 ### 5. 安装 uv（清华 PyPI 镜像）
@@ -183,7 +183,7 @@ python -m uv --version    # uv x.x.x
 kimi --version            # kimi-cli x.x.x
 ```
 
-三条命令都输出版本号，说明全套环境已就绪。
+三条命令都输出版本号，说明全套环境已就绪。  
 **关闭当前 PowerShell，重新开一个普通窗口**，输入 `kimi` 即可开始使用。
 
 ---
@@ -205,7 +205,7 @@ kimi --version            # kimi-cli x.x.x
 
 ### Q1：安装完新终端里输入 `uv` 提示找不到命令？
 
-**原因**：`uv` 是通过 `pip install --user` 装的，落在了 `%APPDATA%\Python\Python312\Scripts`，这个目录默认不在 PATH 里。
+**原因**：`uv` 是通过 `pip install --user` 装的，落在了 `%APPDATA%\Python\Python312\Scripts`，这个目录默认不在 PATH 里。  
 **解决**：把下面路径加到用户环境变量 `Path` 中：
 ```
 %APPDATA%\Python\Python312\Scripts
@@ -213,7 +213,7 @@ kimi --version            # kimi-cli x.x.x
 
 ### Q2：输入 `kimi` 提示找不到命令？
 
-**原因**：`kimi.exe` 在 `%USERPROFILE%\.local\bin`，没加到 PATH。
+**原因**：`kimi.exe` 在 `%USERPROFILE%\.local\bin`，没加到 PATH。  
 **解决**：把下面路径加到用户环境变量 `Path` 中：
 ```
 %USERPROFILE%\.local\bin
@@ -237,7 +237,7 @@ uv tool uninstall kimi-cli
 
 ### Q5：Microsoft Store 又跳出来了？
 
-Windows 更新后可能会重新生成 `WindowsApps\python.exe` 的 App Execution Alias。
+Windows 更新后可能会重新生成 `WindowsApps\python.exe` 的 App Execution Alias。  
 **临时解决**：再次删除假入口：
 ```powershell
 Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue
