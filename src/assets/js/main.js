@@ -93,7 +93,21 @@
           wrapper.className = 'mermaid-diagram';
           var parser = new DOMParser();
           var doc = parser.parseFromString(result.svg, 'image/svg+xml');
-          doc.querySelectorAll('script, [on\\*]').forEach(function(el) { el.remove(); });
+          // 移除 script 标签
+          doc.querySelectorAll('script').forEach(function(el) { el.remove(); });
+
+          // 移除所有以 on 开头的事件处理器属性
+          var allElements = doc.querySelectorAll('*');
+          allElements.forEach(function(el) {
+            Array.from(el.attributes).forEach(function(attr) {
+              if (attr.name.toLowerCase().startsWith('on')) {
+                el.removeAttribute(attr.name);
+              }
+            });
+          });
+
+          // 移除危险的 SVG 元素
+          doc.querySelectorAll('foreignObject').forEach(function(el) { el.remove(); });
           wrapper.appendChild(doc.documentElement);
           pre.parentNode.replaceChild(wrapper, pre);
         }).catch(function(err) {

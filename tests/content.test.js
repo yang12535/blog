@@ -26,9 +26,19 @@ describe('sanitizeHtml', () => {
     expect(sanitizeHtml(input)).toBe('<img src="image.jpg" />');
   });
 
-  it('allows iframe tag with allowed attributes', () => {
+  it('allows iframe tag with allowed hostnames', () => {
+    const input = '<iframe src="https://www.youtube.com/embed/123" width="100%" height="400" frameborder="0" allow="fullscreen" allowfullscreen></iframe>';
+    expect(sanitizeHtml(input)).toBe('<iframe src="https://www.youtube.com/embed/123" width="100%" height="400" frameborder="0" allow="fullscreen" allowfullscreen></iframe>');
+  });
+
+  it('allows bilibili iframe', () => {
+    const input = '<iframe src="https://player.bilibili.com/player.html?bvid=123" width="100%" height="400" frameborder="0" allowfullscreen></iframe>';
+    expect(sanitizeHtml(input)).toBe('<iframe src="https://player.bilibili.com/player.html?bvid=123" width="100%" height="400" frameborder="0" allowfullscreen></iframe>');
+  });
+
+  it('removes iframe src with disallowed hostnames', () => {
     const input = '<iframe src="https://example.com" width="100%" height="400" frameborder="0" allow="fullscreen" allowfullscreen></iframe>';
-    expect(sanitizeHtml(input)).toBe('<iframe src="https://example.com" width="100%" height="400" frameborder="0" allow="fullscreen" allowfullscreen></iframe>');
+    expect(sanitizeHtml(input)).toBe('<iframe width="100%" height="400" frameborder="0" allow="fullscreen" allowfullscreen></iframe>');
   });
 
   it('allows details and summary tags', () => {
