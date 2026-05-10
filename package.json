@@ -8,17 +8,23 @@
     "dev": "node build.js --watch",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
-  "keywords": ["blog", "ssg", "edgeone", "static"],
+  "keywords": [
+    "blog",
+    "ssg",
+    "edgeone",
+    "static"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "chokidar": "^3.6.0"
   },
   "dependencies": {
-    "marked": "^14.1.2",
     "gray-matter": "^4.0.3",
-    "jschardet": "^3.1.2",
     "iconv-lite": "^0.6.3",
-    "nunjucks": "^3.2.4"
+    "jschardet": "^3.1.2",
+    "marked": "^14.1.2",
+    "nunjucks": "^3.2.4",
+    "sanitize-html": "^2.17.3"
   }
 }

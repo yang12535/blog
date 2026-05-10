@@ -95,7 +95,7 @@ async function build() {
     title: CONFIG.title,
     description: CONFIG.description,
   });
-  generateSitemap(allPosts, {
+  generateSitemap(published, {
     outputDir: CONFIG.outputDir,
     siteUrl: CONFIG.siteUrl,
     allTags,
@@ -116,14 +116,39 @@ async function build() {
 
 // CLI
 const args = process.argv.slice(2);
-if (args.includes('--watch')) {
-  build().catch(err => {
+let isBuilding = false;
+let pendingBuild = false;
+
+async function runBuild() {
+  if (isBuilding) {
+    pendingBuild = true;
+    return;
+  }
+  isBuilding = true;
+  try {
+    await build();
+  } catch (err) {
+    console.error('❌ Build failed:', err.message);
     console.error(err);
-  });
+  } finally {
+    isBuilding = false;
+    if (pendingBuild) {
+      pendingBuild = false;
+      runBuild();
+    }
+  }
+}
+
+if (args.includes('--watch')) {
+  runBuild();
   const chokidar = require('chokidar');
+  let debounceTimer;
   chokidar
     .watch([CONFIG.postsDir, CONFIG.templateDir, CONFIG.assetsDir], { ignoreInitial: true })
-    .on('all', () => build().catch(console.error));
+    .on('all', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(runBuild, 150);
+    });
 } else {
   build().catch(err => {
     console.error('❌ Build failed:', err.message);
