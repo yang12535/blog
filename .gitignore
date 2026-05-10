@@ -17,7 +17,27 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Keys
+*.pem
+*.key
+
+# Cache
+.cache/
+*.tmp
+temp/
+
 # Logs
 *.log
 npm-debug.log*
+
+# Coverage reports
+coverage/
+
+# Temporary scan reports
+scans/
+
+# License check temporary files
+licenses*.json
+dep-licenses.md
+dep-table.md
 

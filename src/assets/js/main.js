@@ -91,7 +91,10 @@
         mermaid.render(id, graphDefinition).then(function(result) {
           var wrapper = document.createElement('div');
           wrapper.className = 'mermaid-diagram';
-          wrapper.innerHTML = result.svg;
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(result.svg, 'image/svg+xml');
+          doc.querySelectorAll('script, [on\\*]').forEach(function(el) { el.remove(); });
+          wrapper.appendChild(doc.documentElement);
           pre.parentNode.replaceChild(wrapper, pre);
         }).catch(function(err) {
           console.error('Mermaid render error:', err);
@@ -164,7 +167,7 @@
           document.execCommand('copy');
           btn.textContent = '已复制!';
           setTimeout(function() { btn.textContent = '复制'; }, 1500);
-        } catch (err) {
+        } catch {
           btn.textContent = '复制失败';
           setTimeout(function() { btn.textContent = '复制'; }, 1500);
         }

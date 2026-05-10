@@ -82,12 +82,12 @@ tags: [标签1, 标签2]
 
 ### Frontmatter 字段
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `title` | 是 | 文章标题 |
-| `date` | 否 | 发布日期，默认文件修改时间 |
-| `tags` | 否 | 标签数组 |
-| `draft` | 否 | 设为 `true` 则不发布 |
+| 字段    | 必填 | 说明                       |
+| ------- | ---- | -------------------------- |
+| `title` | 是   | 文章标题                   |
+| `date`  | 否   | 发布日期，默认文件修改时间 |
+| `tags`  | 否   | 标签数组                   |
+| `draft` | 否   | 设为 `true` 则不发布       |
 
 ## 部署到 EdgeOne Pages
 
@@ -145,18 +145,18 @@ const CONFIG = {
 如需更新 CSS/JS 并强制浏览器刷新，修改模板中引用路径的版本号：
 
 ```html
-<link rel="stylesheet" href="assets/css/style.css?v=6">
+<link rel="stylesheet" href="assets/css/style.css?v=6" />
 ```
 
 ## 内容分离部署（可选）
 
 如果希望文章仓库与生成器仓库分离，可设置环境变量：
 
-| 环境变量 | 说明 |
-|----------|------|
-| `CONTENT_REPO` | 内容仓库，如 `owner/posts-repo` |
-| `CONTENT_BRANCH` | 内容分支，默认 `main` |
-| `GITHUB_TOKEN` | GitHub 访问令牌（私有仓库必填） |
+| 环境变量         | 说明                            |
+| ---------------- | ------------------------------- |
+| `CONTENT_REPO`   | 内容仓库，如 `owner/posts-repo` |
+| `CONTENT_BRANCH` | 内容分支，默认 `main`           |
+| `GITHUB_TOKEN`   | GitHub 访问令牌（私有仓库必填） |
 
 在 EdgeOne Pages 控制台 → 项目设置 → 环境变量 中添加即可。
 
@@ -171,3 +171,7 @@ const CONFIG = {
 
 - **代码**（build.js、lib/、模板、样式、脚本等）：[MIT License](LICENSE)
 - **文章/内容**（`content/` 目录下）：采用 [CC BY 4.0](content/LICENSE) 许可，转载需署名并附上原作者 GitHub 链接（https://github.com/yang12535）
+
+## 第三方许可证
+
+- `jschardet@3.1.4`：[LGPL-2.1+](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
