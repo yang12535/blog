@@ -1,5 +1,10 @@
 # 变更日志
 
+## 2026-05-10 更新
+- 修复构建脚本多处正确性：Invalid Date 回退、pullContent 不删本地目录、`__dirname` 定位、sitemap 过滤 hidden、watch 防抖互斥 `8af8ecb`
+- 使用 `sanitize-html` 替代手写正则过滤，自动为 `target="_blank"` 链接补全 `rel="noopener noreferrer"` `8af8ecb`
+- `.gitignore` 补全环境变量、IDE、OS 文件、日志等忽略规则 `8af8ecb`
+
 ## 2026-05-09 更新
 - SEO全面优化与构建脚本健壮性提升，模板增加结构化数据，`lib` 模块增加安全策略与 Nunjucks 过滤器 `9651e11`
 - 集成 Google AdSense 自动广告、站点验证与 `ads.txt` 部署 `574328b`, `9ca2e7e`, `803f179`, `6b5e1b4`

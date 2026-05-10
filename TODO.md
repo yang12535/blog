@@ -79,13 +79,28 @@
 
 ---
 
+## ✅ 本轮修复（PR #10 — 构建正确性）
+
+| # | 问题 | 文件 | 修复方式 |
+|---|------|------|----------|
+| 1 | **Invalid Date 导致文章静默丢弃** — frontmatter 日期格式错误时 `toISOString()` 抛 `RangeError`，被 catch 吞掉 | `lib/content.js` | 增加 `isNaN(d.getTime())` 回退到文件 mtime |
+| 2 | **pullContent() 永久删除本地 postsDir** — 只要设了 `CONTENT_REPO` 就先 `rmSync` 本地文章，拉取失败则永久丢失 | `lib/content.js` | 改为 `mkdirSync` + 覆盖复制，保留本地原有文件 |
+| 3 | **process.cwd() 导致临时目录乱飞** — 从项目外执行构建时 `.content-tmp` 创建在当前目录 | `lib/content.js` | 改为 `path.join(__dirname, '..', '.content-tmp')` |
+| 4 | **sitemap.xml 收录 hidden 文章** — `generateSitemap` 传入 `allPosts` 而非 `published` | `build.js` | 改为传入 `published` 过滤 hidden |
+| 5 | **watch 模式并发构建互相删 dist** — 编辑器保存触发多次 `all` 事件，多个 `build()` 并发运行 | `build.js` | 增加 `debounce(150ms)` + `isBuilding` 互斥锁 |
+| 6 | **sanitizeHtml 手写正则易被绕过** — 无引号事件处理器、HTML 实体编码、危险标签均无法拦截 | `lib/content.js` | 引入 `sanitize-html` 替换手写正则 |
+| 7 | **target="_blank" 缺 rel="noopener"** — `sanitize-html` 默认允许 `a.target`，存在 tabnabbing 风险 | `lib/content.js` | `transformTags` 自动为 `_blank` 链接补 `rel="noopener noreferrer"` |
+| 8 | **.gitignore 严重不完整** — 仅 `dist/` 和 `node_modules/`，缺 `.env`、IDE、OS 文件、日志 | `.gitignore` | 补全 14 项忽略规则 |
+
+---
+
 ## ✅ 已完成的审查任务
 
 - [x] 链接与交叉引用审查（发现 6 处问题）
 - [x] 行文结构与风格一致性审查（发现 20+ 处问题，风格类不强制修复）
 - [x] 技术准确性审查（发现 11 处问题，含 5 处严重错误）
 - [x] 生成 `changed.md`（133 行，43 条 commit）
-- [ ] 代码可执行性审查（进行中）
+- [x] 代码可执行性审查（PR #10 完成首轮修复，共 8 处）
 
 ---
 
