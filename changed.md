@@ -1,133 +1,37 @@
 # 变更日志
 
-## 2026-05-09
+## 2026-05-09 更新
+- SEO全面优化与构建脚本健壮性提升，模板增加结构化数据，`lib` 模块增加安全策略与 Nunjucks 过滤器 `9651e11`
+- 集成 Google AdSense 自动广告、站点验证与 `ads.txt` 部署 `574328b`, `9ca2e7e`, `803f179`, `6b5e1b4`
+- 集成 Giscus (GitHub Discussions) 评论系统 `abadff9`, `47ab61f`
+- 修复构建脚本 `pullContent` 目录安全检测与 URL 尾部斜杠规范化，模板标题改为动态读取 `a42bc4a`
+- 统一 UTF-8 无 BOM 编码与 LF 换行符规范 `ca37cdf`
+- 清理误提交的 `node_modules` 并补充 `.gitignore` `8e4ad58`, `1b0f54f`
 
-### 新增功能
-- `574328b` feat: add AdSense auto-ads script
-- `9ca2e7e` feat: add AdSense verification meta tag
-- `803f179` feat: add about page, avatar, ads.txt
-- `abadff9` feat: integrate Giscus (GitHub Discussions) comments
-- `9651e11` feat(site): SEO 全面优化 + 构建脚本健壮性提升 (#6)
-- `3274dbe` feat(site): SEO 全面优化 + 构建脚本健壮性提升
+## 2026-05-08 更新
+- 构建流程自动生成 `sitemap.xml` 与 `robots.txt` `30871f7`
+- 模板页脚增加 ICP 备案号展示 `5dc3e08`
+- 新增文章目录 (TOC) 自动生成、回到顶部按钮与移动端适配 `0ec7c25`
+- 修复标签 slug 生成与中文标签链接 404 问题，日期 fallback 改为文件 mtime `db60fc0`
+- 将 `build.js` 重构为 `lib` 模块化架构，修复 shell 注入风险与单文件错误隔离 `48e421b`
+- 清理 `dist/` 构建产物移出版本控制 `a4c02d3`
 
-### 修复
-- `e34678f` fix(posts): 简化 PowerShell 下载完整性检查，修复执行策略说明 (#4)
-- `f7bb521` fix(posts): 简化 PowerShell 下载完整性检查，修复执行策略说明
-- `f3cefd6` style: 恢复 kimi-cli-install-win.md 中被误删的段落换行行尾双空格
-- `f7f54eb` style: 恢复引用块内用于换行的行尾双空格
-- `83eb219` style: 统一分隔线、移除重复 H1、修复末尾连续分隔线与多余空行
-- `ca37cdf` fix: 移除 UTF-8 BOM，将 CRLF 统一为 LF
-- `6b5e1b4` fix: copy ads.txt to site root
+## 2026-04-29 更新
+- 修复 `pullContent` 路径检测逻辑，支持 `content/posts` 子目录 `43bc37a`
 
-### 文档
-- `bec6895` docs: 更新 Windows 教程文档（兼容性实测 + 结构调整）
-- `7d813c3` docs更新，内容追加，兼容性实测
-- `b010cc4` docs(curl): append curl-fast.ps1 source code and changelog
+## 2026-04-23 更新
+- 新增 webuser-agent 工具页面与构建生成逻辑 `5bf6e95`
 
-### 优化
-- `1b0f54f` chore: 移除误提交的 node_modules，补充 .gitignore
+## 2026-04-15 更新
+- 将 Mermaid 图表库从 CDN 迁移为本地自托管，新增 `.gitattributes` 统一 LF 换行 `90b372f`
 
-## 2026-05-08
+## 2026-04-09 更新
+- 新增代码块行号显示、一键复制按钮、Markdown 相对链接自动转换，并新增 README/DEPLOY/FAQ/THEME/WRITING/CHANGELOG 项目文档 `7faf9a8`
+- 新增 SVG 站点图标与构建自动复制逻辑 `f5ff72b`
+- 新增 Mermaid 图表渲染支持，`main.js` 缓存版本提升至 `v3` `e8a2edc`
+- 为 CSS 与 JS 添加缓存破坏版本查询参数强制刷新 `92d9476`, `bc16719`
+- 将 Mermaid CDN 从国外切换为国内并确保加载顺序正确 `7566a48`
 
-### 新增功能
-- `30871f7` feat: generate sitemap.xml and robots.txt during build
-- `5dc3e08` feat: 悬挂 ICP 备案号
-- `0ec7c25` feat: 添加文章目录(TOC)跳转、回到顶部按钮及移动端适配
-
-### 修复
-- `db60fc0` Fix tag link slugs and date fallback consistency (#2)
-- `b94a2bc` fix: 移动端隐藏回到顶部按钮
-- `69e10e0` fix: 移动端回到顶部按钮改用 div 避免默认样式干扰
-- `ed5d5f1` fix: 修复移动端回到顶部按钮被系统导航栏遮挡
-- `eb57f5f` 删除多余的，#Requires -Version 5.1
-
-### 文档
-- `69ac3e2` docs: sync project docs with current codebase
-- `06a0eb7` 更新 LICENSE、添加 GitHub 导航链接及相关文档
-
-### 优化
-- `48e421b` refactor: split build.js into modules and fix code quality issues
-- `a4c02d3` chore: remove dist/ from git and add to .gitignore
-
-## 2026-05-06
-
-### 修复
-- `88c3f83` 删除多余的，#Requires -Version 5.1
-
-### 文档
-- `6d93fdd` docs update
-
-## 2026-04-29
-
-### 新增功能
-- `f360619` new docs
-- `05a601e` winget install for ps5.1
-- `aaee4f9` Update winget installation guide for Windows
-
-### 修复
-- `43bc37a` fix(build): support content/posts path in pullContent()
-
-### 文档
-- `9826c0d` docs(install-bun-china): fix msiexec wait, detect existing Node.js, add nvm-windows support
-- `d5935a4` docs update
-- `be5a2dc` docs update
-
-## 2026-04-28
-
-### 文档
-- `60a73dc` 文档更新
-
-## 2026-04-23
-
-### 新增功能
-- `5bf6e95` feat: 整合 webuser-agent UI 增强 (#1)
-
-## 2026-04-16
-
-### 修复
-- `202cb19` fix: 修复 RHEL 9 换源后 yum update 身份冲突问题
-
-### 文档
-- `4e638c5` docs: 添加醒目的不可逆操作警告
-
-## 2026-04-15
-
-### 新增功能
-- `9298a4b` feat: add mermaid diagram for Microsoft Store python hijacking in win install post
-- `90b372f` feat: vendor mermaid.min.js to avoid external CDN
-
-## 2026-04-14
-
-### 优化
-- `553a08c` name yaml update
-
-### 文档
-- `2cf1715` win store update
-
-## 2026-04-09
-
-### 新增功能
-- `e8a2edc` Add Mermaid diagram support
-- `f5ff72b` Add SVG favicon
-- `7faf9a8` feat: code block line numbers + copy, fix .md link resolution, add docs
-- `7474f7a` new docs
-
-### 修复
-- `7566a48` Fix: use domestic CDN for mermaid, ensure main.js loads first
-- `bc16719` fix: add cache-busting version to main.js
-
-### 文档
-- `4f8ab5c` doc update win kimicli
-
-## 2026-04-08
-
-### 新增功能
-- `1456fe8` feat: apply old blog theme (Bulma-style layout)
-
-### 修复
-- `92d9476` fix: bust css cache with version query
-- `86f73cc` fix: add code block for powershell script
-- `77ea67c` fix: update frontmatter for kimi-cli-install-win
-
-### 初始化
-- `e56c01d` init: bogl static blog
+## 2026-04-08 更新
+- 全面重构博客主题为 Bulma 风格三栏布局，引入 CSS 变量体系与响应式设计 `1456fe8`
+- 初始化 Bogl 静态博客生成器项目，基于 Node.js + marked + nunjucks 构建引擎 `e56c01d`
