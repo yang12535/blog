@@ -23,16 +23,17 @@ const CONFIG = {
   templateDir: path.join(__dirname, 'src', 'templates'),
   assetsDir: path.join(__dirname, 'src', 'assets'),
   postsPerPage: 10,
-  siteUrl: (process.env.SITE_URL || 'https://bash.yang125.fun').replace(/\/+$/, ''),
-  icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
+  siteUrl: (process.env.SITE_URL || '').replace(/\/+$/, ''),
+  icp: process.env.SITE_ICP || '',
   psb: process.env.SITE_PSB || '',
+  adsenseId: process.env.ADSENSE_ID || '',
   // Giscus (GitHub Discussions) 评论配置
   // 支持通过环境变量覆盖，方便 fork 后自定义
   giscus: {
-    repo: process.env.GISCUS_REPO || 'yang12535/blog',
-    repoId: process.env.GISCUS_REPO_ID || 'R_kgDOR75DVQ',
-    category: process.env.GISCUS_CATEGORY || 'Announcements',
-    categoryId: process.env.GISCUS_CATEGORY_ID || 'DIC_kwDOR75DVc4C8ot-',
+    repo: process.env.GISCUS_REPO || '',
+    repoId: process.env.GISCUS_REPO_ID || '',
+    category: process.env.GISCUS_CATEGORY || '',
+    categoryId: process.env.GISCUS_CATEGORY_ID || '',
     mapping: process.env.GISCUS_MAPPING || 'pathname',
     reactionsEnabled: process.env.GISCUS_REACTIONS || '1',
     theme: process.env.GISCUS_THEME || 'preferred_color_scheme',
@@ -166,6 +167,7 @@ async function build() {
     icp: CONFIG.icp,
     psb: CONFIG.psb,
     giscus: CONFIG.giscus,
+    adsenseId: CONFIG.adsenseId,
   };
 
   // 5. Generate pages — each step is independent; failures don't block others
@@ -252,19 +254,21 @@ async function build() {
     }
   }
 
-  // 6. Copy ads.txt to root for AdSense
+  // 6. Generate ads.txt for AdSense if configured
   try {
-    const adsTxtSrc = path.join(CONFIG.assetsDir, 'ads.txt');
-    const adsTxtDest = path.join(CONFIG.outputDir, 'ads.txt');
-    if (fs.existsSync(adsTxtSrc)) {
-      fs.copyFileSync(adsTxtSrc, adsTxtDest);
-      console.log('  Copied ads.txt to root.');
+    const adsenseId = CONFIG.adsenseId;
+    if (adsenseId) {
+      const adsTxtContent = `google.com, pub-${adsenseId}, DIRECT, f08c47fec0942fa0`;
+      fs.writeFileSync(path.join(CONFIG.outputDir, 'ads.txt'), adsTxtContent, 'utf-8');
+      console.log('  Generated ads.txt.');
       report.steps.adsTxt = { status: 'success' };
+    } else {
+      report.steps.adsTxt = { status: 'skipped' };
     }
   } catch (err) {
     report.steps.adsTxt = { status: 'failed', error: err.message };
     report.totalWarnings++;
-    console.warn(`  ⚠️ Failed to copy ads.txt: ${err.message}`);
+    console.warn(`  ⚠️ Failed to generate ads.txt: ${err.message}`);
   }
 
   // 7. Summary

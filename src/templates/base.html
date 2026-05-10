@@ -6,8 +6,10 @@
   <title>{% block title %}{{ site.title }}{% endblock %}</title>
   <meta name="description" content="{% block desc %}{{ site.description }}{% endblock %}">
   <link rel="canonical" href="{% block canonical %}{{ site.url }}/{% endblock %}">
-  <meta name="google-adsense-account" content="ca-pub-4120379355917420">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4120379355917420" crossorigin="anonymous"></script>
+  {% if site.adsenseId %}
+  <meta name="google-adsense-account" content="ca-pub-{{ site.adsenseId }}">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-{{ site.adsenseId }}" crossorigin="anonymous"></script>
+  {% endif %}
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="{{ site.title }}">
