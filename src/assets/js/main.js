@@ -109,10 +109,16 @@
           // 移除危险的 SVG 元素（保留 <use>，依赖 href/xlink:href 协议清理）
           doc.querySelectorAll('foreignObject, animate, animateMotion, animateTransform, set').forEach(function(el) { el.remove(); });
 
-          // 清理 href 和 xlink:href 属性中的 javascript: 协议
+          // 清理 href 和 xlink:href 属性，仅允许安全的协议（白名单）
           doc.querySelectorAll('[href], [xlink\\:href]').forEach(function(el) {
             var href = el.getAttribute('href') || el.getAttribute('xlink:href');
-            if (href && href.toLowerCase().startsWith('javascript:')) {
+            if (!href) return;
+            var lower = href.toLowerCase();
+            // 允许：http/https 绝对 URL、#fragment、相对 URL（/ ./ ../）
+            var isSafe = lower.startsWith('http://') || lower.startsWith('https://') ||
+                         lower.startsWith('#') || lower.startsWith('/') ||
+                         lower.startsWith('./') || lower.startsWith('../');
+            if (!isSafe) {
               el.removeAttribute('href');
               el.removeAttribute('xlink:href');
             }
