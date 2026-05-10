@@ -113,7 +113,7 @@ function resolveRelativeLink(url, baseFile) {
   if (clean.startsWith('/')) {
     // 其他根路径，基于项目根目录解析
     const rootDir = path.resolve(__dirname, '..');
-    const resolved = path.resolve(rootDir, clean);
+    const resolved = path.resolve(rootDir, clean.slice(1));
     // 确保解析后的路径仍在项目根目录内
     if (!resolved.startsWith(rootDir + path.sep)) {
       return null;

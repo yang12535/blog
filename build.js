@@ -234,8 +234,12 @@ async function build() {
   for (const gen of generators) {
     try {
       const result = gen.fn();
-      report.steps[gen.name] = { status: 'success', ...result };
-      if (result.failed > 0) {
+      const hasFailures = result.failed > 0;
+      report.steps[gen.name] = {
+        status: hasFailures ? 'warning' : 'success',
+        ...result,
+      };
+      if (hasFailures) {
         report.totalErrors += result.failed;
       }
     } catch (err) {
@@ -266,6 +270,10 @@ async function build() {
   // 7. Summary
   const duration = Date.now() - startTime;
   printBuildSummary(report, duration);
+
+  if (report.totalErrors > 0) {
+    throw new BuildError(`Build completed with ${report.totalErrors} errors`, report);
+  }
 
   return report;
 }
