@@ -75,17 +75,21 @@ function checkSingleUrl(url, timeoutMs) {
         // 跟随重定向
         if (status >= 300 && status < 400 && res.headers.location) {
           const redirectUrl = new URL(res.headers.location, url).toString();
+          res.resume();
           resolve({ status: 'redirect', redirectTo: redirectUrl, finalStatus: status });
           return;
         }
         // 某些服务器不支持 HEAD，降级到 GET
         if ((status === 403 || status === 405) && method === 'HEAD') {
+          res.resume();
           makeRequest('GET');
           return;
         }
         if (status >= 200 && status < 400) {
+          res.resume();
           resolve({ status: 'ok', finalStatus: status });
         } else {
+          res.resume();
           resolve({ status: 'error', finalStatus: status, error: `HTTP ${status}` });
         }
       });
