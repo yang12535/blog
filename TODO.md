@@ -60,24 +60,39 @@
 ## 🟡 项目规范缺陷（长期改进）
 
 ### 代码质量
-- [ ] 缺少 ESLint / Prettier 配置
-- [ ] 缺少 TypeScript 类型定义
-- [ ] 缺少测试框架
-- [ ] 缺少 `.editorconfig`
-- [ ] `build.js` 错误处理不完善
+- [x] 缺少 ESLint / Prettier 配置
+- [x] 缺少 TypeScript 类型定义
+- [x] 缺少测试框架
+- [x] 缺少 `.editorconfig`
+- [x] `build.js` 错误处理不完善
 
 ### 工程化
-- [ ] 缺少 CI/CD 配置
-- [ ] 缺少 pre-commit hook
-- [ ] `package.json` 缺少 `lint`、`test`、`format` 脚本
-- [ ] 缺少 `CONTRIBUTING.md`
+- [x] 缺少 CI/CD 配置
+- [x] 缺少 pre-commit hook
+- [x] `package.json` 缺少 `lint`、`test`、`format` 脚本
+- [x] 缺少 `CONTRIBUTING.md`
 
 ### 文章规范
-- [ ] 无 frontmatter 校验规则
-- [ ] 无链接有效性检查
-- [ ] 无 UTF-8 BOM 自动检测
+- [x] 无 frontmatter 校验规则
+- [x] 无链接有效性检查
+- [x] 无 UTF-8 BOM 自动检测
 
 ---
+
+## ✅ 本轮修复（PR #11 — 全面安全审计与代码质量提升）
+
+| # | 问题 | 文件 | 修复方式 |
+|---|------|------|----------|
+| 1 | **Token 硬编码在 URL 中** — `CONTENT_TOKEN` 直接嵌入 `https://x-access-token:...@github.com` | `lib/content.js` | 改用 `GIT_ASKPASS` 环境变量传递凭证，生成临时脚本 |
+| 2 | **iframe 无白名单限制** — `sanitize-html` 默认允许任意 `src`，存在 XSS 嵌入风险 | `lib/content.js` | `allowedIframeHostnames` 限制为 `youtube.com` / `bilibili.com` |
+| 3 | **Mermaid SVG 未清洗直接插入 DOM** — `wrapper.innerHTML = result.svg` 可能携带恶意脚本 | `src/assets/js/main.js` | `DOMParser` 解析后移除 `script`、`on*` 事件、危险 SVG 元素，并白名单校验 `href` |
+| 4 | **CSP / HSTS / Referrer-Policy 缺失** — 仅 `X-Frame-Options` 和 `X-Content-Type-Options` | `edgeone.json` | 新增完整 CSP（含 giscus/AdSense/Fonts 放行）、HSTS、Referrer-Policy、Permissions-Policy |
+| 5 | **`check-links.js` 路径遍历漏洞** — 未校验 `..` 跳转 | `scripts/check-links.js` | 添加路径边界检查，限制在项目根目录内 |
+| 6 | **测试覆盖率仅 32%** — 核心模块无单元测试 | `tests/` | 新增 52 个用例，覆盖 `build.js`、`generators.js`、`renderer.js`、`content.js`、`utils.js` |
+| 7 | **圈复杂度过高** — `main()` 31、`pullContent()` 26 | `build.js` / `lib/content.js` | 重构为生成器模式 + 错误报告，`pullContent` 拆分为独立函数，圈复杂度降至 6 / 9 |
+| 8 | **自定义 `safe` filter 存在 XSS 风险** — `env.addFilter('safe', ...)` 直接输出原始 HTML | `lib/renderer.js` | 删除该 filter，依赖 `sanitize-html` 在内容层过滤 |
+| 9 | **缺少工程化配置** — 无 ESLint、Prettier、Husky、CI、类型定义 | 根目录 | 新增 `.editorconfig`、ESLint、Prettier、Husky pre-commit、Jest、GitHub Actions CI、`types/` |
+| 10 | **缺少文章规范检查工具** — 无 frontmatter / 链接 / BOM 校验 | `scripts/` | 新增 `validate-frontmatter.js`、`check-links.js`、`check-bom.js` |
 
 ## ✅ 本轮修复（PR #10 — 构建正确性）
 
@@ -104,5 +119,5 @@
 
 ---
 
-> 生成时间：2026-05-09
+> 生成时间：2026-05-10
 > 原则：风格不必模板化，重点修技术错误。

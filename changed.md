@@ -1,6 +1,14 @@
 # 变更日志
 
-## 2026-05-10 更新
+## 2026-05-10 更新（PR #11 — 全面安全审计与代码质量提升）
+- 全面安全审计：移除 URL 硬编码 Token 改用 `GIT_ASKPASS`、iframe 白名单限制（youtube/bilibili）、CSP/HSTS/Referrer-Policy/Permissions-Policy 响应头加固、Mermaid SVG DOMParser 二次清洗、修复 `check-links.js` 路径遍历漏洞 `ebf5e91`
+- 新增 52 个测试用例（总计 108 个），覆盖率 32%→60%，补充 `generators.js` / `renderer.js` / `build.js` 完整测试及边界情况 `ebf5e91`
+- 代码质量重构：降低 `main()` 圈复杂度 31→6、`pullContent()` 26→9，提取 scripts 公共逻辑到 `lib/utils.js`，删除自定义 `safe` filter 消除 XSS 风险，修复 watch 模式 Promise 漂浮与构建时间报告 `ebf5e91`
+- 工程化完善：新增 ESLint、Prettier、Husky pre-commit、`.editorconfig`、Jest、GitHub Actions CI（Node 18/20/22 矩阵）、`CONTRIBUTING.md`、`npm ci` 替代 `npm install` `ebf5e91`
+- 新增工具脚本：`check-links.js`（链接有效性检查）、`validate-frontmatter.js`（文章元数据校验）、`check-bom.js`（UTF-8 BOM 检测与自动修复）`ebf5e91`
+- 修正 TypeScript 类型定义，补充 `pullContent` / `parsePosts` / `generators` 返回类型 `ebf5e91`
+
+## 2026-05-10 更新（PR #10 — 构建正确性）
 - 修复构建脚本多处正确性：Invalid Date 回退、pullContent 不删本地目录、`__dirname` 定位、sitemap 过滤 hidden、watch 防抖互斥 `8af8ecb`
 - 使用 `sanitize-html` 替代手写正则过滤，自动为 `target="_blank"` 链接补全 `rel="noopener noreferrer"` `8af8ecb`
 - `.gitignore` 补全环境变量、IDE、OS 文件、日志等忽略规则 `8af8ecb`
