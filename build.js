@@ -169,7 +169,7 @@ async function build() {
   };
 
   // 5. Generate pages — each step is independent; failures don't block others
-  let allTags, archiveYears;
+  let allTags = [], archiveYears = [];
 
   const generators = [
     {

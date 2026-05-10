@@ -94,7 +94,7 @@ function checkSingleUrl(url, timeoutMs) {
 }
 
 // 解析相对链接 /posts/slug/ → content/posts/slug.md
-function resolveRelativeLink(url) {
+function resolveRelativeLink(url, baseFile) {
   // 移除 hash 和 query
   const clean = url.split(/[#?]/)[0];
   if (clean.startsWith('/posts/')) {
@@ -120,8 +120,16 @@ function resolveRelativeLink(url) {
     }
     return resolved;
   }
-  // 相对路径如 ./file.md 或 ../file.md
-  return null; // 暂不处理非 / 开头的相对路径
+  if (clean.startsWith('./') || clean.startsWith('../')) {
+    const rootDir = path.resolve(__dirname, '..');
+    const resolved = path.resolve(path.dirname(baseFile), clean);
+    // 确保解析后的路径仍在项目根目录内
+    if (!resolved.startsWith(rootDir + path.sep)) {
+      return null;
+    }
+    return resolved;
+  }
+  return null;
 }
 
 function findLineNumber(content, url) {
@@ -160,7 +168,7 @@ async function main() {
       if (url.startsWith('http://') || url.startsWith('https://')) {
         externalLinks.push({ file: rel, url, line });
       } else if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
-        const target = resolveRelativeLink(url);
+        const target = resolveRelativeLink(url, file);
         if (target) {
           relativeLinks.push({ file: rel, url, line, targetPath: target });
         }

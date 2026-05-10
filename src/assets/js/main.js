@@ -107,7 +107,16 @@
           });
 
           // 移除危险的 SVG 元素
-          doc.querySelectorAll('foreignObject').forEach(function(el) { el.remove(); });
+          doc.querySelectorAll('foreignObject, animate, animateMotion, animateTransform, set, use').forEach(function(el) { el.remove(); });
+
+          // 清理 href 和 xlink:href 属性中的 javascript: 协议
+          doc.querySelectorAll('[href], [xlink\\:href]').forEach(function(el) {
+            var href = el.getAttribute('href') || el.getAttribute('xlink:href');
+            if (href && href.toLowerCase().startsWith('javascript:')) {
+              el.removeAttribute('href');
+              el.removeAttribute('xlink:href');
+            }
+          });
           wrapper.appendChild(doc.documentElement);
           pre.parentNode.replaceChild(wrapper, pre);
         }).catch(function(err) {
