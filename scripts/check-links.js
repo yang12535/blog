@@ -68,28 +68,43 @@ async function checkExternalLinks(links, concurrency = 5, timeoutMs = 10000) {
 function checkSingleUrl(url, timeoutMs) {
   return new Promise((resolve) => {
     const client = url.startsWith('https:') ? https : http;
-    const req = client.request(url, { method: 'HEAD', timeout: timeoutMs }, (res) => {
-      const status = res.statusCode;
-      // 跟随重定向
-      if (status >= 300 && status < 400 && res.headers.location) {
-        const redirectUrl = new URL(res.headers.location, url).toString();
-        resolve({ status: 'redirect', redirectTo: redirectUrl, finalStatus: status });
-        return;
-      }
-      if (status >= 200 && status < 400) {
-        resolve({ status: 'ok', finalStatus: status });
-      } else {
-        resolve({ status: 'error', finalStatus: status, error: `HTTP ${status}` });
-      }
-    });
-    req.on('timeout', () => {
-      req.destroy();
-      resolve({ status: 'timeout', error: '请求超时' });
-    });
-    req.on('error', (err) => {
-      resolve({ status: 'error', error: err.message });
-    });
-    req.end();
+
+    function makeRequest(method) {
+      const req = client.request(url, { method, timeout: timeoutMs }, (res) => {
+        const status = res.statusCode;
+        // 跟随重定向
+        if (status >= 300 && status < 400 && res.headers.location) {
+          const redirectUrl = new URL(res.headers.location, url).toString();
+          resolve({ status: 'redirect', redirectTo: redirectUrl, finalStatus: status });
+          return;
+        }
+        // 某些服务器不支持 HEAD，降级到 GET
+        if ((status === 403 || status === 405) && method === 'HEAD') {
+          makeRequest('GET');
+          return;
+        }
+        if (status >= 200 && status < 400) {
+          resolve({ status: 'ok', finalStatus: status });
+        } else {
+          resolve({ status: 'error', finalStatus: status, error: `HTTP ${status}` });
+        }
+      });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ status: 'timeout', error: '请求超时' });
+      });
+      req.on('error', (err) => {
+        if (method === 'HEAD') {
+          // HEAD 请求失败，尝试 GET
+          makeRequest('GET');
+        } else {
+          resolve({ status: 'error', error: err.message });
+        }
+      });
+      req.end();
+    }
+
+    makeRequest('HEAD');
   });
 }
 

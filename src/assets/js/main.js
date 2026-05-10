@@ -106,8 +106,8 @@
             });
           });
 
-          // 移除危险的 SVG 元素
-          doc.querySelectorAll('foreignObject, animate, animateMotion, animateTransform, set, use').forEach(function(el) { el.remove(); });
+          // 移除危险的 SVG 元素（保留 <use>，依赖 href/xlink:href 协议清理）
+          doc.querySelectorAll('foreignObject, animate, animateMotion, animateTransform, set').forEach(function(el) { el.remove(); });
 
           // 清理 href 和 xlink:href 属性中的 javascript: 协议
           doc.querySelectorAll('[href], [xlink\\:href]').forEach(function(el) {
