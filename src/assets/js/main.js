@@ -91,7 +91,39 @@
         mermaid.render(id, graphDefinition).then(function(result) {
           var wrapper = document.createElement('div');
           wrapper.className = 'mermaid-diagram';
-          wrapper.innerHTML = result.svg;
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(result.svg, 'image/svg+xml');
+          // 移除 script 标签
+          doc.querySelectorAll('script').forEach(function(el) { el.remove(); });
+
+          // 移除所有以 on 开头的事件处理器属性
+          var allElements = doc.querySelectorAll('*');
+          allElements.forEach(function(el) {
+            Array.from(el.attributes).forEach(function(attr) {
+              if (attr.name.toLowerCase().startsWith('on')) {
+                el.removeAttribute(attr.name);
+              }
+            });
+          });
+
+          // 移除危险的 SVG 元素（保留 <use>，依赖 href/xlink:href 协议清理）
+          doc.querySelectorAll('foreignObject, animate, animateMotion, animateTransform, set').forEach(function(el) { el.remove(); });
+
+          // 清理 href 和 xlink:href 属性，仅允许安全的协议（白名单）
+          doc.querySelectorAll('[href], [xlink\\:href]').forEach(function(el) {
+            var href = el.getAttribute('href') || el.getAttribute('xlink:href');
+            if (!href) return;
+            var lower = href.toLowerCase();
+            // 允许：http/https 绝对 URL、#fragment、相对 URL（/ ./ ../）
+            var isSafe = lower.startsWith('http://') || lower.startsWith('https://') ||
+                         lower.startsWith('#') || lower.startsWith('/') ||
+                         lower.startsWith('./') || lower.startsWith('../');
+            if (!isSafe) {
+              el.removeAttribute('href');
+              el.removeAttribute('xlink:href');
+            }
+          });
+          wrapper.appendChild(doc.documentElement);
           pre.parentNode.replaceChild(wrapper, pre);
         }).catch(function(err) {
           console.error('Mermaid render error:', err);
@@ -164,7 +196,7 @@
           document.execCommand('copy');
           btn.textContent = '已复制!';
           setTimeout(function() { btn.textContent = '复制'; }, 1500);
-        } catch (err) {
+        } catch {
           btn.textContent = '复制失败';
           setTimeout(function() { btn.textContent = '复制'; }, 1500);
         }
