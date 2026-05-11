@@ -2,10 +2,10 @@
 
 {% block title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
 {% block desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
-{% block canonical %}{{ site.url }}/tags/{{ tagSlug }}/{% endblock %}
+{% block canonical %}{% if site.url %}{{ site.url }}/tags/{{ tagSlug }}/{% endif %}{% endblock %}
 {% block og_title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
 {% block og_desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
-{% block og_url %}{{ site.url }}/tags/{{ tagSlug }}/{% endblock %}
+{% block og_url %}{% if site.url %}{{ site.url }}/tags/{{ tagSlug }}/{% endif %}{% endblock %}
 {% block tw_title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
 {% block tw_desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
 

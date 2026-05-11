@@ -14,31 +14,79 @@ const {
 } = require('./lib/generators');
 const { ensureDir } = require('./lib/utils');
 
-// Config
-const CONFIG = {
-  title: 'Bogl Blog',
-  description: 'Bogl Blog - 分享 Windows、Linux、开发工具等实用技术教程与一键安装脚本。',
-  postsDir: path.join(__dirname, 'content', 'posts'),
-  outputDir: path.join(__dirname, 'dist'),
-  templateDir: path.join(__dirname, 'src', 'templates'),
-  assetsDir: path.join(__dirname, 'src', 'assets'),
-  postsPerPage: 10,
-  siteUrl: (process.env.SITE_URL || 'https://bash.yang125.fun').replace(/\/+$/, ''),
-  icp: process.env.SITE_ICP || '皖ICP备2025105642号-2',
-  psb: process.env.SITE_PSB || '',
-  // Giscus (GitHub Discussions) 评论配置
-  // 支持通过环境变量覆盖，方便 fork 后自定义
-  giscus: {
-    repo: process.env.GISCUS_REPO || 'yang12535/blog',
-    repoId: process.env.GISCUS_REPO_ID || 'R_kgDOR75DVQ',
-    category: process.env.GISCUS_CATEGORY || 'Announcements',
-    categoryId: process.env.GISCUS_CATEGORY_ID || 'DIC_kwDOR75DVc4C8ot-',
-    mapping: process.env.GISCUS_MAPPING || 'pathname',
-    reactionsEnabled: process.env.GISCUS_REACTIONS || '1',
-    theme: process.env.GISCUS_THEME || 'preferred_color_scheme',
-    lang: process.env.GISCUS_LANG || 'zh-CN',
-  },
-};
+function loadConfig() {
+  return {
+    title: 'Bogl Blog',
+    description: 'Bogl Blog - 分享 Windows、Linux、开发工具等实用技术教程与一键安装脚本。',
+    postsDir: path.join(__dirname, 'content', 'posts'),
+    outputDir: path.join(__dirname, 'dist'),
+    templateDir: path.join(__dirname, 'src', 'templates'),
+    assetsDir: path.join(__dirname, 'src', 'assets'),
+    postsPerPage: 10,
+    siteUrl: (() => {
+      const raw = (process.env.SITE_URL || '').trim();
+      if (!raw) return '';
+      try {
+        const parsed = new URL(raw);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          console.warn(`⚠️  SITE_URL must use http or https scheme.`);
+          return '';
+        }
+        if (parsed.username || parsed.password) {
+          console.warn(`⚠️  SITE_URL must not contain credentials.`);
+          return '';
+        }
+        return raw.replace(/\/+$/, '');
+      } catch {
+        console.warn(`⚠️  Invalid SITE_URL provided.`);
+        return '';
+      }
+    })(),
+    icp: (process.env.SITE_ICP || '').trim(),
+    psb: (process.env.SITE_PSB || '').trim(),
+    adsenseId: (() => {
+      const raw = (process.env.ADSENSE_ID || '').trim().replace(/^(ca-pub-|pub-)/i, '');
+      if (!raw) return '';
+      if (!/^\d+$/.test(raw)) {
+        console.warn(`⚠️  ADSENSE_ID must contain only digits. Skipping ads.txt generation.`);
+        return '';
+      }
+      return raw;
+    })(),
+    authorName: (process.env.AUTHOR_NAME || '').trim(),
+    githubUrl: (() => {
+      const raw = (process.env.GITHUB_URL || '').trim();
+      if (!raw) return '';
+      try {
+        const parsed = new URL(raw);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          console.warn(`⚠️  GITHUB_URL must use http or https scheme.`);
+          return '';
+        }
+        if (parsed.username || parsed.password) {
+          console.warn(`⚠️  GITHUB_URL must not contain credentials.`);
+          return '';
+        }
+        return parsed.href;
+      } catch {
+        console.warn(`⚠️  Invalid GITHUB_URL provided.`);
+        return '';
+      }
+    })(),
+    // Giscus (GitHub Discussions) 评论配置
+    // 支持通过环境变量覆盖，方便 fork 后自定义
+    giscus: {
+      repo: process.env.GISCUS_REPO || '',
+      repoId: process.env.GISCUS_REPO_ID || '',
+      category: process.env.GISCUS_CATEGORY || '',
+      categoryId: process.env.GISCUS_CATEGORY_ID || '',
+      mapping: process.env.GISCUS_MAPPING || 'pathname',
+      reactionsEnabled: process.env.GISCUS_REACTIONS || '1',
+      theme: process.env.GISCUS_THEME || 'preferred_color_scheme',
+      lang: process.env.GISCUS_LANG || 'zh-CN',
+    },
+  };
+}
 
 class BuildError extends Error {
   constructor(message, report) {
@@ -80,6 +128,7 @@ function printBuildSummary(report, duration) {
  * @returns {Promise<object>} Build report
  */
 async function build() {
+  const config = loadConfig();
   const startTime = Date.now();
   const report = {
     _startTime: Date.now(),
@@ -92,7 +141,7 @@ async function build() {
 
   // 1. Pull external content if configured
   try {
-    const pullResult = await pullContent(CONFIG.postsDir);
+    const pullResult = await pullContent(config.postsDir);
     if (pullResult.success) {
       if (pullResult.skipped) {
         report.steps.pullContent = { status: 'skipped' };
@@ -114,7 +163,7 @@ async function build() {
   let allPosts;
   let published;
   try {
-    const parseResult = await parsePosts(CONFIG.postsDir);
+    const parseResult = await parsePosts(config.postsDir);
     allPosts = parseResult.posts;
     published = allPosts.filter(p => !p.hidden);
     report.steps.parsePosts = {
@@ -136,10 +185,10 @@ async function build() {
 
   // 3. Clean output dir
   try {
-    if (fs.existsSync(CONFIG.outputDir)) {
-      fs.rmSync(CONFIG.outputDir, { recursive: true, force: true });
+    if (fs.existsSync(config.outputDir)) {
+      fs.rmSync(config.outputDir, { recursive: true, force: true });
     }
-    ensureDir(CONFIG.outputDir);
+    ensureDir(config.outputDir);
     report.steps.cleanOutput = { status: 'success' };
   } catch (err) {
     report.steps.cleanOutput = { status: 'failed', error: err.message };
@@ -150,7 +199,7 @@ async function build() {
   // 4. Setup renderer
   let render;
   try {
-    render = createRenderer(CONFIG.templateDir);
+    render = createRenderer(config.templateDir);
     report.steps.renderer = { status: 'success' };
   } catch (err) {
     report.steps.renderer = { status: 'failed', error: err.message };
@@ -160,12 +209,15 @@ async function build() {
 
   // Site context
   const siteCtx = {
-    title: CONFIG.title,
-    description: CONFIG.description,
-    url: CONFIG.siteUrl,
-    icp: CONFIG.icp,
-    psb: CONFIG.psb,
-    giscus: CONFIG.giscus,
+    title: config.title,
+    description: config.description,
+    url: config.siteUrl,
+    icp: config.icp,
+    psb: config.psb,
+    giscus: config.giscus,
+    adsenseId: config.adsenseId,
+    githubUrl: config.githubUrl,
+    authorName: config.authorName,
   };
 
   // 5. Generate pages — each step is independent; failures don't block others
@@ -175,7 +227,7 @@ async function build() {
     {
       name: 'tagPages',
       fn: () => {
-        const result = generateTagPages(published, { outputDir: CONFIG.outputDir, render, siteCtx });
+        const result = generateTagPages(published, { outputDir: config.outputDir, render, siteCtx });
         allTags = result.allTags;
         archiveYears = result.archiveYears;
         return result;
@@ -184,49 +236,67 @@ async function build() {
     },
     {
       name: 'posts',
-      fn: () => generatePosts(allPosts, { outputDir: CONFIG.outputDir, render, siteCtx }),
+      fn: () => generatePosts(allPosts, { outputDir: config.outputDir, render, siteCtx }),
       critical: false,
     },
     {
       name: 'index',
       fn: () => generateIndexPages(published, {
-        outputDir: CONFIG.outputDir,
+        outputDir: config.outputDir,
         render,
         siteCtx,
         allTags,
         archiveYears,
-        postsPerPage: CONFIG.postsPerPage,
+        postsPerPage: config.postsPerPage,
       }),
       critical: false,
     },
     {
       name: 'archive',
-      fn: () => generateArchive(published, { outputDir: CONFIG.outputDir, render, siteCtx }),
+      fn: () => generateArchive(published, { outputDir: config.outputDir, render, siteCtx }),
       critical: false,
     },
     {
       name: 'rss',
-      fn: () => generateRss(published, {
-        outputDir: CONFIG.outputDir,
-        siteUrl: CONFIG.siteUrl,
-        title: CONFIG.title,
-        description: CONFIG.description,
-      }),
+      fn: () => {
+        if (!config.siteUrl) {
+          console.log('  Skipped RSS (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateRss(published, {
+          outputDir: config.outputDir,
+          siteUrl: config.siteUrl,
+          title: config.title,
+          description: config.description,
+        });
+      },
       critical: false,
     },
     {
       name: 'sitemap',
-      fn: () => generateSitemap(published, { outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl, allTags }),
+      fn: () => {
+        if (!config.siteUrl) {
+          console.log('  Skipped sitemap (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateSitemap(published, { outputDir: config.outputDir, siteUrl: config.siteUrl, allTags });
+      },
       critical: false,
     },
     {
       name: 'robots',
-      fn: () => generateRobots({ outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl }),
+      fn: () => {
+        if (!config.siteUrl) {
+          console.log('  Skipped robots.txt (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateRobots({ outputDir: config.outputDir, siteUrl: config.siteUrl });
+      },
       critical: false,
     },
     {
       name: 'assets',
-      fn: () => copyAssets({ outputDir: CONFIG.outputDir, assetsDir: CONFIG.assetsDir }),
+      fn: () => copyAssets({ outputDir: config.outputDir, assetsDir: config.assetsDir }),
       critical: false,
     },
   ];
@@ -234,6 +304,10 @@ async function build() {
   for (const gen of generators) {
     try {
       const result = gen.fn();
+      if (result.skipped) {
+        report.steps[gen.name] = { status: 'skipped', ...result };
+        continue;
+      }
       const hasFailures = result.failed > 0;
       report.steps[gen.name] = {
         status: hasFailures ? 'warning' : 'success',
@@ -252,19 +326,21 @@ async function build() {
     }
   }
 
-  // 6. Copy ads.txt to root for AdSense
+  // 6. Generate ads.txt for AdSense if configured
   try {
-    const adsTxtSrc = path.join(CONFIG.assetsDir, 'ads.txt');
-    const adsTxtDest = path.join(CONFIG.outputDir, 'ads.txt');
-    if (fs.existsSync(adsTxtSrc)) {
-      fs.copyFileSync(adsTxtSrc, adsTxtDest);
-      console.log('  Copied ads.txt to root.');
+    const adsenseId = config.adsenseId;
+    if (adsenseId) {
+      const adsTxtContent = `google.com, pub-${adsenseId}, DIRECT, f08c47fec0942fa0\n`;
+      fs.writeFileSync(path.join(config.outputDir, 'ads.txt'), adsTxtContent, 'utf-8');
+      console.log('  Generated ads.txt.');
       report.steps.adsTxt = { status: 'success' };
+    } else {
+      report.steps.adsTxt = { status: 'skipped' };
     }
   } catch (err) {
     report.steps.adsTxt = { status: 'failed', error: err.message };
     report.totalWarnings++;
-    console.warn(`  ⚠️ Failed to copy ads.txt: ${err.message}`);
+    console.warn(`  ⚠️ Failed to generate ads.txt: ${err.message}`);
   }
 
   // 7. Summary
@@ -278,7 +354,7 @@ async function build() {
   return report;
 }
 
-module.exports = { build, BuildError, printBuildSummary };
+module.exports = { build, BuildError, printBuildSummary, loadConfig };
 
 if (require.main === module) {
   // CLI
@@ -316,7 +392,11 @@ if (require.main === module) {
     const chokidar = require('chokidar');
     let debounceTimer;
     chokidar
-      .watch([CONFIG.postsDir, CONFIG.templateDir, CONFIG.assetsDir], { ignoreInitial: true })
+      .watch([
+        path.join(__dirname, 'content', 'posts'),
+        path.join(__dirname, 'src', 'templates'),
+        path.join(__dirname, 'src', 'assets'),
+      ], { ignoreInitial: true })
       .on('all', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => runBuild().catch(console.error), 150);
