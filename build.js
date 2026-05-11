@@ -26,7 +26,8 @@ const CONFIG = {
   siteUrl: (process.env.SITE_URL || '').replace(/\/+$/, ''),
   icp: process.env.SITE_ICP || '',
   psb: process.env.SITE_PSB || '',
-  adsenseId: process.env.ADSENSE_ID || '',
+  adsenseId: (process.env.ADSENSE_ID || '').trim().replace(/^(ca-pub-|pub-)/i, ''),
+  authorName: process.env.AUTHOR_NAME || '',
   githubUrl: (() => {
     const raw = (process.env.GITHUB_URL || '').trim();
     if (!raw) return '';
@@ -188,6 +189,7 @@ async function build() {
     giscus: CONFIG.giscus,
     adsenseId: CONFIG.adsenseId,
     githubUrl: CONFIG.githubUrl,
+    authorName: CONFIG.authorName,
   };
 
   // 5. Generate pages — each step is independent; failures don't block others
