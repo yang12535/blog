@@ -2,10 +2,10 @@
 
 {% block title %}归档 - {{ site.title }}{% endblock %}
 {% block desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
-{% block canonical %}{{ site.url }}/archive/{% endblock %}
+{% block canonical %}{% if site.url %}{{ site.url }}/archive/{% endif %}{% endblock %}
 {% block og_title %}归档 - {{ site.title }}{% endblock %}
 {% block og_desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
-{% block og_url %}{{ site.url }}/archive/{% endblock %}
+{% block og_url %}{% if site.url %}{{ site.url }}/archive/{% endif %}{% endblock %}
 {% block tw_title %}归档 - {{ site.title }}{% endblock %}
 {% block tw_desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
 
