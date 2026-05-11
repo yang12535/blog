@@ -109,6 +109,21 @@
 
 ---
 
+## ✅ 本轮修复（PR #12 — 移除硬编码配置）
+
+| # | 问题 | 文件 | 修复方式 |
+|---|------|------|----------|
+| 1 | **硬编码域名与备案号** — `SITE_URL` 默认 `bash.yang125.fun`，`SITE_ICP` 默认 `皖ICP备...` | `build.js` | 默认值改为空字符串，改为从环境变量读取 |
+| 2 | **硬编码 AdSense ID** — `ca-pub-4120379355917420` 直接写在 `base.html` 与 `src/assets/ads.txt` | `build.js` / `base.html` | 改为从 `ADSENSE_ID` 环境变量读取，动态生成 `ads.txt` |
+| 3 | **硬编码 GitHub 仓库链接** — `https://github.com/yang12535/blog` 写在导航栏 | `base.html` | 改为从 `GITHUB_URL` 环境变量读取，条件渲染 |
+| 4 | **硬编码 Giscus 评论配置** — `repoId` / `categoryId` 有默认值 | `build.js` | 默认值改为空字符串，未配置时跳过 Giscus 脚本 |
+| 5 | **CONFIG 模块加载副作用** — `require('build.js')` 时立即校验环境变量并输出 `console.warn` | `build.js` | 重构为 `loadConfig()` 函数，仅在 `build()` 调用时执行 |
+| 6 | **SITE_URL 未校验** — 无 scheme 检查、无凭据检查、无 trim | `build.js` | 增加 `URL` 解析校验，仅允许 `http`/`https`，拒绝含用户名密码的 URL |
+| 7 | **未设置 SITE_URL 时仍生成无效 SEO 文件** — RSS / sitemap / robots 使用相对路径 `/posts/...` | `build.js` / 模板 | 未设置时标记为 `skipped`，模板中 `canonical` / `og:url` / `JSON-LD` 条件省略 |
+| 8 | **子模板 block 依赖父模板守卫** — `canonical` / `og_url` block 在 `site.url` 为空时求值为相对路径 | `post.html` / `archive.html` / `tag.html` / `tags.html` | block 内部增加 `{% if site.url %}` 保护 |
+| 9 | **环境变量未 trim** — `SITE_ICP` / `SITE_PSB` / `AUTHOR_NAME` 含空白时被误判为已设置 | `build.js` | 统一增加 `.trim()`，空值视为未设置 |
+| 10 | **CI 构建缺少环境变量** — 合并后 CI 中所有配置为空，生成纯净版博客 | `.github/workflows/ci.yml` | build 步骤注入环境变量，优先读取 `vars`/`secrets`，未配置时回退到原默认值 |
+
 ## ✅ 已完成的审查任务
 
 - [x] 链接与交叉引用审查（发现 6 处问题）
@@ -116,6 +131,7 @@
 - [x] 技术准确性审查（发现 11 处问题，含 5 处严重错误）
 - [x] 生成 `changed.md`（133 行，43 条 commit）
 - [x] 代码可执行性审查（PR #10 完成首轮修复，共 8 处）
+- [x] 硬编码配置清理（PR #12 完成，共 10 处）
 
 ---
 

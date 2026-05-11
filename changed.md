@@ -1,5 +1,17 @@
 # 变更日志
 
+## 2026-05-11 更新（PR #12 — 移除硬编码配置，全面环境变量化）
+- 移除所有硬编码 ID、备案号与域名，构建配置全面改为环境变量驱动 `fabaf62`
+- `build.js` 重构：`CONFIG` 模块级常量改为 `loadConfig()` 函数，消除 `require` 时的副作用，校验警告仅在构建运行时输出 `fabaf62`
+- 新增环境变量：`ADSENSE_ID`（自动去除 `ca-pub-`/`pub-` 前缀并验证纯数字）、`GITHUB_URL`（仅允许 `http`/`https`、拒绝含凭据 URL）、`AUTHOR_NAME` `fabaf62`
+- 原有配置默认值清空：`SITE_URL`、`SITE_ICP`、`Giscus` 的 `repoId`/`categoryId` 默认改为空字符串，避免 fork 后携带个人标识 `fabaf62`
+- 模板条件渲染：`canonical`、`og:url`、`JSON-LD`、`RSS link`、`AdSense` 脚本、`GitHub` 导航链接在对应配置缺失时自动省略，避免生成无效 SEO 元数据 `fabaf62`
+- `ads.txt` 由静态复制改为构建时动态生成，未配置 `ADSENSE_ID` 时跳过 `fabaf62`
+- 子模板 `canonical`/`og_url` block 增加 `site.url` 空值保护，避免未设置域名时求值为相对路径 `861bc87`
+- `AUTHOR_NAME` / `SITE_ICP` / `SITE_PSB` 统一增加 `.trim()`，防止纯空白环境变量被误判为已设置 `1b625d3`
+- CI workflow (`ci.yml`) 的 build 步骤注入环境变量，确保合并后 CI 构建结果与生产一致 `6ae8c2f`
+- 测试覆盖：新增 RSS/sitemap/robots 跳过行为测试、ads.txt 生成与跳过测试、环境变量隔离恢复测试 `a4216bb`
+
 ## 2026-05-10 更新（PR #11 — 全面安全审计与代码质量提升）
 - 全面安全审计：移除 URL 硬编码 Token 改用 `GIT_ASKPASS`、iframe 白名单限制（youtube/bilibili）、CSP/HSTS/Referrer-Policy/Permissions-Policy 响应头加固、Mermaid SVG DOMParser 二次清洗、修复 `check-links.js` 路径遍历漏洞 `ebf5e91`
 - 新增 52 个测试用例（总计 108 个），覆盖率 32%→60%，补充 `generators.js` / `renderer.js` / `build.js` 完整测试及边界情况 `ebf5e91`
