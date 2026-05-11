@@ -33,12 +33,16 @@ const CONFIG = {
     try {
       const parsed = new URL(url);
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        console.warn(`⚠️  GITHUB_URL must use http or https scheme. Got: ${parsed.protocol}`);
+        console.warn(`⚠️  GITHUB_URL must use http or https scheme.`);
+        return '';
+      }
+      if (parsed.username || parsed.password) {
+        console.warn(`⚠️  GITHUB_URL must not contain credentials.`);
         return '';
       }
       return url;
     } catch {
-      console.warn(`⚠️  Invalid GITHUB_URL: ${url}`);
+      console.warn(`⚠️  Invalid GITHUB_URL provided.`);
       return '';
     }
   })(),
