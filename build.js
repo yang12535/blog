@@ -42,8 +42,8 @@ function loadConfig() {
         return '';
       }
     })(),
-    icp: process.env.SITE_ICP || '',
-    psb: process.env.SITE_PSB || '',
+    icp: (process.env.SITE_ICP || '').trim(),
+    psb: (process.env.SITE_PSB || '').trim(),
     adsenseId: (() => {
       const raw = (process.env.ADSENSE_ID || '').trim().replace(/^(ca-pub-|pub-)/i, '');
       if (!raw) return '';
@@ -53,7 +53,7 @@ function loadConfig() {
       }
       return raw;
     })(),
-    authorName: process.env.AUTHOR_NAME || '',
+    authorName: (process.env.AUTHOR_NAME || '').trim(),
     githubUrl: (() => {
       const raw = (process.env.GITHUB_URL || '').trim();
       if (!raw) return '';
