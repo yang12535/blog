@@ -69,10 +69,16 @@ describe('BuildError', () => {
 
 describe('build integration', () => {
   let originalSiteUrl;
+  let originalAdsenseId;
+  let originalGithubUrl;
+  let originalAuthorName;
   let build;
 
   beforeAll(() => {
     originalSiteUrl = process.env.SITE_URL;
+    originalAdsenseId = process.env.ADSENSE_ID;
+    originalGithubUrl = process.env.GITHUB_URL;
+    originalAuthorName = process.env.AUTHOR_NAME;
     process.env.SITE_URL = 'https://example.com';
     delete process.env.ADSENSE_ID;
     delete process.env.GITHUB_URL;
@@ -89,6 +95,21 @@ describe('build integration', () => {
       delete process.env.SITE_URL;
     } else {
       process.env.SITE_URL = originalSiteUrl;
+    }
+    if (originalAdsenseId === undefined) {
+      delete process.env.ADSENSE_ID;
+    } else {
+      process.env.ADSENSE_ID = originalAdsenseId;
+    }
+    if (originalGithubUrl === undefined) {
+      delete process.env.GITHUB_URL;
+    } else {
+      process.env.GITHUB_URL = originalGithubUrl;
+    }
+    if (originalAuthorName === undefined) {
+      delete process.env.AUTHOR_NAME;
+    } else {
+      process.env.AUTHOR_NAME = originalAuthorName;
     }
     console.log.mockRestore();
     console.error.mockRestore();

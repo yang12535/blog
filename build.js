@@ -390,10 +390,13 @@ if (require.main === module) {
   if (args.includes('--watch')) {
     runBuild();
     const chokidar = require('chokidar');
-    const cliConfig = loadConfig();
     let debounceTimer;
     chokidar
-      .watch([cliConfig.postsDir, cliConfig.templateDir, cliConfig.assetsDir], { ignoreInitial: true })
+      .watch([
+        path.join(__dirname, 'content', 'posts'),
+        path.join(__dirname, 'src', 'templates'),
+        path.join(__dirname, 'src', 'assets'),
+      ], { ignoreInitial: true })
       .on('all', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => runBuild().catch(console.error), 150);
