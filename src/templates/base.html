@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site.title }}{% endblock %}</title>
   <meta name="description" content="{% block desc %}{{ site.description }}{% endblock %}">
+  {% if site.url %}
   <link rel="canonical" href="{% block canonical %}{{ site.url }}/{% endblock %}">
+  {% endif %}
   {% if site.adsenseId %}
   <meta name="google-adsense-account" content="ca-pub-{{ site.adsenseId }}">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-{{ site.adsenseId }}" crossorigin="anonymous"></script>
@@ -17,13 +19,16 @@
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <meta property="og:title" content="{% block og_title %}{{ site.title }}{% endblock %}">
   <meta property="og:description" content="{% block og_desc %}{{ site.description }}{% endblock %}">
+  {% if site.url %}
   <meta property="og:url" content="{% block og_url %}{{ site.url }}/{% endblock %}">
+  {% endif %}
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="{% block tw_title %}{{ site.title }}{% endblock %}">
   <meta name="twitter:description" content="{% block tw_desc %}{{ site.description }}{% endblock %}">
 
+  {% if site.url %}
   <!-- JSON-LD: WebSite -->
   {% set siteLd = {
     "@context": "https://schema.org",
@@ -33,6 +38,7 @@
     "description": site.description
   } %}
   <script type="application/ld+json">{{ siteLd | json }}</script>
+  {% endif %}
 
   {% block extra_head %}{% endblock %}
 

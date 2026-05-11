@@ -123,18 +123,27 @@ describe('build integration', () => {
   it(
     'skips rss/sitemap/robots when SITE_URL is not set',
     async () => {
+      const prevSiteUrl = process.env.SITE_URL;
       delete process.env.SITE_URL;
-      jest.resetModules();
-      const buildNoUrl = require('../build').build;
-      const report = await buildNoUrl();
-      expect(report.steps.rss.status).toBe('skipped');
-      expect(report.steps.sitemap.status).toBe('skipped');
-      expect(report.steps.robots.status).toBe('skipped');
+      try {
+        jest.resetModules();
+        const buildNoUrl = require('../build').build;
+        const report = await buildNoUrl();
+        expect(report.steps.rss.status).toBe('skipped');
+        expect(report.steps.sitemap.status).toBe('skipped');
+        expect(report.steps.robots.status).toBe('skipped');
 
-      const distDir = path.join(__dirname, '..', 'dist');
-      expect(fs.existsSync(path.join(distDir, 'feed.xml'))).toBe(false);
-      expect(fs.existsSync(path.join(distDir, 'sitemap.xml'))).toBe(false);
-      expect(fs.existsSync(path.join(distDir, 'robots.txt'))).toBe(false);
+        const distDir = path.join(__dirname, '..', 'dist');
+        expect(fs.existsSync(path.join(distDir, 'feed.xml'))).toBe(false);
+        expect(fs.existsSync(path.join(distDir, 'sitemap.xml'))).toBe(false);
+        expect(fs.existsSync(path.join(distDir, 'robots.txt'))).toBe(false);
+      } finally {
+        if (prevSiteUrl === undefined) {
+          delete process.env.SITE_URL;
+        } else {
+          process.env.SITE_URL = prevSiteUrl;
+        }
+      }
     },
     30000
   );
@@ -144,21 +153,23 @@ describe('build integration', () => {
     async () => {
       const originalAdsenseId = process.env.ADSENSE_ID;
       process.env.ADSENSE_ID = '1234567890123456';
-      jest.resetModules();
-      const buildWithAds = require('../build').build;
-      const report = await buildWithAds();
-      expect(report.steps.adsTxt.status).toBe('success');
+      try {
+        jest.resetModules();
+        const buildWithAds = require('../build').build;
+        const report = await buildWithAds();
+        expect(report.steps.adsTxt.status).toBe('success');
 
-      const distDir = path.join(__dirname, '..', 'dist');
-      const adsTxtPath = path.join(distDir, 'ads.txt');
-      expect(fs.existsSync(adsTxtPath)).toBe(true);
-      const content = fs.readFileSync(adsTxtPath, 'utf-8');
-      expect(content).toBe('google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
-
-      if (originalAdsenseId === undefined) {
-        delete process.env.ADSENSE_ID;
-      } else {
-        process.env.ADSENSE_ID = originalAdsenseId;
+        const distDir = path.join(__dirname, '..', 'dist');
+        const adsTxtPath = path.join(distDir, 'ads.txt');
+        expect(fs.existsSync(adsTxtPath)).toBe(true);
+        const content = fs.readFileSync(adsTxtPath, 'utf-8');
+        expect(content).toBe('google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
+      } finally {
+        if (originalAdsenseId === undefined) {
+          delete process.env.ADSENSE_ID;
+        } else {
+          process.env.ADSENSE_ID = originalAdsenseId;
+        }
       }
     },
     30000
@@ -169,18 +180,20 @@ describe('build integration', () => {
     async () => {
       const originalAdsenseId = process.env.ADSENSE_ID;
       delete process.env.ADSENSE_ID;
-      jest.resetModules();
-      const buildNoAds = require('../build').build;
-      const report = await buildNoAds();
-      expect(report.steps.adsTxt.status).toBe('skipped');
+      try {
+        jest.resetModules();
+        const buildNoAds = require('../build').build;
+        const report = await buildNoAds();
+        expect(report.steps.adsTxt.status).toBe('skipped');
 
-      const distDir = path.join(__dirname, '..', 'dist');
-      expect(fs.existsSync(path.join(distDir, 'ads.txt'))).toBe(false);
-
-      if (originalAdsenseId === undefined) {
-        delete process.env.ADSENSE_ID;
-      } else {
-        process.env.ADSENSE_ID = originalAdsenseId;
+        const distDir = path.join(__dirname, '..', 'dist');
+        expect(fs.existsSync(path.join(distDir, 'ads.txt'))).toBe(false);
+      } finally {
+        if (originalAdsenseId === undefined) {
+          delete process.env.ADSENSE_ID;
+        } else {
+          process.env.ADSENSE_ID = originalAdsenseId;
+        }
       }
     },
     30000
