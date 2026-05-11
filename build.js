@@ -32,6 +32,10 @@ const CONFIG = {
         console.warn(`⚠️  SITE_URL must use http or https scheme.`);
         return '';
       }
+      if (parsed.username || parsed.password) {
+        console.warn(`⚠️  SITE_URL must not contain credentials.`);
+        return '';
+      }
       return raw.replace(/\/+$/, '');
     } catch {
       console.warn(`⚠️  Invalid SITE_URL provided.`);

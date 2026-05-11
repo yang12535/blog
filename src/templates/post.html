@@ -15,33 +15,20 @@
 {% set postUrl = site.url + '/posts/' + post.slug + '/' %}
 {% set postDesc = post.excerpt | truncate(150) %}
 {% set postDate = post.date | slice(0, 10) %}
+{% set blogLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": post.title,
+  "description": postDesc,
+  "url": postUrl,
+  "datePublished": postDate,
+  "dateModified": postDate,
+  "publisher": {"@type":"Organization","name": site.title},
+  "mainEntityOfPage": {"@type":"WebPage","@id": postUrl},
+  "keywords": post.tags | join(', ')
+} %}
 {% if site.authorName %}
-{% set blogLd = {
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": post.title,
-  "description": postDesc,
-  "url": postUrl,
-  "datePublished": postDate,
-  "dateModified": postDate,
-  "author": {"@type":"Person","name": site.authorName},
-  "publisher": {"@type":"Organization","name": site.title},
-  "mainEntityOfPage": {"@type":"WebPage","@id": postUrl},
-  "keywords": post.tags | join(', ')
-} %}
-{% else %}
-{% set blogLd = {
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": post.title,
-  "description": postDesc,
-  "url": postUrl,
-  "datePublished": postDate,
-  "dateModified": postDate,
-  "publisher": {"@type":"Organization","name": site.title},
-  "mainEntityOfPage": {"@type":"WebPage","@id": postUrl},
-  "keywords": post.tags | join(', ')
-} %}
+{% set blogLd = blogLd | withAuthor(site.authorName) %}
 {% endif %}
 <script type="application/ld+json">{{ blogLd | json }}</script>
 
