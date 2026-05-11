@@ -135,5 +135,20 @@
 
 ---
 
+## 🔴 待办（回头处理，不急）
+
+> 以下事项不影响当前站点运行，但属于技术债，有空时逐步清理。
+
+### CI / 部署
+- [ ] **CI workflow fallback 默认值未清理** — `.github/workflows/ci.yml` 中 `secrets.ADSENSE_ID || '4120379355917420'` 等 fallback 仍携带个人真实配置，与 PR #12 "移除硬编码"目标冲突。需改为空字符串或删除 fallback，以后通过 GitHub Settings → Secrets and variables 配置。
+- [ ] **GitHub Repository Variables / Secrets 配置** — 在 GitHub Settings → Secrets and variables → Actions 中配置 `vars.SITE_URL`、`secrets.ADSENSE_ID` 等，使 CI artifact 与生产站点一致。
+- [ ] **EO Pages 环境变量批量导入** — 将个人 `.env` 内容粘贴至 EO Pages 控制台批量导入，确保自动部署时配置生效。
+
+### 文档
+- [ ] **CONTRIBUTING.md 补充 fork 后环境变量配置指引** — 说明 fork 后需要设置哪些环境变量才能恢复完整功能。
+
+---
+
 > 生成时间：2026-05-10
 > 原则：风格不必模板化，重点修技术错误。
+> 更新：2026-05-11 补充 CI / 部署待办（牛马累了，先记着）
