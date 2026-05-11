@@ -11,6 +11,7 @@
 {% block tw_desc %}{{ post.excerpt | truncate(150) }}{% endblock %}
 
 {% block extra_head %}
+{% if site.url %}
 {% set postUrl = site.url + '/posts/' + post.slug + '/' %}
 {% set postDesc = post.excerpt | truncate(150) %}
 {% set postDate = post.date | slice(0, 10) %}
@@ -38,6 +39,7 @@
   ]
 } %}
 <script type="application/ld+json">{{ breadcrumbLd | json }}</script>
+{% endif %}
 {% endblock %}
 
 {% block sidebar %}

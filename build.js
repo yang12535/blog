@@ -28,10 +28,10 @@ const CONFIG = {
   psb: process.env.SITE_PSB || '',
   adsenseId: process.env.ADSENSE_ID || '',
   githubUrl: (() => {
-    const url = process.env.GITHUB_URL || '';
-    if (!url) return '';
+    const raw = (process.env.GITHUB_URL || '').trim();
+    if (!raw) return '';
     try {
-      const parsed = new URL(url);
+      const parsed = new URL(raw);
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
         console.warn(`⚠️  GITHUB_URL must use http or https scheme.`);
         return '';
@@ -40,7 +40,7 @@ const CONFIG = {
         console.warn(`⚠️  GITHUB_URL must not contain credentials.`);
         return '';
       }
-      return url;
+      return parsed.href;
     } catch {
       console.warn(`⚠️  Invalid GITHUB_URL provided.`);
       return '';
