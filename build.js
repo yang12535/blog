@@ -27,7 +27,21 @@ const CONFIG = {
   icp: process.env.SITE_ICP || '',
   psb: process.env.SITE_PSB || '',
   adsenseId: process.env.ADSENSE_ID || '',
-  githubUrl: process.env.GITHUB_URL || '',
+  githubUrl: (() => {
+    const url = process.env.GITHUB_URL || '';
+    if (!url) return '';
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        console.warn(`⚠️  GITHUB_URL must use http or https scheme. Got: ${parsed.protocol}`);
+        return '';
+      }
+      return url;
+    } catch {
+      console.warn(`⚠️  Invalid GITHUB_URL: ${url}`);
+      return '';
+    }
+  })(),
   // Giscus (GitHub Discussions) 评论配置
   // 支持通过环境变量覆盖，方便 fork 后自定义
   giscus: {
