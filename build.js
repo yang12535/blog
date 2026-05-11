@@ -27,6 +27,7 @@ const CONFIG = {
   icp: process.env.SITE_ICP || '',
   psb: process.env.SITE_PSB || '',
   adsenseId: process.env.ADSENSE_ID || '',
+  githubUrl: process.env.GITHUB_URL || '',
   // Giscus (GitHub Discussions) 评论配置
   // 支持通过环境变量覆盖，方便 fork 后自定义
   giscus: {
@@ -168,6 +169,7 @@ async function build() {
     psb: CONFIG.psb,
     giscus: CONFIG.giscus,
     adsenseId: CONFIG.adsenseId,
+    githubUrl: CONFIG.githubUrl,
   };
 
   // 5. Generate pages — each step is independent; failures don't block others
@@ -208,22 +210,40 @@ async function build() {
     },
     {
       name: 'rss',
-      fn: () => generateRss(published, {
-        outputDir: CONFIG.outputDir,
-        siteUrl: CONFIG.siteUrl,
-        title: CONFIG.title,
-        description: CONFIG.description,
-      }),
+      fn: () => {
+        if (!CONFIG.siteUrl) {
+          console.log('  Skipped RSS (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateRss(published, {
+          outputDir: CONFIG.outputDir,
+          siteUrl: CONFIG.siteUrl,
+          title: CONFIG.title,
+          description: CONFIG.description,
+        });
+      },
       critical: false,
     },
     {
       name: 'sitemap',
-      fn: () => generateSitemap(published, { outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl, allTags }),
+      fn: () => {
+        if (!CONFIG.siteUrl) {
+          console.log('  Skipped sitemap (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateSitemap(published, { outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl, allTags });
+      },
       critical: false,
     },
     {
       name: 'robots',
-      fn: () => generateRobots({ outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl }),
+      fn: () => {
+        if (!CONFIG.siteUrl) {
+          console.log('  Skipped robots.txt (SITE_URL not set).');
+          return { failed: 0, skipped: true };
+        }
+        return generateRobots({ outputDir: CONFIG.outputDir, siteUrl: CONFIG.siteUrl });
+      },
       critical: false,
     },
     {
@@ -236,6 +256,10 @@ async function build() {
   for (const gen of generators) {
     try {
       const result = gen.fn();
+      if (result.skipped) {
+        report.steps[gen.name] = { status: 'skipped', ...result };
+        continue;
+      }
       const hasFailures = result.failed > 0;
       report.steps[gen.name] = {
         status: hasFailures ? 'warning' : 'success',
@@ -258,7 +282,7 @@ async function build() {
   try {
     const adsenseId = CONFIG.adsenseId;
     if (adsenseId) {
-      const adsTxtContent = `google.com, pub-${adsenseId}, DIRECT, f08c47fec0942fa0`;
+      const adsTxtContent = `google.com, pub-${adsenseId}, DIRECT, f08c47fec0942fa0\n`;
       fs.writeFileSync(path.join(CONFIG.outputDir, 'ads.txt'), adsTxtContent, 'utf-8');
       console.log('  Generated ads.txt.');
       report.steps.adsTxt = { status: 'success' };

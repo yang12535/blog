@@ -56,10 +56,9 @@ jest.mock('../lib/content', () => ({
   })),
 }));
 
-const { build, BuildError } = require('../build');
-
 describe('BuildError', () => {
   it('has name BuildError and stores report', () => {
+    const { BuildError } = require('../build');
     const report = { steps: {}, totalErrors: 1, totalWarnings: 0 };
     const err = new BuildError('Something failed', report);
     expect(err.name).toBe('BuildError');
@@ -69,13 +68,21 @@ describe('BuildError', () => {
 });
 
 describe('build integration', () => {
+  let originalSiteUrl;
+  let build;
+
   beforeAll(() => {
+    originalSiteUrl = process.env.SITE_URL;
+    process.env.SITE_URL = 'https://example.com';
+    jest.resetModules();
+    build = require('../build').build;
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterAll(() => {
+    process.env.SITE_URL = originalSiteUrl;
     console.log.mockRestore();
     console.error.mockRestore();
     console.warn.mockRestore();
