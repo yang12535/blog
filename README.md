@@ -120,13 +120,13 @@ npx edgeone pages deploy
 | `SITE_URL` | 站点域名（带 `https://`） | `https://your-domain.com` |
 | `SITE_ICP` | ICP 备案号（空则页脚不显示） | `京ICP备12345678号-1` |
 | `SITE_PSB` | 公安备案号（空则不显示） | `京公网安备11010502012345号` |
-| `ADSENSE_ID` | Google AdSense 发布者 ID（纯数字，可带 `ca-pub-` 前缀） | `4120379355917420` |
-| `GITHUB_URL` | GitHub 仓库链接（导航栏图标） | `https://github.com/yang12535/blog` |
-| `AUTHOR_NAME` | 文章作者名称（JSON-LD 用） | `yang12535` |
-| `GISCUS_REPO` | Giscus 评论仓库 | `yang12535/blog` |
-| `GISCUS_REPO_ID` | Giscus 仓库 ID | `R_kgDOR75DVQ` |
+| `ADSENSE_ID` | Google AdSense 发布者 ID（纯数字，可带 `ca-pub-` 前缀） | `1234567890123456` |
+| `GITHUB_URL` | GitHub 仓库链接（导航栏图标） | `https://github.com/yourname/blog` |
+| `AUTHOR_NAME` | 文章作者名称（JSON-LD 用） | `yourname` |
+| `GISCUS_REPO` | Giscus 评论仓库 | `yourname/blog` |
+| `GISCUS_REPO_ID` | Giscus 仓库 ID | `R_xxxxxxxxxx` |
 | `GISCUS_CATEGORY` | Giscus 分类名称 | `Announcements` |
-| `GISCUS_CATEGORY_ID` | Giscus 分类 ID | `DIC_kwDOR75DVc4C8ot-` |
+| `GISCUS_CATEGORY_ID` | Giscus 分类 ID | `DIC_xxxxxxxxxx` |
 
 **未设置的环境变量对应功能将静默跳过**，不会输出任何个人标识。
 
@@ -137,7 +137,7 @@ npx edgeone pages deploy
 ```bash
 SITE_URL=https://your-domain.com
 SITE_ICP=京ICP备12345678号-1
-ADSENSE_ID=4120379355917420
+ADSENSE_ID=1234567890123456
 GITHUB_URL=https://github.com/yourname/blog
 AUTHOR_NAME=yourname
 ```
