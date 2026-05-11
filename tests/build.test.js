@@ -74,11 +74,14 @@ describe('build integration', () => {
   beforeAll(() => {
     originalSiteUrl = process.env.SITE_URL;
     process.env.SITE_URL = 'https://example.com';
-    jest.resetModules();
-    build = require('../build').build;
+    delete process.env.ADSENSE_ID;
+    delete process.env.GITHUB_URL;
+    delete process.env.AUTHOR_NAME;
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.resetModules();
+    build = require('../build').build;
   });
 
   afterAll(() => {
