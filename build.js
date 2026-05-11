@@ -23,10 +23,32 @@ const CONFIG = {
   templateDir: path.join(__dirname, 'src', 'templates'),
   assetsDir: path.join(__dirname, 'src', 'assets'),
   postsPerPage: 10,
-  siteUrl: (process.env.SITE_URL || '').replace(/\/+$/, ''),
+  siteUrl: (() => {
+    const raw = (process.env.SITE_URL || '').trim();
+    if (!raw) return '';
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        console.warn(`⚠️  SITE_URL must use http or https scheme.`);
+        return '';
+      }
+      return raw.replace(/\/+$/, '');
+    } catch {
+      console.warn(`⚠️  Invalid SITE_URL provided.`);
+      return '';
+    }
+  })(),
   icp: process.env.SITE_ICP || '',
   psb: process.env.SITE_PSB || '',
-  adsenseId: (process.env.ADSENSE_ID || '').trim().replace(/^(ca-pub-|pub-)/i, ''),
+  adsenseId: (() => {
+    const raw = (process.env.ADSENSE_ID || '').trim().replace(/^(ca-pub-|pub-)/i, '');
+    if (!raw) return '';
+    if (!/^\d+$/.test(raw)) {
+      console.warn(`⚠️  ADSENSE_ID must contain only digits. Skipping ads.txt generation.`);
+      return '';
+    }
+    return raw;
+  })(),
   authorName: process.env.AUTHOR_NAME || '',
   githubUrl: (() => {
     const raw = (process.env.GITHUB_URL || '').trim();
