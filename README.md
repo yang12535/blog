@@ -111,22 +111,51 @@ npx edgeone pages deploy
 
 ## 自定义配置
 
-### 站点信息
+所有个性化配置均通过**环境变量**提供，不再硬编码在源码中，方便 fork 后零修改直接使用。
 
-编辑 `build.js` 顶部的 `CONFIG`：
+### 环境变量列表
 
-```javascript
-const CONFIG = {
-  title: '你的博客标题',
-  description: '博客描述',
-  postsPerPage: 10,
-  siteUrl: process.env.SITE_URL || 'https://your-domain.com',
-  icp: process.env.SITE_ICP || '',
-  psb: process.env.SITE_PSB || '',
-};
+| 环境变量 | 说明 | 示例值 |
+|---------|------|--------|
+| `SITE_URL` | 站点域名（带 `https://`） | `https://your-domain.com` |
+| `SITE_ICP` | ICP 备案号（空则页脚不显示） | `京ICP备12345678号-1` |
+| `SITE_PSB` | 公安备案号（空则不显示） | `京公网安备11010502012345号` |
+| `ADSENSE_ID` | Google AdSense 发布者 ID（纯数字，可带 `ca-pub-` 前缀） | `4120379355917420` |
+| `GITHUB_URL` | GitHub 仓库链接（导航栏图标） | `https://github.com/yang12535/blog` |
+| `AUTHOR_NAME` | 文章作者名称（JSON-LD 用） | `yang12535` |
+| `GISCUS_REPO` | Giscus 评论仓库 | `yang12535/blog` |
+| `GISCUS_REPO_ID` | Giscus 仓库 ID | `R_kgDOR75DVQ` |
+| `GISCUS_CATEGORY` | Giscus 分类名称 | `Announcements` |
+| `GISCUS_CATEGORY_ID` | Giscus 分类 ID | `DIC_kwDOR75DVc4C8ot-` |
+
+**未设置的环境变量对应功能将静默跳过**，不会输出任何个人标识。
+
+### 本地使用 .env
+
+项目根目录创建 `.env` 文件：
+
+```bash
+SITE_URL=https://your-domain.com
+SITE_ICP=京ICP备12345678号-1
+ADSENSE_ID=4120379355917420
+GITHUB_URL=https://github.com/yourname/blog
+AUTHOR_NAME=yourname
 ```
 
-或通过环境变量覆盖：`SITE_URL`、`SITE_ICP`、`SITE_PSB`。
+本地构建前导出环境变量即可：
+
+```bash
+export $(cat .env | xargs)
+npm run build
+```
+
+> `.env` 文件已被 `.gitignore` 忽略，不会误提交到仓库。
+
+### EdgeOne Pages 环境变量配置
+
+在 [EdgeOne Pages 控制台](https://console.cloud.tencent.com/edgeone/pages) → 项目设置 → 环境变量 中添加。
+
+支持**批量导入**：将 `.env` 文件全部内容粘贴到变量名输入框即可自动解析。
 
 ### 主题样式
 
@@ -150,15 +179,13 @@ const CONFIG = {
 
 ## 内容分离部署（可选）
 
-如果希望文章仓库与生成器仓库分离，可设置环境变量：
+如果希望文章仓库与生成器仓库分离，可额外设置：
 
 | 环境变量         | 说明                            |
 | ---------------- | ------------------------------- |
 | `CONTENT_REPO`   | 内容仓库，如 `owner/posts-repo` |
 | `CONTENT_BRANCH` | 内容分支，默认 `main`           |
 | `GITHUB_TOKEN`   | GitHub 访问令牌（私有仓库必填） |
-
-在 EdgeOne Pages 控制台 → 项目设置 → 环境变量 中添加即可。
 
 ## 限制说明
 
