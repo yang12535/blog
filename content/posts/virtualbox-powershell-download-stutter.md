@@ -91,11 +91,37 @@ curl/IWR 读取网络缓冲区的速度下降
 
 curl 的进度条输出到 **stderr**，是纯文本行，不是 PowerShell 的 `Write-Progress` UI 组件。curl 的进度刷新频率和渲染开销都远低于 IWR，因此不会触发同样的阻塞效应。
 
+> **推荐**：如果你需要保留下载进度显示，又不想被 PowerShell 进度条拖累，可以用 curl 的简单进度条模式：
+> ```powershell
+> curl.exe -# -L -o file.exe "https://..."
+> ```
+> `-#` 参数只显示一个简单的 `#` 进度条，渲染开销极低，不会像 `Write-Progress` 那样触发全屏重绘。
+
 但 curl 下载**境外 HTTPS** 时仍可能遇到另一个问题（Schannel CRL 检查卡死），这与本文讨论的控制台渲染问题是独立的。详见 [Windows 旧版 curl 下载慢的根治方案](/posts/curl-download-slow-fix/)。
 
 ### 为什么 aria2 正常？
 
 aria2 是**多线程下载**，同时维护 8~16 个 TCP 连接。即使某个连接的接收窗口因阻塞暂时关闭，其他连接仍在传输，任务管理器看到的是多条连接的叠加，自然显得平滑。
+
+### 第四层：代理环境下的放大效应（高延迟 + 小数据块）
+
+上述三层叠加效应在**走代理下载**时会被急剧放大。实测对比：
+
+| 环境 | `$ProgressPreference = 'Continue'` | `$ProgressPreference = 'SilentlyContinue'` | 速度差异 |
+|------|-----------------------------------|-------------------------------------------|----------|
+| 直连 CDN（低延迟、大数据块） | ~4.4 MB/s | ~4.4 MB/s | **几乎为 0** |
+| gh-proxy 代理（高延迟、小数据块） | ~1.6 MB/s | ~4.2 MB/s | **2.6 倍** |
+
+**原因**：代理服务器（尤其是 Node.js 实现的轻量级转发服务，如 gh-proxy）通常以 **4~16 KB 的小 chunk** 流式回传数据。PS5.1 的 `Invoke-WebRequest` 每收到一个 chunk 就触发一次 `Write-Progress` → conhost 全屏重绘，导致进度条刷新频率比直连高 **10~50 倍**，形成"渲染阻塞 I/O"的死亡螺旋：
+
+```
+代理发送 4KB chunk → IWR 收到 → Write-Progress 刷新 → 阻塞 30~100ms
+    → TCP 接收缓冲区满 → 窗口缩小 → 代理降速
+    → 下个 chunk 更慢到来 → 但每次仍然要刷新进度条
+    → 有效下载时间被压缩到 10~20%
+```
+
+这意味着：在代理环境下使用 PS5.1 的 `Invoke-WebRequest`，**即使没有 VirtualBox，也会出现类似的脉冲式卡顿和速度暴跌**。
 
 ---
 
@@ -131,6 +157,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 保存后关闭窗口，重新打开 PowerShell 即可。
 
+> **特别重要**：如果你通过代理（如 gh-proxy、Clash 等）下载，**务必**在运行 `Invoke-WebRequest` 前先执行 `$ProgressPreference = 'SilentlyContinue'`，否则速度可能被拖慢 **60% 以上**（详见上文"第四层"分析）。
+>
 > 副作用：所有使用 `Write-Progress` 的命令（如 `Copy-Item` 大文件、某些模块的安装脚本）都不会再显示进度条。如果你偶尔需要进度条，可以临时改回来：
 > ```powershell
 > $ProgressPreference = 'Continue'
@@ -242,6 +270,16 @@ curl.exe -# -L -o file.exe "https://..."
 - **Hyper-V 增强会话模式（Enhanced Session Mode）** 基于 RDP 协议，本质上已经绕过了传统的控制台渲染路径
 
 VirtualBox 的控制台在 WHP 兼容模式下的显示性能是其已知短板。
+
+---
+
+## 更新日志
+
+- **2026-05-12** 补充代理环境下的进度条放大效应分析：
+  - 新增"第四层：代理环境下的放大效应"章节，解释代理小 chunk 导致 `Write-Progress` 刷新频率暴增的原理
+  - 补充实测数据：直连 CDN 差异几乎为 0，gh-proxy 代理下速度差异达 **2.6 倍**
+  - 方案一新增代理环境特别重要提示
+  - 推荐 `curl.exe -#` 作为轻量进度条替代方案
 
 ---
 
