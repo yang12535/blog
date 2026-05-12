@@ -668,6 +668,8 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
 
 ## 更新日志
 
+- **2026-05-12** 修复代理版脚本的进度条性能陷阱：
+  - 在 `Get-WithProxy` 函数开头添加 `$ProgressPreference = 'SilentlyContinue'`，防止代理环境下 PS5.1 进度条导致下载速度暴跌（实测影响可达 2.6 倍）
 - **2026-05-08** 修复断点续传导致的安装失败：
   - 改为无条件删除旧临时文件，确保每次运行都重新下载干净的安装包
   - 对 PowerShell 7 MSI、Windows Terminal msixbundle/zip 增加 SHA256 校验，防止下载被拦截或损坏
