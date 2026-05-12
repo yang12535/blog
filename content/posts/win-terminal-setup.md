@@ -450,6 +450,8 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Na
 # 自动 fallback 下载函数
 function Get-WithProxy {
     param([string]$Url, [string]$OutFile)
+    # 强制关闭进度条，避免代理环境下小数据块导致频繁 UI 刷新拖慢下载
+    $ProgressPreference = 'SilentlyContinue'
     $proxies = @(
         "https://gh-proxy.org/",
         "https://mirror.ghproxy.com/",

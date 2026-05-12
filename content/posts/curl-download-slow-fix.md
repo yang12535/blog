@@ -91,8 +91,14 @@ curl.exe -L --tcp-nodelay --ssl-no-revoke `
 | `-A "..."` | 伪装成 Chrome，绕过服务端对 curl UA 的限速策略 |
 | `--ssl-no-revoke` | 禁用 Schannel 的证书吊销检查，根治代理环境下的 TLS 握手失败 |
 | `-x http://...` | 显式指定代理地址（curl 不会自动读取 Windows 系统代理） |
+| `-#` | 使用简单进度条（仅显示 `#` 字符），渲染开销极低，适合代理/弱网环境 |
 
 > **坑点**：`--ssl-no-revoke` 仅在 curl 7.44+ 可用，系统自带的 7.55.1 恰好支持，但再老的版本就不行了。`--tcp-nodelay` 在 curl 7.50.2+ 已默认启用，对 7.55.1 无额外增益。
+
+> **提示**：在代理或弱网环境下，建议加上 `-#` 使用简单进度条。curl 默认的详细进度条会频繁刷新 stderr，在 PowerShell 中仍有一定开销；`-#` 只显示一行 `#` 进度条，渲染成本接近于零。示例：
+> ```powershell
+> curl.exe -# -L -A "..." -o file.zip "https://..."
+> ```
 
 ---
 
@@ -338,6 +344,19 @@ powershell -ExecutionPolicy Bypass -File .\curl-fast.ps1 "https://..."
 - Chrome 132 → 200 但返回 JS 验证页（curl 无法执行 JavaScript）
 
 **这是服务端层面的限制**，和 curl 参数优化无关。遇到这种情况，**换镜像站即可**（清华 TUNA、华为云、阿里云等）。
+
+### Q11：为什么代理下载脚本（如 gh-proxy）在 PowerShell 5.1 里运行特别慢？
+
+这是 `Invoke-WebRequest` + 代理 + PowerShell 5.1 进度条的组合陷阱。
+
+代理服务器（特别是 Node.js 实现的轻量级转发）通常以 **4~16 KB 的小 chunk** 流式回传数据。PS5.1 的 `Invoke-WebRequest` 每收到一个 chunk 就触发一次 `Write-Progress` → conhost 全屏重绘，形成"渲染阻塞 I/O"的死亡螺旋，速度可能被拖慢 **60% 以上**。
+
+**解决**：在使用 `Invoke-WebRequest` 的脚本开头加入：
+```powershell
+$ProgressPreference = 'SilentlyContinue'
+```
+
+更详细的原理分析请参考姊妹篇：[VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案](/posts/virtualbox-powershell-download-stutter/)。
 
 ---
 
