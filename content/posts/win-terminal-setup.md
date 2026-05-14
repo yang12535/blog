@@ -42,7 +42,7 @@ $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell 7.4 安装包 SHA256 校验失败"
 }
-Write-Host ">>> 安装 PowerShell 7.4..." -ForegroundColor Cyan
+Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
 msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
 if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
     throw "PowerShell 7.4 安装失败，退出码: $LASTEXITCODE"
@@ -55,7 +55,7 @@ if ($LASTEXITCODE -in @(3010, 1641)) {
 $wtZip = "$temp\WindowsTerminal_x64.zip"
 $wtUrl = "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip"
 if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
-Write-Host ">>> 下载 Windows Terminal..." -ForegroundColor Cyan
+Write-Host ">>> 下载 Windows Terminal $wtVer..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $wtUrl -OutFile $wtZip -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
 $wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
 if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
@@ -132,7 +132,7 @@ Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 # --- 5. 创建桌面快捷方式 ---
 $wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
 $WshShell = New-Object -ComObject WScript.Shell
-$SC = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Terminal.lnk")
+$SC = $WshShell.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Terminal.lnk")
 $SC.TargetPath = $wtExe
 $SC.WorkingDirectory = "$wtDest\terminal-$wtVer"
 $SC.IconLocation = $wtExe
@@ -201,7 +201,7 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 直接运行：
 ```powershell
-& "$env:LOCALAPPDATA\WindowsTerminal\terminal-$wtVer\WindowsTerminal.exe"
+& "$env:LOCALAPPDATA\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe"
 ```
 
 ### Q2：PowerShell 7 里中文还是乱码？
@@ -275,13 +275,13 @@ $wtVer  = "1.21.3231.0"
 $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
 $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
 if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
-Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
+Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
 Get-WithProxy -Url $ps7Url -OutFile $ps7Out
 $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell 7.4 安装包 SHA256 校验失败"
 }
-Write-Host ">>> 安装 PowerShell 7.4..." -ForegroundColor Cyan
+Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
 msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
 if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
     throw "PowerShell 7.4 安装失败，退出码: $LASTEXITCODE"
@@ -293,7 +293,7 @@ if ($LASTEXITCODE -in @(3010, 1641)) {
 # --- 2. 下载并解压 Windows Terminal ---
 $wtZip = "$temp\WindowsTerminal_x64.zip"
 if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
-Write-Host ">>> 下载 Windows Terminal..." -ForegroundColor Cyan
+Write-Host ">>> 下载 Windows Terminal $wtVer..." -ForegroundColor Cyan
 Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip" -OutFile $wtZip
 $wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
 if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
@@ -370,7 +370,7 @@ Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 # --- 5. 桌面快捷方式 ---
 $wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
 $WshShell = New-Object -ComObject WScript.Shell
-$SC = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Terminal.lnk")
+$SC = $WshShell.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Terminal.lnk")
 $SC.TargetPath = $wtExe
 $SC.WorkingDirectory = "$wtDest\terminal-$wtVer"
 $SC.IconLocation = $wtExe
