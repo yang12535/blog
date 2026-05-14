@@ -28,12 +28,16 @@ tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
+# 版本号（升级时只需改这里）
+$ps7Ver = "7.4.6"
+$wtVer  = "1.21.3231.0"
+
 # --- 1. 下载并安装 PowerShell 7.4 ---
-$ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi"
-$ps7Out = "$temp\PowerShell-7.4.6-win-x64.msi"
+$ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
+$ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
 if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
 Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing
+Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
 $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell 7.4 安装包 SHA256 校验失败"
@@ -49,10 +53,10 @@ if ($LASTEXITCODE -in @(3010, 1641)) {
 
 # --- 2. 下载并解压 Windows Terminal（Unpackaged）---
 $wtZip = "$temp\WindowsTerminal_x64.zip"
-$wtUrl = "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip"
+$wtUrl = "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip"
 if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
 Write-Host ">>> 下载 Windows Terminal..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $wtUrl -OutFile $wtZip -UseBasicParsing
+Invoke-WebRequest -Uri $wtUrl -OutFile $wtZip -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
 $wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
 if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
     throw "Windows Terminal zip SHA256 校验失败"
@@ -63,16 +67,28 @@ Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 # --- 3. 写 PowerShell 7 Profile（强制 UTF-8）---
 $ps7ProfileDir = "$env:USERPROFILE\Documents\PowerShell"
 New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
+$profilePath = "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1"
+if (Test-Path $profilePath) {
+    $backup = "$profilePath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    Copy-Item $profilePath $backup -Force
+    Write-Host ">>> 已备份原 Profile 到 $backup" -ForegroundColor Yellow
+}
 $profileContent = @"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 `$OutputEncoding = [System.Text.Encoding]::UTF8
 `$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 "@
-Set-Content -Path "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1" -Value $profileContent -Encoding UTF8
+Set-Content -Path $profilePath -Value $profileContent -Encoding UTF8
 
 # --- 4. 写 Windows Terminal settings.json ---
 $wtSettingsDir = "$env:LOCALAPPDATA\Microsoft\Windows Terminal"
 New-Item -ItemType Directory -Force -Path $wtSettingsDir | Out-Null
+$wtSettingsPath = "$wtSettingsDir\settings.json"
+if (Test-Path $wtSettingsPath) {
+    $backup = "$wtSettingsPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    Copy-Item $wtSettingsPath $backup -Force
+    Write-Host ">>> 已备份原 settings.json 到 $backup" -ForegroundColor Yellow
+}
 $settingsJson = @'
 {
   "$help": "https://aka.ms/terminal-documentation",
@@ -111,14 +127,14 @@ $settingsJson = @'
   }
 }
 '@
-Set-Content -Path "$wtSettingsDir\settings.json" -Value $settingsJson -Encoding UTF8
+Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 
 # --- 5. 创建桌面快捷方式 ---
-$wtExe = "$wtDest\terminal-1.21.3231.0\WindowsTerminal.exe"
+$wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
 $WshShell = New-Object -ComObject WScript.Shell
 $SC = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Terminal.lnk")
 $SC.TargetPath = $wtExe
-$SC.WorkingDirectory = "$wtDest\terminal-1.21.3231.0"
+$SC.WorkingDirectory = "$wtDest\terminal-$wtVer"
 $SC.IconLocation = $wtExe
 $SC.Save()
 
@@ -220,35 +236,44 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 # 自动 fallback 下载函数
 function Get-WithProxy {
     param([string]$Url, [string]$OutFile)
+    $oldProgress = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
-    $proxies = @(
-        "https://gh-proxy.org/",
-        "https://mirror.ghproxy.com/",
-        "https://ghproxy.net/",
-        "https://ghp.ci/"
-    )
-    foreach ($p in $proxies) {
-        $proxyUrl = "$p$Url"
-        Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
-        try {
-            Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120
-            if ((Get-Item $OutFile).Length -gt 1024) {
-                Write-Host "Success via $p" -ForegroundColor Green
-                return
-            }
-        } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
+    try {
+        $proxies = @(
+            "https://gh-proxy.org/",
+            "https://mirror.ghproxy.com/",
+            "https://ghproxy.net/",
+            "https://ghp.ci/"
+        )
+        foreach ($p in $proxies) {
+            $proxyUrl = "$p$Url"
+            Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
+            try {
+                Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
+                if ((Get-Item $OutFile).Length -gt 1024) {
+                    Write-Host "Success via $p" -ForegroundColor Green
+                    return
+                }
+            } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
+        }
+        Write-Host "Trying direct download..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
+    } finally {
+        $ProgressPreference = $oldProgress
     }
-    Write-Host "Trying direct download..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
 }
 
 # 创建临时目录
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
+# 版本号（升级时只需改这里）
+$ps7Ver = "7.4.6"
+$wtVer  = "1.21.3231.0"
+
 # --- 1. 下载并安装 PowerShell 7.4 ---
-$ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi"
-$ps7Out = "$temp\PowerShell-7.4.6-win-x64.msi"
+$ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
+$ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
 if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
 Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
 Get-WithProxy -Url $ps7Url -OutFile $ps7Out
@@ -269,7 +294,7 @@ if ($LASTEXITCODE -in @(3010, 1641)) {
 $wtZip = "$temp\WindowsTerminal_x64.zip"
 if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
 Write-Host ">>> 下载 Windows Terminal..." -ForegroundColor Cyan
-Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v1.21.3231.0/Microsoft.WindowsTerminal_1.21.3231.0_x64.zip" -OutFile $wtZip
+Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip" -OutFile $wtZip
 $wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
 if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
     throw "Windows Terminal zip SHA256 校验失败"
@@ -280,16 +305,28 @@ Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 # --- 3. PS7 Profile（UTF-8）---
 $ps7ProfileDir = "$env:USERPROFILE\Documents\PowerShell"
 New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
+$profilePath = "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1"
+if (Test-Path $profilePath) {
+    $backup = "$profilePath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    Copy-Item $profilePath $backup -Force
+    Write-Host ">>> 已备份原 Profile 到 $backup" -ForegroundColor Yellow
+}
 $profileContent = @"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 `$OutputEncoding = [System.Text.Encoding]::UTF8
 `$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 "@
-Set-Content -Path "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1" -Value $profileContent -Encoding UTF8
+Set-Content -Path $profilePath -Value $profileContent -Encoding UTF8
 
 # --- 4. Terminal settings.json ---
 $wtSettingsDir = "$env:LOCALAPPDATA\Microsoft\Windows Terminal"
 New-Item -ItemType Directory -Force -Path $wtSettingsDir | Out-Null
+$wtSettingsPath = "$wtSettingsDir\settings.json"
+if (Test-Path $wtSettingsPath) {
+    $backup = "$wtSettingsPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    Copy-Item $wtSettingsPath $backup -Force
+    Write-Host ">>> 已备份原 settings.json 到 $backup" -ForegroundColor Yellow
+}
 $settingsJson = @'
 {
   "$help": "https://aka.ms/terminal-documentation",
@@ -328,14 +365,14 @@ $settingsJson = @'
   }
 }
 '@
-Set-Content -Path "$wtSettingsDir\settings.json" -Value $settingsJson -Encoding UTF8
+Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 
 # --- 5. 桌面快捷方式 ---
-$wtExe = "$wtDest\terminal-1.21.3231.0\WindowsTerminal.exe"
+$wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
 $WshShell = New-Object -ComObject WScript.Shell
 $SC = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Terminal.lnk")
 $SC.TargetPath = $wtExe
-$SC.WorkingDirectory = "$wtDest\terminal-1.21.3231.0"
+$SC.WorkingDirectory = "$wtDest\terminal-$wtVer"
 $SC.IconLocation = $wtExe
 $SC.Save()
 
