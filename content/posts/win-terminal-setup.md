@@ -24,6 +24,11 @@ tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
 在 PowerShell 里复制粘贴执行（支持 PowerShell 5.1 老窗口）：
 
 ```powershell
+# 检测管理员权限
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw "请以管理员身份运行 PowerShell（右键 → 以管理员身份运行），否则 MSI 安装会失败。"
+}
+
 # 创建临时目录
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
@@ -266,6 +271,11 @@ function Get-WithProxy {
     }
 }
 
+# 检测管理员权限
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw "请以管理员身份运行 PowerShell（右键 → 以管理员身份运行），否则 MSI 安装会失败。"
+}
+
 # 创建临时目录
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
@@ -372,6 +382,9 @@ Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 
 # --- 5. 桌面快捷方式 ---
 $wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
+if (-not (Test-Path $wtExe)) {
+    throw "WindowsTerminal.exe 未找到: $wtExe，请检查解压目录内容。"
+}
 $WshShell = New-Object -ComObject WScript.Shell
 $SC = $WshShell.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Terminal.lnk")
 $SC.TargetPath = $wtExe
