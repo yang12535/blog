@@ -36,16 +36,16 @@ $wtVer  = "1.21.3231.0"
 $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
 $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
 if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
-Write-Host ">>> 下载 PowerShell 7.4..." -ForegroundColor Cyan
+Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
 $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
-    throw "PowerShell 7.4 安装包 SHA256 校验失败"
+    throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
 msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
 if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
-    throw "PowerShell 7.4 安装失败，退出码: $LASTEXITCODE"
+    throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
 }
 if ($LASTEXITCODE -in @(3010, 1641)) {
     Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
@@ -199,9 +199,9 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 ### Q1：双击桌面 Terminal 没反应？
 
-直接运行：
+直接运行（将 `<版本>` 替换为实际目录名）：
 ```powershell
-& "$env:LOCALAPPDATA\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe"
+& "$env:LOCALAPPDATA\WindowsTerminal\terminal-<版本>\WindowsTerminal.exe"
 ```
 
 ### Q2：PowerShell 7 里中文还是乱码？
@@ -279,12 +279,12 @@ Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
 Get-WithProxy -Url $ps7Url -OutFile $ps7Out
 $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
-    throw "PowerShell 7.4 安装包 SHA256 校验失败"
+    throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
 msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
 if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
-    throw "PowerShell 7.4 安装失败，退出码: $LASTEXITCODE"
+    throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
 }
 if ($LASTEXITCODE -in @(3010, 1641)) {
     Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
