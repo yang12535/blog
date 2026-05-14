@@ -28,7 +28,7 @@ tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
-# 版本号（升级时只需改这里）
+# 版本号与 SHA256（升级时需同步更新）
 $ps7Ver = "7.4.6"
 $wtVer  = "1.21.3231.0"
 
@@ -191,7 +191,7 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 | --- | --- |
 | **Windows Terminal 设置** | `%LOCALAPPDATA%\Microsoft\Windows Terminal\settings.json` |
 | **PowerShell 7 Profile** | `%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` |
-| **Unpackaged Terminal** | `%LOCALAPPDATA%\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe` |
+| **Unpackaged Terminal** | `%LOCALAPPDATA%\WindowsTerminal\terminal-<版本>\WindowsTerminal.exe` |
 
 ---
 
@@ -201,7 +201,7 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 直接运行：
 ```powershell
-& "$env:LOCALAPPDATA\WindowsTerminal\terminal-1.21.3231.0\WindowsTerminal.exe"
+& "$env:LOCALAPPDATA\WindowsTerminal\terminal-$wtVer\WindowsTerminal.exe"
 ```
 
 ### Q2：PowerShell 7 里中文还是乱码？
@@ -267,7 +267,7 @@ function Get-WithProxy {
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
-# 版本号（升级时只需改这里）
+# 版本号与 SHA256（升级时需同步更新）
 $ps7Ver = "7.4.6"
 $wtVer  = "1.21.3231.0"
 
