@@ -43,11 +43,11 @@ if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
-if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
+msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 REBOOT=ReallySuppress
+if ($LASTEXITCODE -notin @(0, 3010)) {
     throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
 }
-if ($LASTEXITCODE -in @(3010, 1641)) {
+if ($LASTEXITCODE -eq 3010) {
     Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
 }
 
@@ -131,6 +131,9 @@ Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 
 # --- 5. 创建桌面快捷方式 ---
 $wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
+if (-not (Test-Path $wtExe)) {
+    throw "WindowsTerminal.exe 未找到: $wtExe，请检查解压目录内容。"
+}
 $WshShell = New-Object -ComObject WScript.Shell
 $SC = $WshShell.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Terminal.lnk")
 $SC.TargetPath = $wtExe
@@ -152,7 +155,7 @@ Write-Host ">>> 完成！双击桌面的 'Terminal' 快捷方式即可使用。"
 Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。
 
 ```powershell
-msiexec /i "PowerShell-7.4.6-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
+msiexec /i "PowerShell-<版本>-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
 ```
 
 | 参数 | 含义 |
@@ -282,11 +285,11 @@ if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1
-if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
+msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 REBOOT=ReallySuppress
+if ($LASTEXITCODE -notin @(0, 3010)) {
     throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
 }
-if ($LASTEXITCODE -in @(3010, 1641)) {
+if ($LASTEXITCODE -eq 3010) {
     Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
 }
 
