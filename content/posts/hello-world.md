@@ -1,7 +1,7 @@
 ---
 title: Hello World
 date: 2026-04-08
-tags: [bogl, 随笔]
+tags: [bogl]
 ---
 
 这是 Bogl 博客的第一篇文章。
