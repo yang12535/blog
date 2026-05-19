@@ -53,8 +53,11 @@ $exitCode = $proc.ExitCode
 if ($exitCode -notin @(0, 3010)) {
     throw "PowerShell $ps7Ver 安装失败，退出码: $exitCode"
 }
-if ($exitCode -eq 3010) {
+if ($exitCode -eq 0) {
     Write-Host ">>> PS7 已安装成功，无需重启，当前即可使用。" -ForegroundColor Green
+}
+if ($exitCode -eq 3010) {
+    Write-Host ">>> PS7 已安装成功，但安装程序提示需要重启（退出码 3010）。当前已禁止自动重启（REBOOT=ReallySuppress），可继续使用。" -ForegroundColor Green
     Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
@@ -302,8 +305,11 @@ $exitCode = $proc.ExitCode
 if ($exitCode -notin @(0, 3010)) {
     throw "PowerShell $ps7Ver 安装失败，退出码: $exitCode"
 }
-if ($exitCode -eq 3010) {
+if ($exitCode -eq 0) {
     Write-Host ">>> PS7 已安装成功，无需重启，当前即可使用。" -ForegroundColor Green
+}
+if ($exitCode -eq 3010) {
+    Write-Host ">>> PS7 已安装成功，但安装程序提示需要重启（退出码 3010）。当前已禁止自动重启（REBOOT=ReallySuppress），可继续使用。" -ForegroundColor Green
     Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
