@@ -1,7 +1,7 @@
 ---
 title: Windows 旧版 curl 下载慢的根治方案（自动代理 + UA 伪装 + aria2c 兜底）
 date: 2026-05-08
-tags: [curl, windows, proxy, aria2, download, 国内镜像]
+tags: [windows, download, proxy]
 ---
 
 ---

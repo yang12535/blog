@@ -1,7 +1,7 @@
 ---
 title: VirtualBox 中 PowerShell 下载脉冲式卡顿的根治方案
 date: 2026-05-09
-tags: [virtualbox, powershell, windows, download, iwr, curl, 虚拟机]
+tags: [virtualbox, windows, powershell, download]
 ---
 
 > 在 VirtualBox 虚拟机中使用 PowerShell 下载大文件时，任务管理器呈现脉冲式波动、速度暴跌到 100 Kbps？不要先怀疑网络或代理——**先关闭进度条**，90% 的情况立即恢复正常。

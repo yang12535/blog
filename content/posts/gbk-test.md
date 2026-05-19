@@ -1,7 +1,7 @@
 ---
 title: GBK测试
 date: 2026-04-07
-tags: [测试, gbk]
+tags: [gbk]
 ---
 
 这是一篇GBK编码的文章。

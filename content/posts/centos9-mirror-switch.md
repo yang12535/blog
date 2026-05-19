@@ -1,7 +1,7 @@
 ---
 title: CentOS Stream 9 / RHEL 9 纯换源（两行）
 date: 2026-04-09
-tags: [centos, rhel, mirror, yum, pip]
+tags: [centos, linux, mirror]
 ---
 
 # CentOS Stream 9 / RHEL 9 纯换源（两行）

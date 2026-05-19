@@ -1,7 +1,7 @@
 ---
 title: 国内网络环境 Windows 安装 Bun（TUNA + 阿里云）
 date: 2026-05-06
-tags: [bun, nodejs, windows, mirror, npm, 国内镜像]
+tags: [bun, windows, nodejs]
 
 ---
 
