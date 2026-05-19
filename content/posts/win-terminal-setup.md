@@ -48,12 +48,14 @@ if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 REBOOT=ReallySuppress
-if ($LASTEXITCODE -notin @(0, 3010)) {
-    throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
+$proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
+$exitCode = $proc.ExitCode
+if ($exitCode -notin @(0, 3010)) {
+    throw "PowerShell $ps7Ver 安装失败，退出码: $exitCode"
 }
-if ($LASTEXITCODE -eq 3010) {
-    Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
+if ($exitCode -eq 3010) {
+    Write-Host ">>> PS7 已安装成功，无需重启，当前即可使用。" -ForegroundColor Green
+    Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
 # --- 2. 下载并解压 Windows Terminal（Unpackaged）---
@@ -295,12 +297,14 @@ if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
     throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-msiexec /i "$ps7Out" /qn ADD_EXPLORER_CONTEXT_MENU=1 REBOOT=ReallySuppress
-if ($LASTEXITCODE -notin @(0, 3010)) {
-    throw "PowerShell $ps7Ver 安装失败，退出码: $LASTEXITCODE"
+$proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
+$exitCode = $proc.ExitCode
+if ($exitCode -notin @(0, 3010)) {
+    throw "PowerShell $ps7Ver 安装失败，退出码: $exitCode"
 }
-if ($LASTEXITCODE -eq 3010) {
-    Write-Host ">>> 安装成功，但需要重启才能完全生效。" -ForegroundColor Yellow
+if ($exitCode -eq 3010) {
+    Write-Host ">>> PS7 已安装成功，无需重启，当前即可使用。" -ForegroundColor Green
+    Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
 # --- 2. 下载并解压 Windows Terminal ---
