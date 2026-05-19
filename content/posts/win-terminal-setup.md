@@ -232,6 +232,18 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 还原卡环境，关机后 C 盘自动还原。**每次开机后重新运行一遍一键脚本**（约 1 分钟）即可。
 
+### Q4：首次打开 Terminal 仍然是 PS5.1？
+
+PowerShell 7 安装后，Windows Terminal 不会立即识别新安装的 PS7。需要**关闭所有 Terminal 窗口后重新打开**（或从桌面快捷方式启动），此时 Terminal 才会加载 `settings.json` 中的 `source: Windows.Terminal.PowershellCore` 配置并显示 "PowerShell 7" 标签页。
+
+### Q5：升级版本时怎么找新的 SHA256？
+
+在 GitHub Release 页面下载对应的 `hashes.sha256` 文件：
+- PowerShell: https://github.com/PowerShell/PowerShell/releases
+- Windows Terminal: https://github.com/microsoft/terminal/releases
+
+打开文件找到对应文件名（如 `PowerShell-7.4.6-win-x64.msi`）的哈希值，复制到脚本中的 `$ps7Hash` 或 `$wtZipHash` 变量即可。
+
 ---
 
 ## 附录：国内 GitHub 代理版脚本
@@ -296,7 +308,7 @@ if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
 Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
 Get-WithProxy -Url $ps7Url -OutFile $ps7Out
 $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
-if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
+if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash.ToUpper()) {
     throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
 }
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
@@ -417,14 +429,8 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
   - 砍掉字体下载/解压/注册整节（系统自带 Consolas + Segoe UI Emoji 已够用）
   - 砍掉 Oh My Posh 美化（还原机房外观其次，功能优先）
   - 砍掉 msixbundle 双保险（只保留 Unpackaged 版，最稳妥）
-  - 合并分步详解为 4 节，FAQ 砍到 3 个
+  - 合并分步详解为 4 节，FAQ 扩展为 5 个
   - 代理版脚本同步精简并后移至附录
   - 经本地 PS5.1 + conhost 实测：Profile 加载后 UTF-8 生效，中文/Emoji 正常
-
----
-
-> 在 Windows 10/11 还原机房一键安装 Windows Terminal + PowerShell 7，强制 UTF-8 根治 GBK 乱码。
->
-> 复制脚本 → 粘贴 → 回车，获得一个带多标签页、UTF-8、中文/Emoji 正常显示的现代化终端。
 
 ---
