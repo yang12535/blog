@@ -4,12 +4,14 @@ date: 2026-06-03
 tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一条龙]
 ---
 
-> 本文替代并整合了以下旧文，旧文已标记弃用，不再维护：
-> - [~~Windows 一键安装 Kimi CLI~~](./kimi-cli-install-win.md)
-> - [~~国内网络环境 Windows 安装 Bun~~](./install-bun-china.md)
-> - [~~还原机房 PowerShell 7 + Windows Terminal 极速配置~~](./win-terminal-setup.md)
+> 本文整合了一套完整的还原机房装机流程（PS7 + Git + Node.js + npm + Bun + Kimi Code），建议作为首选方案。
 >
-> 如果你只需要其中某个组件，仍可参考旧文，但请注意 kimi-cli 已停止维护，且本文的 **统一 PATH 管理方案** 更可靠。
+> 以下旧文仍可独立参考：
+> - [~~Windows 一键安装 Kimi CLI~~](./kimi-cli-install-win.md)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
+> - [国内网络环境 Windows 安装 Bun](./install-bun-china.md)
+> - [还原机房 PowerShell 7 + Windows Terminal 极速配置](./win-terminal-setup.md)
+>
+> 本文的 **统一 PATH 管理方案** 相比旧文更可靠，推荐直接使用本文脚本。
 
 ---
 
@@ -62,18 +64,28 @@ function Write-Fail($msg)  { Write-Host ">>> $msg" -ForegroundColor Red }
 # 所有组件安装完毕后统一调用一次，不依赖安装程序自动添加 PATH
 function Add-ToPath {
     param([string]$Dir)
-    # 当前会话立即生效
-    if ($env:Path -notlike "*$Dir*") {
+    # 标准化路径（去掉尾部反斜杠，统一大小写）用于精确比较
+    $normDir = $Dir.TrimEnd('\').ToLower()
+    # 当前会话：按 ; 拆分后精确匹配
+    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+    if ($normDir -notin $sessionPaths) {
         $env:Path = "$Dir;$env:Path"
     }
-    # 用户注册表（尽量持久化）
+    # 用户注册表
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath -notlike "*$Dir*") {
-        [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+    if ($userPath) {
+        $userPaths = $userPath -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+        if ($normDir -notin $userPaths) {
+            [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+        }
+    } else {
+        # 用户 PATH 为空时直接写入，避免前导分号
+        [Environment]::SetEnvironmentVariable("Path", $Dir, "User")
     }
 }
 
 # --- 代理下载函数（自动 fallback）---
+# 通过文件头魔数校验避免代理返回 HTML 错误页/ captive portal 被误判为成功
 function Get-WithProxy {
     param([string]$Url, [string]$OutFile)
     $oldProgress = $ProgressPreference
@@ -91,10 +103,15 @@ function Get-WithProxy {
             Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
             try {
                 Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
-                if ((Get-Item $OutFile).Length -gt 1024) {
+                # 校验文件头魔数，避免代理返回 HTML 错误页
+                $header = [System.IO.File]::ReadAllBytes($OutFile)[0..1]
+                if (($header[0] -eq 0xD0 -and $header[1] -eq 0xCF) -or   # MSI (OLE)
+                    ($header[0] -eq 0x4D -and $header[1] -eq 0x5A) -or   # EXE (MZ)
+                    ($header[0] -eq 0x50 -and $header[1] -eq 0x4B)) {    # ZIP (PK)
                     Write-Host "Success via $p" -ForegroundColor Green
                     return
                 }
+                Write-Warn "下载内容非安装包（文件头不匹配），继续尝试其他代理..."
             } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
         }
         Write-Host "Trying direct download..." -ForegroundColor Yellow
@@ -142,7 +159,15 @@ if (-not (Test-Path $gitExe)) {
     $gitOut = "$temp\Git-$gitVer-64-bit.exe"
     if (Test-Path $gitOut) { Remove-Item $gitOut -Force }
     Get-WithProxy -Url $gitUrl -OutFile $gitOut
-    # Git 安装包没有内置哈希校验文件，跳过 SHA256
+    # Git 安装包校验（官方 release 未提供 SHA256，用文件大小 + PE 文件头兜底）
+    $gitItem = Get-Item $gitOut
+    if ($gitItem.Length -lt 10MB) {
+        throw "Git 安装包大小异常（$($gitItem.Length) bytes），可能下载了错误页面"
+    }
+    $gitHeader = [System.IO.File]::ReadAllBytes($gitOut)[0..1]
+    if (-not ($gitHeader[0] -eq 0x4D -and $gitHeader[1] -eq 0x5A)) {
+        throw "Git 安装包文件头异常（非 PE 可执行文件），可能下载了损坏/被篡改的文件"
+    }
     $proc = Start-Process -FilePath $gitOut -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS", "/COMPONENTS=icons,ext\reg\shellhere,assoc,assoc_sh" -Wait -PassThru
     if ($proc.ExitCode -ne 0) {
         throw "Git 安装失败，退出码: $($proc.ExitCode)"
@@ -168,7 +193,7 @@ if (-not (Test-Path $nodeExe)) {
         throw "Node.js MSI SHA256 校验失败"
     }
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$nodeOut`"", "/qn", "/norestart" -Wait -PassThru
-    if ($proc.ExitCode -ne 0) {
+    if ($proc.ExitCode -notin @(0, 3010)) {
         throw "Node.js 安装失败，退出码: $($proc.ExitCode)"
     }
     Write-Ok "Node.js $nodeVer 安装完成"
@@ -276,6 +301,8 @@ $pathList = @(
     $gitDir                              # Git
 )
 
+# 反向遍历以保持前插优先级（Add-ToPath 前插，先遍历的会被后遍历的推到后面）
+[array]::Reverse($pathList)
 foreach ($dir in $pathList) {
     if (Test-Path $dir) {
         Add-ToPath -Dir $dir
@@ -473,7 +500,7 @@ bun add -g @moonshot-ai/kimi-code
 
 **正常**。还原卡环境，关机后 C 盘自动还原。
 
-**解决**：把一键脚本保存为 `.ps1` 文件，放到 **D 盘或 U 盘**。每次开机后右键"使用 PowerShell 运行"一遍（约 30 秒，已下载的组件会自动跳过）。
+**解决**：把一键脚本保存为 `.ps1` 文件，放到 **D 盘或 U 盘**。每次开机后**右键 PowerShell 图标 → "以管理员身份运行"**，然后在管理员窗口中运行该脚本（约 30 秒，已下载的组件会自动跳过）。
 
 ### Q2：脚本运行后在新终端里输入 `npm` 提示找不到命令？
 
