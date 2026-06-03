@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
+{% block desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
+{% block canonical %}{% if site.url %}{{ site.url }}/tags/{{ tagSlug }}/{% endif %}{% endblock %}
+{% block og_title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
+{% block og_desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
+{% block og_url %}{% if site.url %}{{ site.url }}/tags/{{ tagSlug }}/{% endif %}{% endblock %}
+{% block tw_title %}标签：{{ tag }} - {{ site.title }}{% endblock %}
+{% block tw_desc %}查看 {{ site.title }} 中所有关于「{{ tag }}」标签的技术文章与教程。{% endblock %}
+
+{% block sidebar %}
+<aside class="sidebar-left">
+  <div class="widget"><div class="widget-body"><a class="menu-item" href="{{ root }}tags/">← 所有标签</a></div></div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:20px;font-weight:600;">标签：{{ tag }}</h2>
+{% for post in posts %}
+<article class="article-card">
+  <div class="article-body">
+    <h2 class="article-title"><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
+    <div class="article-footer"><span>{{ post.dateDisplay }}</span></div>
+  </div>
+</article>
+{% endfor %}
+{% endblock %}

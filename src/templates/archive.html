@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}归档 - {{ site.title }}{% endblock %}
+{% block desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
+{% block canonical %}{% if site.url %}{{ site.url }}/archive/{% endif %}{% endblock %}
+{% block og_title %}归档 - {{ site.title }}{% endblock %}
+{% block og_desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
+{% block og_url %}{% if site.url %}{{ site.url }}/archive/{% endif %}{% endblock %}
+{% block tw_title %}归档 - {{ site.title }}{% endblock %}
+{% block tw_desc %}{{ site.title }} 文章归档，按年份浏览所有技术文章和教程。{% endblock %}
+
+{% block sidebar %}
+<aside class="sidebar-left">
+  <div class="widget"><div class="widget-body"><a class="menu-item" href="{{ root }}">← 返回首页</a></div></div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:20px;font-weight:600;">文章归档</h2>
+{% for year in archive %}
+<div class="article-card">
+  <div class="article-body">
+    <h3 style="margin-bottom:16px;font-weight:600;">{{ year.year }} 年</h3>
+    <ul class="menu-list">
+      {% for post in year.posts %}
+      <li style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a>
+        <span style="color:var(--text-muted);font-size:0.85rem;">{{ post.dateDisplay }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

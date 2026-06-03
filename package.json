@@ -1,0 +1,54 @@
+{
+  "name": "bogl-html",
+  "version": "1.0.0",
+  "description": "Bogl - 轻量静态博客生成器 for Tencent EdgeOne Pages",
+  "main": "build.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "prepare": "husky",
+    "check:frontmatter": "node scripts/validate-frontmatter.js",
+    "check:links": "node scripts/check-links.js --warn-external",
+    "check:bom": "node scripts/check-bom.js",
+    "check:all": "npm run check:frontmatter && npm run check:links && npm run check:bom"
+  },
+  "keywords": [
+    "blog",
+    "ssg",
+    "edgeone",
+    "static"
+  ],
+  "author": "",
+  "license": "MIT",
+  "lint-staged": {
+    "*.js": "eslint --fix",
+    "*.{md,json}": "prettier --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "chokidar": "^3.6.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "iconv-lite": "^0.6.3",
+    "jschardet": "^3.1.2",
+    "marked": "^14.1.2",
+    "nunjucks": "^3.2.4",
+    "sanitize-html": "^2.17.3"
+  }
+}

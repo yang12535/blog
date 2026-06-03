@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}标签 - {{ site.title }}{% endblock %}
+{% block desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
+{% block canonical %}{% if site.url %}{{ site.url }}/tags/{% endif %}{% endblock %}
+{% block og_title %}标签 - {{ site.title }}{% endblock %}
+{% block og_desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
+{% block og_url %}{% if site.url %}{{ site.url }}/tags/{% endif %}{% endblock %}
+{% block tw_title %}标签 - {{ site.title }}{% endblock %}
+{% block tw_desc %}{{ site.title }} 标签列表，浏览所有技术文章分类。{% endblock %}
+
+{% block sidebar %}
+<aside class="sidebar-left">
+  <div class="widget"><div class="widget-body"><a class="menu-item" href="{{ root }}">← 返回首页</a></div></div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:20px;font-weight:600;">所有标签</h2>
+{% if tags.length %}
+<div class="article-card"><div class="article-body">
+  <div class="article-tags" style="margin-bottom:0;">
+    {% for tag in tags %}
+    <a class="tag" href="{{ root }}tags/{{ tag.slug }}/">{{ tag.name }} ({{ tag.count }})</a>
+    {% endfor %}
+  </div>
+</div></div>
+{% else %}
+<div class="article-card"><div class="article-body" style="text-align:center;color:var(--text-light);padding:40px;">暂无标签。</div></div>
+{% endif %}
+{% endblock %}

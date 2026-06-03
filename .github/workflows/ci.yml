@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm run test --if-present
+
+      - name: Build
+        run: npm run build
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://bash.yang125.fun' }}
+          SITE_ICP: ${{ vars.SITE_ICP || '皖ICP备2025105642号-2' }}
+          ADSENSE_ID: ${{ secrets.ADSENSE_ID || '4120379355917420' }}
+          GITHUB_URL: ${{ vars.GITHUB_URL || 'https://github.com/yang12535/blog' }}
+          AUTHOR_NAME: ${{ vars.AUTHOR_NAME || 'yang12535' }}
+          GISCUS_REPO: ${{ vars.GISCUS_REPO || 'yang12535/blog' }}
+          GISCUS_REPO_ID: ${{ vars.GISCUS_REPO_ID || 'R_kgDOR75DVQ' }}
+          GISCUS_CATEGORY: ${{ vars.GISCUS_CATEGORY || 'Announcements' }}
+          GISCUS_CATEGORY_ID: ${{ vars.GISCUS_CATEGORY_ID || 'DIC_kwDOR75DVc4C8ot-' }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-node-${{ matrix.node-version }}
+          path: dist/

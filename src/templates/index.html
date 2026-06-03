@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block desc %}{{ site.title }} - 分享 Windows、Linux、开发工具等实用技术教程与一键安装脚本。{% endblock %}
+
+{% block sidebar %}
+<aside class="sidebar-left">
+  <div class="widget">
+    <div class="widget-header">标签</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        {% for tag in allTags %}
+        <li><a class="menu-item" href="{{ root }}tags/{{ tag.slug }}/">{{ tag.name }} <span class="tag">{{ tag.count }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="widget">
+    <div class="widget-header">归档</div>
+    <div class="widget-body">
+      <ul class="menu-list">
+        {% for year in archiveYears %}
+        <li><a class="menu-item" href="{{ root }}archive">{{ year }} 年</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title" style="margin-bottom:20px;font-size:1.5rem;font-weight:600;color:var(--text);">{{ site.title }}</h1>
+{% if posts.length %}
+  {% for post in posts %}
+  <article class="article-card">
+    <div class="article-body">
+      <h2 class="article-title"><a href="{{ root }}posts/{{ post.slug }}/">{{ post.title }}</a></h2>
+      <div class="article-tags">
+        {% for tag in post.tagLinks %}
+        <a class="tag" href="{{ root }}tags/{{ tag.slug }}/">{{ tag.name }}</a>
+        {% endfor %}
+      </div>
+      {% if post.excerpt %}
+      <p class="article-excerpt">{{ post.excerpt }}</p>
+      {% endif %}
+      <div class="article-footer">
+        <span>{{ post.dateDisplay }}</span>
+        <span>RSS</span>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+
+  {% if totalPages > 1 %}
+  <div class="pagination">
+    {% if prevPage %}
+    <a href="{% if prevPage == 1 %}{{ root }}{% else %}{{ root }}page/{{ prevPage }}/{% endif %}">上一页</a>
+    {% endif %}
+    <span class="current">{{ currentPage }} / {{ totalPages }}</span>
+    {% if nextPage %}
+    <a href="{{ root }}page/{{ nextPage }}/">下一页</a>
+    {% endif %}
+  </div>
+  {% endif %}
+{% else %}
+  <div class="article-card"><div class="article-body" style="text-align:center;color:var(--text-light);padding:60px 20px;">暂无文章。</div></div>
+{% endif %}
+{% endblock %}
