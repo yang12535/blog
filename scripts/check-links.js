@@ -70,12 +70,14 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
     const client = url.startsWith('https:') ? https : http;
 
     function makeRequest(method, attempt = 0) {
+      let settled = false;
       const req = client.request(url, { method, timeout: timeoutMs }, (res) => {
         const status = res.statusCode;
         // 跟随重定向
         if (status >= 300 && status < 400 && res.headers.location) {
           const redirectUrl = new URL(res.headers.location, url).toString();
           res.resume();
+          settled = true;
           resolve({ status: 'redirect', redirectTo: redirectUrl, finalStatus: status });
           return;
         }
@@ -87,14 +89,18 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
         }
         if (status >= 200 && status < 400) {
           res.resume();
+          settled = true;
           resolve({ status: 'ok', finalStatus: status });
         } else {
           res.resume();
+          settled = true;
           resolve({ status: 'error', finalStatus: status, error: `HTTP ${status}` });
         }
       });
       req.on('timeout', () => {
         req.destroy();
+        if (settled) return;
+        settled = true;
         if (attempt < retries) {
           setTimeout(() => makeRequest(method, attempt + 1), 500);
         } else {
@@ -102,6 +108,8 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
         }
       });
       req.on('error', (err) => {
+        if (settled) return;
+        settled = true;
         if (method === 'HEAD') {
           // HEAD 请求失败，尝试 GET
           makeRequest('GET', attempt);
@@ -110,7 +118,7 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
         if (attempt < retries) {
           setTimeout(() => makeRequest(method, attempt + 1), 500);
         } else {
-          resolve({ status: 'error', error: err.message });
+          resolve({ status: 'error', error: `[${err.code || 'UNKNOWN'}] ${err.message}` });
         }
       });
       req.end();
@@ -167,7 +175,7 @@ function resolveRelativeLink(url, baseFile) {
       const assetsMatch = clean.match(/(?:\.\.\/)*assets\/.*$/);
       if (assetsMatch) {
         const srcFallback = path.resolve(rootDir, 'src', assetsMatch[0].replace(/^(\.\.\/)+/, ''));
-        if (fs.existsSync(srcFallback)) {
+        if (srcFallback.startsWith(rootDir + path.sep) && fs.existsSync(srcFallback)) {
           return srcFallback;
         }
       }

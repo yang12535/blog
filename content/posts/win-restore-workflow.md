@@ -209,8 +209,12 @@ if (-not (Test-Path $nodeExe)) {
 
 # 关键：Node.js MSI 安装后注册表 PATH 在当前会话不生效，必须立即显式添加
 # 否则后续 Bun 安装（install.js 内部调用 node）会因找不到 node 而失败
-Add-ToPath -Dir $nodeDir
-Write-Ok "已确保 Node.js 目录在当前会话 PATH 中"
+if (Test-Path $nodeDir) {
+    Add-ToPath -Dir $nodeDir
+    Write-Ok "已确保 Node.js 目录在当前会话 PATH 中"
+} else {
+    Write-Warn "Node.js 目录不存在，跳过 PATH 添加: $nodeDir"
+}
 
 # 显式定位 npm.cmd（绕过 PS5.1 Restricted 执行策略）
 $npmCmd = Get-Command "$nodeDir\npm.cmd" -ErrorAction SilentlyContinue
