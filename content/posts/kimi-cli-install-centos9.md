@@ -4,6 +4,13 @@ date: 2026-04-09
 tags: [kimi-cli, centos, linux, uv]
 ---
 
+> 📌 **官方已迁移**：`kimi-cli` 已品牌迁移为 `kimi-code`，包名与安装方式均有变化。本文所述的 `kimi-cli` 目前仍可正常使用，但后续建议自行安装新版：
+> ```bash
+> npm install -g @moonshot-ai/kimi-code
+> # 或
+> bun add -g @moonshot-ai/kimi-code
+> ```
+
 # CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
 
 > 对应 Windows 版：[Windows 下安装 Kimi CLI，PowerShell 一键指令](https://bash.yang125.fun/posts/kimi-cli-install-win/)
