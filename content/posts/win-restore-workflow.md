@@ -182,13 +182,13 @@ $nodeDir = "C:\Program Files\nodejs"
 $nodeExe = "$nodeDir\node.exe"
 if (-not (Test-Path $nodeExe)) {
     Write-Info "从清华 TUNA 镜像下载并安装 Node.js..."
-    $nodeVer = "v22.14.0"
+    $nodeVer = "v22.16.0"
     $msiName = "node-$nodeVer-x64.msi"
     $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
     $nodeOut = "$temp\$msiName"
     if (Test-Path $nodeOut) { Remove-Item $nodeOut -Force }
     Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
-    $nodeHash = "2c0cc97ec64c1e4111362e1e32e0547fd870e4d9c79ec844c117da583f21b386"
+    $nodeHash = "e2f2802202513e1bf41f7c00307635f6c6fe31c0275c1e03d269d45a76e5fc2e"
     if ((Get-FileHash $nodeOut -Algorithm SHA256).Hash -ne $nodeHash) {
         throw "Node.js MSI SHA256 校验失败"
     }
@@ -403,7 +403,7 @@ GitHub Release 文件下载会依次尝试以上代理站，全部失败后才�
 ### 3. Node.js 从清华 TUNA 镜像下载
 
 ```
-https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.14.0/node-v22.14.0-x64.msi
+https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-x64.msi
 ```
 
 TUNA 同步了完整的 Node.js 发布目录，国内下载速度通常在 5~20MB/s。如需其他版本，直接去镜像站目录里挑对应 MSI 改 URL 即可。
@@ -423,14 +423,21 @@ npm.cmd config set registry https://registry.npmmirror.com/
 ```powershell
 function Add-ToPath {
     param([string]$Dir)
-    # 当前会话立即生效
-    if ($env:Path -notlike "*$Dir*") {
+    $normDir = $Dir.TrimEnd('\').ToLower()
+    # 当前会话：按 ; 拆分后精确匹配
+    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+    if ($normDir -notin $sessionPaths) {
         $env:Path = "$Dir;$env:Path"
     }
-    # 用户注册表（尽量持久化）
+    # 用户注册表
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath -notlike "*$Dir*") {
-        [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+    if ($userPath) {
+        $userPaths = $userPath -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+        if ($normDir -notin $userPaths) {
+            [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+        }
+    } else {
+        [Environment]::SetEnvironmentVariable("Path", $Dir, "User")
     }
 }
 ```
@@ -570,10 +577,10 @@ $portable = "$env:USERPROFILE\PortableDev"
 New-Item -ItemType Directory -Force -Path $portable | Out-Null
 
 # --- Node.js 便携版 ---
-$nodeZip = "$portable\node-v22.14.0-win-x64.zip"
-Invoke-WebRequest -Uri "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.14.0/node-v22.14.0-win-x64.zip" -OutFile $nodeZip
+$nodeZip = "$portable\node-v22.16.0-win-x64.zip"
+Invoke-WebRequest -Uri "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-win-x64.zip" -OutFile $nodeZip
 Expand-Archive -Path $nodeZip -DestinationPath $portable -Force
-$nodeDir = "$portable\node-v22.14.0-win-x64"
+$nodeDir = "$portable\node-v22.16.0-win-x64"
 
 # --- Git 便携版（PortableGit）---
 $gitZip = "$portable\PortableGit-2.54.0-64-bit.7z.exe"
