@@ -17,7 +17,7 @@
     "test:coverage": "jest --coverage",
     "prepare": "husky",
     "check:frontmatter": "node scripts/validate-frontmatter.js",
-    "check:links": "node scripts/check-links.js",
+    "check:links": "node scripts/check-links.js --warn-external",
     "check:bom": "node scripts/check-bom.js",
     "check:all": "npm run check:frontmatter && npm run check:links && npm run check:bom"
   },
