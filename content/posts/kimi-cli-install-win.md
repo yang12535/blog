@@ -7,7 +7,7 @@ tags: [kimi-cli, windows, uv, powershell, deprecated]
 
 > ⚠️ **官方已迁移**：`kimi-cli` 已品牌迁移为 `kimi-code`，包名与安装方式均有变化。本文所述的 `kimi-cli` 目前仍可正常使用，但不再更新维护。
 >
-> 如需安装新版 Kimi Code，请参考新文：[还原机房一条龙：PS7 + Git + Node.js + npm + Bun + Kimi Code 极速装机](/posts/win-restore-workflow/)
+> 如需安装新版 Kimi Code，请参考新文：[还原机房一条龙：PS7 + Git + Node.js + npm + Bun + Kimi Code 极速装机](./win-restore-workflow.md)
 
 ## 环境信息
 

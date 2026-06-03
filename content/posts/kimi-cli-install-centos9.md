@@ -13,7 +13,7 @@ tags: [kimi-cli, centos, linux, uv]
 
 # CentOS Stream 9 / RHEL 9 无订阅版安装 Kimi CLI
 
-> 对应 Windows 版：[还原机房一条龙：PS7 + Git + Node.js + npm + Bun + Kimi Code 极速装机](/posts/win-restore-workflow/)
+> 对应 Windows 版：[还原机房一条龙：PS7 + Git + Node.js + npm + Bun + Kimi Code 极速装机](./win-restore-workflow.md)
 
 ## 环境信息
 

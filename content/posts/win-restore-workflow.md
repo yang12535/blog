@@ -7,9 +7,9 @@ tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一�
 > 本文整合了一套完整的还原机房装机流程（PS7 + Git + Node.js + npm + Bun + Kimi Code），建议作为首选方案。
 >
 > 以下旧文仍可独立参考：
-> - [~~Windows 一键安装 Kimi CLI~~](/posts/kimi-cli-install-win/)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
-> - [国内网络环境 Windows 安装 Bun](/posts/install-bun-china/)
-> - [还原机房 PowerShell 7 + Windows Terminal 极速配置](/posts/win-terminal-setup/)
+> - [~~Windows 一键安装 Kimi CLI~~](./kimi-cli-install-win.md)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
+> - [国内网络环境 Windows 安装 Bun](./install-bun-china.md)
+> - [还原机房 PowerShell 7 + Windows Terminal 极速配置](./win-terminal-setup.md)
 >
 > 本文的 **统一 PATH 管理方案** 相比旧文更可靠，推荐直接使用本文脚本。
 
@@ -64,22 +64,22 @@ function Write-Fail($msg)  { Write-Host ">>> $msg" -ForegroundColor Red }
 # 所有组件安装完毕后统一调用一次，不依赖安装程序自动添加 PATH
 function Add-ToPath {
     param([string]$Dir)
-    # 标准化路径（去掉尾部反斜杠，统一大小写）用于精确比较
-    $normDir = $Dir.TrimEnd('\').ToLower()
-    # 当前会话：按 ; 拆分后精确匹配
-    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+    # 标准化路径（Trim + 去掉尾部反斜杠 + ToLowerInvariant）用于精确比较
+    $normDir = $Dir.Trim().TrimEnd('\').ToLowerInvariant()
+    # 当前会话：按 ; 拆分、Trim、过滤空段后精确匹配
+    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.Trim().TrimEnd('\').ToLowerInvariant() } | Where-Object { $_ }
     if ($normDir -notin $sessionPaths) {
         $env:Path = "$Dir;$env:Path"
     }
-    # 用户注册表
+    # 用户注册表：同样前插，保持与当前会话优先级一致
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($userPath) {
-        $userPaths = $userPath -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+        $userPaths = $userPath -split ';' | ForEach-Object { $_.Trim().TrimEnd('\').ToLowerInvariant() } | Where-Object { $_ }
         if ($normDir -notin $userPaths) {
-            [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+            [Environment]::SetEnvironmentVariable("Path", "$Dir;$userPath", "User")
         }
     } else {
-        # 用户 PATH 为空时直接写入，避免前导分号
+        # 用户 PATH 为空时直接写入
         [Environment]::SetEnvironmentVariable("Path", $Dir, "User")
     }
 }
@@ -104,18 +104,24 @@ function Get-WithProxy {
             try {
                 Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
                 # 校验文件头魔数，避免代理返回 HTML 错误页/空文件
-                $bytes = [System.IO.File]::ReadAllBytes($OutFile)
-                if ($bytes.Length -lt 2) {
-                    Write-Warn "下载文件为空（可能代理返回了空响应），继续尝试..."
-                    continue
+                $fs = [System.IO.File]::OpenRead($OutFile)
+                try {
+                    $buf = New-Object byte[] 2
+                    $read = $fs.Read($buf, 0, 2)
+                    if ($read -lt 2) {
+                        Write-Warn "下载文件为空（可能代理返回了空响应），继续尝试..."
+                        continue
+                    }
+                    if (($buf[0] -eq 0xD0 -and $buf[1] -eq 0xCF) -or   # MSI (OLE)
+                        ($buf[0] -eq 0x4D -and $buf[1] -eq 0x5A) -or   # EXE (MZ)
+                        ($buf[0] -eq 0x50 -and $buf[1] -eq 0x4B)) {    # ZIP (PK)
+                        Write-Host "Success via $p" -ForegroundColor Green
+                        return
+                    }
+                    Write-Warn "下载内容非安装包（文件头不匹配），继续尝试其他代理..."
+                } finally {
+                    $fs.Dispose()
                 }
-                if (($bytes[0] -eq 0xD0 -and $bytes[1] -eq 0xCF) -or   # MSI (OLE)
-                    ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A) -or   # EXE (MZ)
-                    ($bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B)) {    # ZIP (PK)
-                    Write-Host "Success via $p" -ForegroundColor Green
-                    return
-                }
-                Write-Warn "下载内容非安装包（文件头不匹配），继续尝试其他代理..."
             } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
         }
         Write-Host "Trying direct download..." -ForegroundColor Yellow
@@ -215,6 +221,9 @@ Write-Ok "npm 定位成功: $($npmCmd.Source)"
 # ==================== 4. npm 国内镜像 + 清理 ps1 wrapper ====================
 Write-Info "配置 npm 使用 npmmirror（阿里云）..."
 & $npmCmd.Source config set registry https://registry.npmmirror.com/ 2>$null
+if (-not $?) {
+    throw "npm registry 配置失败，请检查网络或代理设置"
+}
 Write-Ok "npm registry 已设置为 https://registry.npmmirror.com/"
 
 # 删除 npm/bun 的 ps1 wrapper，防止 PS5.1 Restricted 策略拦截
@@ -426,18 +435,16 @@ npm.cmd config set registry https://registry.npmmirror.com/
 ```powershell
 function Add-ToPath {
     param([string]$Dir)
-    $normDir = $Dir.TrimEnd('\').ToLower()
-    # 当前会话：按 ; 拆分后精确匹配
-    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+    $normDir = $Dir.Trim().TrimEnd('\').ToLowerInvariant()
+    $sessionPaths = $env:Path -split ';' | ForEach-Object { $_.Trim().TrimEnd('\').ToLowerInvariant() } | Where-Object { $_ }
     if ($normDir -notin $sessionPaths) {
         $env:Path = "$Dir;$env:Path"
     }
-    # 用户注册表
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($userPath) {
-        $userPaths = $userPath -split ';' | ForEach-Object { $_.TrimEnd('\').ToLower() }
+        $userPaths = $userPath -split ';' | ForEach-Object { $_.Trim().TrimEnd('\').ToLowerInvariant() } | Where-Object { $_ }
         if ($normDir -notin $userPaths) {
-            [Environment]::SetEnvironmentVariable("Path", "$userPath;$Dir", "User")
+            [Environment]::SetEnvironmentVariable("Path", "$Dir;$userPath", "User")
         }
     } else {
         [Environment]::SetEnvironmentVariable("Path", $Dir, "User")
