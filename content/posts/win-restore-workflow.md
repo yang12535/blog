@@ -7,9 +7,9 @@ tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一�
 > 本文整合了一套完整的还原机房装机流程（PS7 + Git + Node.js + npm + Bun + Kimi Code），建议作为首选方案。
 >
 > 以下旧文仍可独立参考：
-> - [~~Windows 一键安装 Kimi CLI~~](./kimi-cli-install-win.md)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
-> - [国内网络环境 Windows 安装 Bun](./install-bun-china.md)
-> - [还原机房 PowerShell 7 + Windows Terminal 极速配置](./win-terminal-setup.md)
+> - [~~Windows 一键安装 Kimi CLI~~](/posts/kimi-cli-install-win/)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
+> - [国内网络环境 Windows 安装 Bun](/posts/install-bun-china/)
+> - [还原机房 PowerShell 7 + Windows Terminal 极速配置](/posts/win-terminal-setup/)
 >
 > 本文的 **统一 PATH 管理方案** 相比旧文更可靠，推荐直接使用本文脚本。
 
@@ -103,11 +103,15 @@ function Get-WithProxy {
             Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
             try {
                 Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
-                # 校验文件头魔数，避免代理返回 HTML 错误页
-                $header = [System.IO.File]::ReadAllBytes($OutFile)[0..1]
-                if (($header[0] -eq 0xD0 -and $header[1] -eq 0xCF) -or   # MSI (OLE)
-                    ($header[0] -eq 0x4D -and $header[1] -eq 0x5A) -or   # EXE (MZ)
-                    ($header[0] -eq 0x50 -and $header[1] -eq 0x4B)) {    # ZIP (PK)
+                # 校验文件头魔数，避免代理返回 HTML 错误页/空文件
+                $bytes = [System.IO.File]::ReadAllBytes($OutFile)
+                if ($bytes.Length -lt 2) {
+                    Write-Warn "下载文件为空（可能代理返回了空响应），继续尝试..."
+                    continue
+                }
+                if (($bytes[0] -eq 0xD0 -and $bytes[1] -eq 0xCF) -or   # MSI (OLE)
+                    ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A) -or   # EXE (MZ)
+                    ($bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B)) {    # ZIP (PK)
                     Write-Host "Success via $p" -ForegroundColor Green
                     return
                 }
@@ -159,14 +163,10 @@ if (-not (Test-Path $gitExe)) {
     $gitOut = "$temp\Git-$gitVer-64-bit.exe"
     if (Test-Path $gitOut) { Remove-Item $gitOut -Force }
     Get-WithProxy -Url $gitUrl -OutFile $gitOut
-    # Git 安装包校验（官方 release 未提供 SHA256，用文件大小 + PE 文件头兜底）
-    $gitItem = Get-Item $gitOut
-    if ($gitItem.Length -lt 10MB) {
-        throw "Git 安装包大小异常（$($gitItem.Length) bytes），可能下载了错误页面"
-    }
-    $gitHeader = [System.IO.File]::ReadAllBytes($gitOut)[0..1]
-    if (-not ($gitHeader[0] -eq 0x4D -and $gitHeader[1] -eq 0x5A)) {
-        throw "Git 安装包文件头异常（非 PE 可执行文件），可能下载了损坏/被篡改的文件"
+    # Git 安装包 SHA256 校验
+    $gitHash = "2b96e7854f0520f0f6b709c21041d9801b1be44d5e1a0d9fa621b2fbc40f1983"
+    if ((Get-FileHash $gitOut -Algorithm SHA256).Hash -ne $gitHash) {
+        throw "Git $gitVer SHA256 校验失败"
     }
     $proc = Start-Process -FilePath $gitOut -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS", "/COMPONENTS=icons,ext\reg\shellhere,assoc,assoc_sh" -Wait -PassThru
     if ($proc.ExitCode -ne 0) {
@@ -218,11 +218,14 @@ Write-Info "配置 npm 使用 npmmirror（阿里云）..."
 Write-Ok "npm registry 已设置为 https://registry.npmmirror.com/"
 
 # 删除 npm/bun 的 ps1 wrapper，防止 PS5.1 Restricted 策略拦截
+# 注意：Node.js MSI 也会在 $nodeDir 生成 npm.ps1/npx.ps1，需一并清理
 $wrappers = @(
     "$env:APPDATA\npm\npm.ps1"
     "$env:APPDATA\npm\npx.ps1"
     "$env:LOCALAPPDATA\npm\npm.ps1"
     "$env:LOCALAPPDATA\npm\npx.ps1"
+    "$nodeDir\npm.ps1"
+    "$nodeDir\npx.ps1"
 )
 foreach ($w in $wrappers) {
     if (Test-Path $w) {
