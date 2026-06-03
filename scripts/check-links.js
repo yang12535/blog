@@ -65,11 +65,11 @@ async function checkExternalLinks(links, concurrency = 5, timeoutMs = 10000) {
   return results;
 }
 
-function checkSingleUrl(url, timeoutMs, retries = 2) {
+function checkSingleUrl(url, timeoutMs) {
   return new Promise((resolve) => {
     const client = url.startsWith('https:') ? https : http;
 
-    function makeRequest(method, attempt = 0) {
+    function makeRequest(method) {
       const req = client.request(url, { method, timeout: timeoutMs }, (res) => {
         const status = res.statusCode;
         // 跟随重定向
@@ -82,7 +82,7 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
         // 某些服务器不支持 HEAD，降级到 GET
         if ((status === 403 || status === 405) && method === 'HEAD') {
           res.resume();
-          makeRequest('GET', attempt);
+          makeRequest('GET');
           return;
         }
         if (status >= 200 && status < 400) {
@@ -95,20 +95,12 @@ function checkSingleUrl(url, timeoutMs, retries = 2) {
       });
       req.on('timeout', () => {
         req.destroy();
-        if (attempt < retries) {
-          setTimeout(() => makeRequest(method, attempt + 1), 500);
-        } else {
-          resolve({ status: 'timeout', error: '请求超时' });
-        }
+        resolve({ status: 'timeout', error: '请求超时' });
       });
       req.on('error', (err) => {
         if (method === 'HEAD') {
           // HEAD 请求失败，尝试 GET
-          makeRequest('GET', attempt);
-          return;
-        }
-        if (attempt < retries) {
-          setTimeout(() => makeRequest(method, attempt + 1), 500);
+          makeRequest('GET');
         } else {
           resolve({ status: 'error', error: err.message });
         }
@@ -145,13 +137,6 @@ function resolveRelativeLink(url, baseFile) {
     if (!resolved.startsWith(rootDir + path.sep)) {
       return null;
     }
-    // 构建资源fallback：如果根目录不存在，尝试 src/ 目录（src/assets 会在构建时复制到 dist/assets）
-    if (!fs.existsSync(resolved) && clean.startsWith('/assets/')) {
-      const srcResolved = path.resolve(rootDir, 'src', clean.slice(1));
-      if (srcResolved.startsWith(rootDir + path.sep) && fs.existsSync(srcResolved)) {
-        return srcResolved;
-      }
-    }
     return resolved;
   }
   if (clean.startsWith('./') || clean.startsWith('../')) {
@@ -160,17 +145,6 @@ function resolveRelativeLink(url, baseFile) {
     // 确保解析后的路径仍在项目根目录内
     if (!resolved.startsWith(rootDir + path.sep)) {
       return null;
-    }
-    // 构建资源fallback：如果从 content/posts 解析的 assets 路径不存在，尝试 src/ 目录
-    if (!fs.existsSync(resolved) && clean.includes('assets/')) {
-      // 更通用的方式：把相对路径中指向 assets 的部分映射到 src/assets
-      const assetsMatch = clean.match(/(?:\.\.\/)*assets\/.*$/);
-      if (assetsMatch) {
-        const srcFallback = path.resolve(rootDir, 'src', assetsMatch[0].replace(/^(\.\.\/)+/, ''));
-        if (fs.existsSync(srcFallback)) {
-          return srcFallback;
-        }
-      }
     }
     return resolved;
   }
@@ -186,12 +160,7 @@ function findLineNumber(content, url) {
 }
 
 async function main() {
-  const warnExternal = process.argv.includes('--warn-external');
-
   log(`${COLORS.cyan}🔗 链接检查工具${COLORS.reset}`);
-  if (warnExternal) {
-    log(`${COLORS.yellow}⚠️  外部链接超时/重置将降级为警告（国内网络环境适配）${COLORS.reset}`);
-  }
   log('');
 
   if (!fs.existsSync(POSTS_DIR)) {
@@ -245,7 +214,6 @@ async function main() {
 
   // 检查外部链接
   const brokenExternal = [];
-  const warnExternalLinks = [];
   const okExternal = [];
   if (externalLinks.length > 0) {
     log(`${COLORS.cyan}🌐 正在检查外部链接...${COLORS.reset}`);
@@ -255,8 +223,6 @@ async function main() {
         okExternal.push(r);
       } else if (r.status === 'redirect') {
         okExternal.push(r); // 重定向视为可用
-      } else if (warnExternal && (r.error === '请求超时' || r.error?.includes('ECONNRESET') || r.error?.includes('ETIMEDOUT') || r.error?.includes('ENOTFOUND'))) {
-        warnExternalLinks.push(r); // 网络层错误降级为警告
       } else {
         brokenExternal.push(r);
       }
@@ -298,13 +264,6 @@ async function main() {
         log(`      ${COLORS.green}✔${COLORS.reset} ${link.file}:${link.line} → ${link.url}${COLORS.gray}${statusStr}${COLORS.reset}`);
       }
     }
-    if (warnExternalLinks.length > 0) {
-      log(`   ${COLORS.yellow}⚠️  网络不稳定/超时 (${warnExternalLinks.length})${COLORS.reset}`);
-      for (const link of warnExternalLinks) {
-        log(`      ${COLORS.yellow}⚠${COLORS.reset} ${link.file}:${link.line} → ${link.url}`);
-        log(`         ${COLORS.yellow}原因: ${link.error}${COLORS.reset}`);
-      }
-    }
     if (brokenExternal.length > 0) {
       hasError = true;
       log(`   ${COLORS.red}❌ 不可访问 (${brokenExternal.length})${COLORS.reset}`);
@@ -320,17 +279,12 @@ async function main() {
   const totalBroken = brokenRelative.length + brokenExternal.length;
   log(`${COLORS.cyan}📊 汇总${COLORS.reset}`);
   log(`   相对链接: ${relativeLinks.length} (${COLORS.green}${okRelative.length} 有效${COLORS.reset}${brokenRelative.length > 0 ? `, ${COLORS.red}${brokenRelative.length} 断链${COLORS.reset}` : ''})`);
-  const externalWarnStr = warnExternalLinks.length > 0 ? `, ${COLORS.yellow}${warnExternalLinks.length} 超时/重置${COLORS.reset}` : '';
-  const externalBrokenStr = brokenExternal.length > 0 ? `, ${COLORS.red}${brokenExternal.length} 不可访问${COLORS.reset}` : '';
-  log(`   外部链接: ${externalLinks.length} (${COLORS.green}${okExternal.length} 可访问${COLORS.reset}${externalWarnStr}${externalBrokenStr})`);
+  log(`   外部链接: ${externalLinks.length} (${COLORS.green}${okExternal.length} 可访问${COLORS.reset}${brokenExternal.length > 0 ? `, ${COLORS.red}${brokenExternal.length} 不可访问${COLORS.reset}` : ''})`);
   log('');
 
   if (hasError) {
     log(`${COLORS.red}❌ 发现 ${totalBroken} 个断链，请修复${COLORS.reset}`);
     process.exit(1);
-  } else if (warnExternalLinks.length > 0) {
-    log(`${COLORS.green}🎉 所有链接检查通过！${COLORS.reset} ${COLORS.yellow}(注意: ${warnExternalLinks.length} 个外部链接因网络不稳定未确认)${COLORS.reset}`);
-    process.exit(0);
   } else {
     log(`${COLORS.green}🎉 所有链接检查通过！${COLORS.reset}`);
     process.exit(0);
