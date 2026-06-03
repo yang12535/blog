@@ -280,7 +280,7 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction Si
 
 ---
 
-> 如果还有问题，欢迎在评论区留言，或在 [GitHub](https://github.com/your-repo) 提 Issue。
+> 如果还有问题，欢迎在评论区留言，或在 [GitHub](https://github.com/yang12535/blog) 提 Issue。
 
 ---
 
