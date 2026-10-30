@@ -61,6 +61,9 @@ if ($exitCode -eq 3010) {
     Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
+# 关闭 PS7 启动时的更新检查：还原机房升级留不住，且部分版本（实测 7.6.6）显示更新提示时会直接崩溃
+[Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK', 'Off', 'Machine')
+
 # --- 2. 下载并解压 Windows Terminal（Unpackaged）---
 $wtZip = "$temp\WindowsTerminal_x64.zip"
 $wtUrl = "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip"
@@ -75,7 +78,7 @@ $wtDest = "$env:LOCALAPPDATA\WindowsTerminal"
 Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 
 # --- 3. 写 PowerShell 7 Profile（强制 UTF-8）---
-$ps7ProfileDir = "$env:USERPROFILE\Documents\PowerShell"
+$ps7ProfileDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell"
 New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
 $profilePath = "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1"
 if (Test-Path $profilePath) {
@@ -175,6 +178,8 @@ msiexec /i "PowerShell-<版本>-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
 
 安装后本体位于 `C:\Program Files\PowerShell\7\pwsh.exe`，与系统自带的 5.1 互不冲突。
 
+脚本还会设置系统环境变量 `POWERSHELL_UPDATECHECK=Off`，关掉启动时的"有新版本"提示：还原机房升级留不住，而且部分版本（实测 7.6.6）画这个提示框时会直接崩溃。
+
 ### 2. 安装 Windows Terminal（Unpackaged）
 
 Windows Terminal 是微软官方的现代终端，支持多标签页、GPU 加速、背景毛玻璃。
@@ -232,13 +237,24 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 还原卡环境，关机后 C 盘自动还原。**每次开机后重新运行一遍一键脚本**（约 1 分钟）即可。
 
+### Q4：PowerShell 7 一打开就崩，报 `totalWidth ('-17') must be a non-negative value`？
+
+这是 PowerShell 自身的 bug：检测到新版本后画更新提示框时宽度算成负数（实测 7.6.6 有新版 7.6.8 时触发）。用 Windows PowerShell 5.1（管理员）执行：
+
+```powershell
+[Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK', 'Off', 'Machine')
+Remove-Item "$env:LOCALAPPDATA\Microsoft\PowerShell\*\update*" -Force -ErrorAction SilentlyContinue
+```
+
+然后**关掉整个 Terminal 再重开**（新环境变量才生效）。新版脚本已默认关闭更新检查。
+
 ---
 
 ## 附录：国内 GitHub 代理版脚本
 
 如果上述脚本里的 GitHub 直链在你那边下载极慢或超时，使用此版本。**内置多个代理站自动 fallback**，走不通就换下一个，最后才尝试直连。
 
-> 目前测试可用的文件下载代理：`gh-proxy.org`（主站）、`mirror.ghproxy.com`、`ghproxy.net`、`ghp.ci`。用法均为在原链接前拼接代理域名，如：
+> 目前测试可用的文件下载代理：`gh-proxy.org`（主站）、`ghfast.top`、`ghproxy.net`、`gh.llkk.cc`。用法均为在原链接前拼接代理域名，如：
 > ```
 > https://gh-proxy.org/https://github.com/xxx/xxx/releases/download/...
 > ```
@@ -247,30 +263,33 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 ```powershell
 # 自动 fallback 下载函数
+# 每个源下载后立即校验 SHA256，失效代理返回的错误页不会被当成成功
 function Get-WithProxy {
-    param([string]$Url, [string]$OutFile)
+    param([string]$Url, [string]$OutFile, [string]$Sha256)
     $oldProgress = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
     try {
         $proxies = @(
             "https://gh-proxy.org/",
-            "https://mirror.ghproxy.com/",
+            "https://ghfast.top/",
             "https://ghproxy.net/",
-            "https://ghp.ci/"
+            "https://gh.llkk.cc/",
+            ""  # 最后直连 GitHub
         )
         foreach ($p in $proxies) {
-            $proxyUrl = "$p$Url"
-            Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
+            $tryUrl = "$p$Url"
+            Write-Host "Trying $tryUrl ..." -ForegroundColor DarkGray
             try {
-                Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
-                if ((Get-Item $OutFile).Length -gt 1024) {
-                    Write-Host "Success via $p" -ForegroundColor Green
+                Invoke-WebRequest -Uri $tryUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop
+                if ((Get-FileHash $OutFile -Algorithm SHA256).Hash -eq $Sha256) {
+                    Write-Host "Success via $(if ($p) { $p } else { 'GitHub 直连' })" -ForegroundColor Green
                     return
                 }
-            } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
+                Write-Host "SHA256 不匹配（代理可能返回了错误页），换下一个源" -ForegroundColor Red
+            } catch { Write-Host "Failed: $($_.Exception.Message)" -ForegroundColor Red }
+            Remove-Item $OutFile -Force -ErrorAction SilentlyContinue
         }
-        Write-Host "Trying direct download..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
+        throw "所有下载源均失败或校验不通过：$Url"
     } finally {
         $ProgressPreference = $oldProgress
     }
@@ -294,11 +313,7 @@ $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/P
 $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
 if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
 Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
-Get-WithProxy -Url $ps7Url -OutFile $ps7Out
-$ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
-if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
-    throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
-}
+Get-WithProxy -Url $ps7Url -OutFile $ps7Out -Sha256 "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
 Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
 $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
 $exitCode = $proc.ExitCode
@@ -313,20 +328,19 @@ if ($exitCode -eq 3010) {
     Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
 }
 
+# 关闭 PS7 启动时的更新检查：还原机房升级留不住，且部分版本（实测 7.6.6）显示更新提示时会直接崩溃
+[Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK', 'Off', 'Machine')
+
 # --- 2. 下载并解压 Windows Terminal ---
 $wtZip = "$temp\WindowsTerminal_x64.zip"
 if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
 Write-Host ">>> 下载 Windows Terminal $wtVer..." -ForegroundColor Cyan
-Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip" -OutFile $wtZip
-$wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
-if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
-    throw "Windows Terminal zip SHA256 校验失败"
-}
+Get-WithProxy -Url "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip" -OutFile $wtZip -Sha256 "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
 $wtDest = "$env:LOCALAPPDATA\WindowsTerminal"
 Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 
 # --- 3. PS7 Profile（UTF-8）---
-$ps7ProfileDir = "$env:USERPROFILE\Documents\PowerShell"
+$ps7ProfileDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell"
 New-Item -ItemType Directory -Force -Path $ps7ProfileDir | Out-Null
 $profilePath = "$ps7ProfileDir\Microsoft.PowerShell_profile.ps1"
 if (Test-Path $profilePath) {
@@ -405,7 +419,7 @@ $SC.Save()
 Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundColor Green
 ```
 
-> **代理站优先级**：默认先走 `gh-proxy.org`（目前最稳），失败自动切 `mirror.ghproxy.com` → `ghproxy.net` → `ghp.ci`，全部挂掉才走 GitHub 直连。
+> **代理站优先级**：默认先走 `gh-proxy.org`（目前最稳），失败自动切 `ghfast.top` → `ghproxy.net` → `gh.llkk.cc`，全部挂掉才走 GitHub 直连。每个源下载完都会校验 SHA256，代理返回错误页也会自动换下一个。
 >
 > 如果你那边某个代理特别快，可以把 `Get-WithProxy` 函数里 `$proxies` 数组的顺序调一下，把最快的放第一。
 
@@ -413,6 +427,11 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
 
 ## 更新日志
 
+- **2026-10-30** 修复：
+  - 两个脚本均关闭 PS7 更新检查，避免更新提示框崩溃（新增 FAQ Q4）
+  - 代理版下载函数改为每个源下载后立即校验 SHA256，失效代理返回错误页时自动换下一个源（原逻辑只看文件 >1KB，会被错误页骗过后直接校验失败退出）
+  - 代理列表移除已失效的 `mirror.ghproxy.com`、`ghp.ci`，补充 `ghfast.top`、`gh.llkk.cc`
+  - Profile 目录改用系统"文档"真实路径，兼容文档被重定向到其他盘/OneDrive
 - **2026-05-14** 极速精简：
   - 砍掉字体下载/解压/注册整节（系统自带 Consolas + Segoe UI Emoji 已够用）
   - 砍掉 Oh My Posh 美化（还原机房外观其次，功能优先）
