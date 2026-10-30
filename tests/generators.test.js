@@ -108,7 +108,7 @@ describe('generateIndexPages', () => {
     expect(mockRender).toHaveBeenCalledWith(
       'index.html',
       expect.objectContaining({ currentPage: 2 }),
-      '../'
+      '../../'
     );
   });
 
