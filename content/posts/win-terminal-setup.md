@@ -41,10 +41,20 @@ function Get-VerifiedFile {
     }
 
     $part = "$OutFile.part"
+    $curlHelp = & curl.exe --help all 2>$null | Out-String
+    $revokeFallback = if ($curlHelp -match '--ssl-revoke-best-effort') {
+        '--ssl-revoke-best-effort'
+    } else {
+        '--ssl-no-revoke'
+    }
     foreach ($downloadUrl in $Urls) {
         Remove-Item $part -Force -ErrorAction SilentlyContinue
         Write-Host "Trying $downloadUrl ..." -ForegroundColor DarkGray
         & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 --output $part $downloadUrl
+        if ($LASTEXITCODE -eq 60) {
+            Write-Host ">>> curl 证书验证失败，使用 $revokeFallback 重试（仍校验 CA、域名和有效期）。" -ForegroundColor Yellow
+            & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 $revokeFallback --output $part $downloadUrl
+        }
         if ($LASTEXITCODE -eq 0 -and (Test-Path $part)) {
             $actualHash = (Get-FileHash $part -Algorithm SHA256).Hash
             if ($actualHash -ieq $Sha256) {
@@ -198,6 +208,8 @@ Write-Host ">>> 完成！双击桌面的 'Terminal' 快捷方式即可使用。"
 ### 1. 安装 PowerShell 7（全新安装为 7.6.9）
 
 Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。主脚本首选 CERNET github-release（`https://mirrors.cernet.edu.cn/github-release/`）清单中的 SDU 节点，失败后切换 NJU 或 `v4.gh-proxy.org`；检测到任意已有 PowerShell 7 时会跳过安装。
+
+如果 Schannel 因证书吊销列表不可达而使 `curl` 返回 60，下载函数会自动使用 `--ssl-revoke-best-effort` 重试；旧版 `curl` 不支持该参数时退到 `--ssl-no-revoke`。CA、域名、有效期和安装包 SHA256 校验始终保留，不安装额外根证书，也不使用 `--insecure`。
 
 ```powershell
 msiexec /i "PowerShell-<版本>-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
@@ -466,6 +478,7 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
 
 - **2026-11-09** 修复：
   - 主脚本改为教育网镜像优先，PowerShell 全新安装版本更新为 7.6.9；已有 PowerShell 7 直接跳过
+  - `curl` 返回 60 时自动使用 `--ssl-revoke-best-effort` 重试，旧版退到 `--ssl-no-revoke`，修复 Schannel 吊销检查失败；保留 CA、域名、有效期和 SHA256 校验
   - 主脚本改用 `curl.exe` 和 `.part` 临时文件，每个完整 URL 下载后立即校验 SHA256，避免 504 错误页或半截安装包中断安装
   - Windows Terminal 保留 `v4.gh-proxy.org` → `gh-proxy.org` → `ghfast.top` → 直连的回退链；CERNET 清单中暂未找到对应镜像
   - 原代理版脚本移至纯代理备选，保留 PowerShell 7.4.6，不再与主脚本同步变更

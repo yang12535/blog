@@ -103,10 +103,20 @@ function Get-VerifiedFile {
     }
 
     $part = "$OutFile.part"
+    $curlHelp = & curl.exe --help all 2>$null | Out-String
+    $revokeFallback = if ($curlHelp -match '--ssl-revoke-best-effort') {
+        '--ssl-revoke-best-effort'
+    } else {
+        '--ssl-no-revoke'
+    }
     foreach ($downloadUrl in $Urls) {
         Remove-Item $part -Force -ErrorAction SilentlyContinue
         Write-Host "Trying $downloadUrl ..." -ForegroundColor DarkGray
         & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 --output $part $downloadUrl
+        if ($LASTEXITCODE -eq 60) {
+            Write-Warn "curl 证书验证失败，使用 $revokeFallback 重试（仍校验 CA、域名和有效期）。"
+            & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 $revokeFallback --output $part $downloadUrl
+        }
         if ($LASTEXITCODE -eq 0 -and (Test-Path $part)) {
             $actualHash = (Get-FileHash $part -Algorithm SHA256).Hash
             if ($actualHash -ieq $Sha256) {
@@ -411,6 +421,8 @@ PowerShell 7 和 Node.js 使用 MSI 安装程序，默认安装到 `C:\Program F
 
 CERNET 主站会根据网络跳转到具体节点，PowerShell 和 Git 的目录结构并不相同。脚本中的 URL 已按实际目录填写，不要只替换域名。可在 `https://mirrors.cernet.edu.cn/github-release/` 查看当前节点提供的项目。
 
+如果 Schannel 因证书吊销列表不可达而使 `curl` 返回 60，下载函数会自动使用 `--ssl-revoke-best-effort` 重试；旧版 `curl` 不支持该参数时退到 `--ssl-no-revoke`。CA、域名、有效期和安装包 SHA256 校验始终保留，不安装额外根证书，也不使用 `--insecure`。
+
 ### 3. Node.js 使用 CERNET / TUNA 镜像
 
 ```text
@@ -616,6 +628,7 @@ Add-ToPath -Dir "$portable\PortableGit\cmd"
 - **2026-11-09** 修复：
   - PowerShell 全新安装改用 CERNET 清单中的 SDU/NJU 节点，版本更新为 7.6.9；已有 PowerShell 7 直接跳过
   - Git 改用 CERNET 并更新为 2.56.0.4；Node.js 22.16.0 改用 CERNET 首选、TUNA 回退
+  - `curl` 返回 60 时自动使用 `--ssl-revoke-best-effort` 重试，旧版退到 `--ssl-no-revoke`，修复 Schannel 吊销检查失败；保留 CA、域名、有效期和 SHA256 校验
   - 下载函数改为 `Get-VerifiedFile`：使用 `curl.exe` 和 `.part` 文件，逐源校验 SHA256，删除失效代理拼接逻辑
   - 修正 CERNET Node.js 路径：保留 `/nodejs-release/` 入口，避免手动改成 `/node/` 后 GET 返回 404
   - 已实测 Node.js、npm、Bun、Kimi Code 完整安装及重复运行；所有新增镜像安装包均通过 SHA256 校验
