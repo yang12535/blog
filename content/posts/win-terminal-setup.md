@@ -2,18 +2,17 @@
 title: 还原机房 PowerShell 7 + Windows Terminal 极速配置
 date: 2026-04-29
 tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
-
 ---
 
 ## 环境信息
 
-| 项目 | 说明 |
-| --- | --- |
-| **系统** | Windows 10 / 11（64 位） |
-| **权限** | 管理员（还原卡环境，重启还原） |
-| **场景** | 机房、OS-Easy 还原卡 |
-| **目标** | PowerShell 7 + Windows Terminal + 强制 UTF-8 |
-| **网络** | 能访问 GitHub 即可（Release 直链） |
+| 项目     | 说明                                                  |
+| -------- | ----------------------------------------------------- |
+| **系统** | Windows 10 / 11（64 位）                              |
+| **权限** | 管理员（还原卡环境，重启还原）                        |
+| **场景** | 机房、OS-Easy 还原卡                                  |
+| **目标** | PowerShell 7 + Windows Terminal + 强制 UTF-8          |
+| **网络** | 教育网镜像优先；Windows Terminal 使用 GitHub 代理回退 |
 
 ---
 
@@ -24,56 +23,89 @@ tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
 在 PowerShell 里复制粘贴执行（支持 PowerShell 5.1 老窗口）：
 
 ```powershell
-# 检测管理员权限
+$ErrorActionPreference = "Stop"
+
+function Get-VerifiedFile {
+    param(
+        [string[]]$Urls,
+        [string]$OutFile,
+        [string]$Sha256
+    )
+
+    if (Test-Path $OutFile) {
+        if ((Get-FileHash $OutFile -Algorithm SHA256).Hash -ieq $Sha256) {
+            Write-Host ">>> 已存在校验通过的安装包：$OutFile" -ForegroundColor Green
+            return
+        }
+        Remove-Item $OutFile -Force
+    }
+
+    $part = "$OutFile.part"
+    foreach ($downloadUrl in $Urls) {
+        Remove-Item $part -Force -ErrorAction SilentlyContinue
+        Write-Host "Trying $downloadUrl ..." -ForegroundColor DarkGray
+        & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 --output $part $downloadUrl
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $part)) {
+            $actualHash = (Get-FileHash $part -Algorithm SHA256).Hash
+            if ($actualHash -ieq $Sha256) {
+                Move-Item $part $OutFile -Force
+                Write-Host ">>> 下载及 SHA256 校验成功。" -ForegroundColor Green
+                return
+            }
+            Write-Host "SHA256 不匹配：$actualHash" -ForegroundColor Red
+        }
+    }
+
+    Remove-Item $part -Force -ErrorAction SilentlyContinue
+    throw "所有下载源均失败或校验不通过：$OutFile"
+}
+
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw "请以管理员身份运行 PowerShell（右键 → 以管理员身份运行），否则 MSI 安装会失败。"
 }
 
-# 创建临时目录
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
-# 版本号与 SHA256（升级时需同步更新）
-$ps7Ver = "7.4.6"
-$wtVer  = "1.21.3231.0"
+# --- 1. PowerShell 7：CERNET 清单节点优先 ---
+$ps7Dir = "C:\Program Files\PowerShell\7"
+$ps7Exe = "$ps7Dir\pwsh.exe"
+$ps7Ver = "7.6.9"
+$ps7Hash = "50D33C7494AAF82B987CFD4DE3F232D04F91FDD4C0DEECA8A669CCED3E7CF8F9"
 
-# --- 1. 下载并安装 PowerShell 7.4 ---
-$ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
-$ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
-if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
-Write-Host ">>> 下载 PowerShell $ps7Ver..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $ps7Url -OutFile $ps7Out -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
-$ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
-if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
-    throw "PowerShell $ps7Ver 安装包 SHA256 校验失败"
-}
-Write-Host ">>> 安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-$proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
-$exitCode = $proc.ExitCode
-if ($exitCode -notin @(0, 3010)) {
-    throw "PowerShell $ps7Ver 安装失败，退出码: $exitCode"
-}
-if ($exitCode -eq 0) {
-    Write-Host ">>> PS7 已安装成功，无需重启，当前即可使用。" -ForegroundColor Green
-}
-if ($exitCode -eq 3010) {
-    Write-Host ">>> PS7 已安装成功，但安装程序提示需要重启（退出码 3010）。当前已禁止自动重启（REBOOT=ReallySuppress），可继续使用。" -ForegroundColor Green
-    Write-Host ">>> ⚠️ 还原卡环境：重启后需重新运行本脚本。" -ForegroundColor Yellow
+if (-not (Test-Path $ps7Exe)) {
+    $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
+    $ps7Urls = @(
+        "https://mirrors.sdu.edu.cn/github-release/PowerShell_PowerShell/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi",
+        "https://mirror.nju.edu.cn/github-release/PowerShell/PowerShell/v$ps7Ver%20Release%20of%20PowerShell/PowerShell-$ps7Ver-win-x64.msi",
+        "https://v4.gh-proxy.org/https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
+    )
+    Write-Host ">>> 下载并安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
+    Get-VerifiedFile -Urls $ps7Urls -OutFile $ps7Out -Sha256 $ps7Hash
+    $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
+    if ($proc.ExitCode -notin @(0, 3010)) {
+        throw "PowerShell $ps7Ver 安装失败，退出码：$($proc.ExitCode)"
+    }
+} else {
+    Write-Host ">>> PowerShell 7 已存在，跳过安装。" -ForegroundColor Green
 }
 
-# 关闭 PS7 启动时的更新检查：还原机房升级留不住，且部分版本（实测 7.6.6）显示更新提示时会直接崩溃
 [Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK', 'Off', 'Machine')
 
-# --- 2. 下载并解压 Windows Terminal（Unpackaged）---
+# --- 2. Windows Terminal：代理回退，逐源校验 SHA256 ---
+$wtVer = "1.21.3231.0"
 $wtZip = "$temp\WindowsTerminal_x64.zip"
-$wtUrl = "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip"
-if (Test-Path $wtZip) { Remove-Item $wtZip -Force }
+$wtHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
+$wtGitHubUrl = "https://github.com/microsoft/terminal/releases/download/v$wtVer/Microsoft.WindowsTerminal_$($wtVer)_x64.zip"
+$wtUrls = @(
+    "https://v4.gh-proxy.org/$wtGitHubUrl",
+    "https://gh-proxy.org/$wtGitHubUrl",
+    "https://ghfast.top/$wtGitHubUrl",
+    $wtGitHubUrl
+)
+
 Write-Host ">>> 下载 Windows Terminal $wtVer..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $wtUrl -OutFile $wtZip -UseBasicParsing -ErrorAction Stop -TimeoutSec 300
-$wtZipHash = "8FB268B93C9B99D6CF553709C2C58BF1B2FF4B364199152E09221DFB2A44BBF5"
-if ((Get-FileHash $wtZip -Algorithm SHA256).Hash -ne $wtZipHash) {
-    throw "Windows Terminal zip SHA256 校验失败"
-}
+Get-VerifiedFile -Urls $wtUrls -OutFile $wtZip -Sha256 $wtHash
 $wtDest = "$env:LOCALAPPDATA\WindowsTerminal"
 Expand-Archive -Path $wtZip -DestinationPath $wtDest -Force
 
@@ -145,7 +177,7 @@ Set-Content -Path $wtSettingsPath -Value $settingsJson -Encoding UTF8
 # --- 5. 创建桌面快捷方式 ---
 $wtExe = "$wtDest\terminal-$wtVer\WindowsTerminal.exe"
 if (-not (Test-Path $wtExe)) {
-    throw "WindowsTerminal.exe 未找到: $wtExe，请检查解压目录内容。"
+    throw "WindowsTerminal.exe 未找到：$wtExe，请检查解压目录内容。"
 }
 $WshShell = New-Object -ComObject WScript.Shell
 $SC = $WshShell.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Terminal.lnk")
@@ -157,23 +189,23 @@ $SC.Save()
 Write-Host ">>> 完成！双击桌面的 'Terminal' 快捷方式即可使用。" -ForegroundColor Green
 ```
 
-> **提示**：脚本运行期间请不要关闭窗口。由于是从 GitHub 下载，若网络较慢请耐心等待。
+> **提示**：脚本运行期间请不要关闭窗口。某个下载源失败时会自动切换；所有安装包均需通过 SHA256 校验后才会安装。
 
 ---
 
 ## 分步详解
 
-### 1. 安装 PowerShell 7.4
+### 1. 安装 PowerShell 7（全新安装为 7.6.9）
 
-Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。
+Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。主脚本首选 CERNET github-release（`https://mirrors.cernet.edu.cn/github-release/`）清单中的 SDU 节点，失败后切换 NJU 或 `v4.gh-proxy.org`；检测到任意已有 PowerShell 7 时会跳过安装。
 
 ```powershell
 msiexec /i "PowerShell-<版本>-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
 ```
 
-| 参数 | 含义 |
-| --- | --- |
-| `/qn` | 静默安装，无弹窗 |
+| 参数                          | 含义                                  |
+| ----------------------------- | ------------------------------------- |
+| `/qn`                         | 静默安装，无弹窗                      |
 | `ADD_EXPLORER_CONTEXT_MENU=1` | 右键菜单添加"在此处打开 PowerShell 7" |
 
 安装后本体位于 `C:\Program Files\PowerShell\7\pwsh.exe`，与系统自带的 5.1 互不冲突。
@@ -189,6 +221,7 @@ Unpackaged 版是绿色免安装，解压后直接 `WindowsTerminal.exe` 启动�
 ### 3. 强制 UTF-8，根治 GBK 乱码
 
 Windows 中文版默认代码页是 **GBK (936)**，这会导致：
+
 - `git log` 中文乱码
 - `python`、`npm`、`cargo` 等现代工具输出异常
 - 复制粘贴到剪贴板的内容编码错乱
@@ -205,11 +238,11 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 ### 4. 配置文件位置速查
 
-| 配置项 | 路径 |
-| --- | --- |
-| **Windows Terminal 设置** | `%LOCALAPPDATA%\Microsoft\Windows Terminal\settings.json` |
-| **PowerShell 7 Profile** | `%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` |
-| **Unpackaged Terminal** | `%LOCALAPPDATA%\WindowsTerminal\terminal-<版本>\WindowsTerminal.exe` |
+| 配置项                    | 路径                                                                  |
+| ------------------------- | --------------------------------------------------------------------- |
+| **Windows Terminal 设置** | `%LOCALAPPDATA%\Microsoft\Windows Terminal\settings.json`             |
+| **PowerShell 7 Profile**  | `%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` |
+| **Unpackaged Terminal**   | `%LOCALAPPDATA%\WindowsTerminal\terminal-<版本>\WindowsTerminal.exe`  |
 
 ---
 
@@ -218,6 +251,7 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 ### Q1：双击桌面 Terminal 没反应？
 
 直接运行（将 `<版本>` 替换为实际目录名）：
+
 ```powershell
 & "$env:LOCALAPPDATA\WindowsTerminal\terminal-<版本>\WindowsTerminal.exe"
 ```
@@ -225,10 +259,13 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 ### Q2：PowerShell 7 里中文还是乱码？
 
 检查 Profile 是否已加载。在 Terminal 里执行：
+
 ```powershell
 [Console]::OutputEncoding
 ```
+
 应输出 `System.Text.UTF8Encoding`。如果不是，检查文件路径：
+
 ```
 %USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
 ```
@@ -250,13 +287,14 @@ Remove-Item "$env:LOCALAPPDATA\Microsoft\PowerShell\*\update*" -Force -ErrorActi
 
 ---
 
-## 附录：国内 GitHub 代理版脚本
+## 附录：纯 GitHub 代理版脚本（保留 PowerShell 7.4.6）
 
-如果上述脚本里的 GitHub 直链在你那边下载极慢或超时，使用此版本。**内置多个代理站自动 fallback**，走不通就换下一个，最后才尝试直连。
+上面的主脚本已经内置教育网镜像和代理回退，通常无需使用本附录。只有需要保留旧版 **PowerShell 7.4.6** 时，才使用下面的纯代理备选脚本。
 
-> 目前测试可用的文件下载代理：`gh-proxy.org`（主站）、`ghfast.top`、`ghproxy.net`、`gh.llkk.cc`。用法均为在原链接前拼接代理域名，如：
-> ```
-> https://gh-proxy.org/https://github.com/xxx/xxx/releases/download/...
+> Windows Terminal 的代理顺序为 `v4.gh-proxy.org` → `gh-proxy.org` → `ghfast.top` → GitHub 直连。代理地址均拼在完整 GitHub URL 前，例如：
+>
+> ```text
+> https://v4.gh-proxy.org/https://github.com/xxx/xxx/releases/download/...
 > ```
 
 ### 代理版一键脚本（复制即用）
@@ -270,10 +308,9 @@ function Get-WithProxy {
     $ProgressPreference = 'SilentlyContinue'
     try {
         $proxies = @(
+            "https://v4.gh-proxy.org/",
             "https://gh-proxy.org/",
             "https://ghfast.top/",
-            "https://ghproxy.net/",
-            "https://gh.llkk.cc/",
             ""  # 最后直连 GitHub
         )
         foreach ($p in $proxies) {
@@ -419,14 +456,20 @@ $SC.Save()
 Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundColor Green
 ```
 
-> **代理站优先级**：默认先走 `gh-proxy.org`（目前最稳），失败自动切 `ghfast.top` → `ghproxy.net` → `gh.llkk.cc`，全部挂掉才走 GitHub 直连。每个源下载完都会校验 SHA256，代理返回错误页也会自动换下一个。
+> **代理站优先级**：默认先走 `v4.gh-proxy.org`，失败后依次尝试 `gh-proxy.org`、`ghfast.top` 和 GitHub 直连。每个源下载完都会校验 SHA256，代理返回错误页也会自动换下一个。
 >
-> 如果你那边某个代理特别快，可以把 `Get-WithProxy` 函数里 `$proxies` 数组的顺序调一下，把最快的放第一。
+> 如果你那边某个代理特别快，可以调整 `Get-WithProxy` 函数里 `$proxies` 数组的顺序。
 
 ---
 
 ## 更新日志
 
+- **2026-11-09** 修复：
+  - 主脚本改为教育网镜像优先，PowerShell 全新安装版本更新为 7.6.9；已有 PowerShell 7 直接跳过
+  - 主脚本改用 `curl.exe` 和 `.part` 临时文件，每个完整 URL 下载后立即校验 SHA256，避免 504 错误页或半截安装包中断安装
+  - Windows Terminal 保留 `v4.gh-proxy.org` → `gh-proxy.org` → `ghfast.top` → 直连的回退链；CERNET 清单中暂未找到对应镜像
+  - 原代理版脚本移至纯代理备选，保留 PowerShell 7.4.6，不再与主脚本同步变更
+  - 已在 Windows 10 1909 + PowerShell 5.1 实测：Windows Terminal 正常启动，PowerShell 7 UTF-8 配置生效
 - **2026-10-30** 修复：
   - 两个脚本均关闭 PS7 更新检查，避免更新提示框崩溃（新增 FAQ Q4）
   - 代理版下载函数改为每个源下载后立即校验 SHA256，失效代理返回错误页时自动换下一个源（原逻辑只看文件 >1KB，会被错误页骗过后直接校验失败退出）

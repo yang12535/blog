@@ -7,6 +7,7 @@ tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一�
 > 本文整合了一套完整的还原机房装机流程（PS7 + Git + Node.js + npm + Bun + Kimi Code），建议作为首选方案。
 >
 > 以下旧文仍可独立参考：
+>
 > - [~~Windows 一键安装 Kimi CLI~~](./kimi-cli-install-win.md)（`kimi-cli` 官方已迁移为 `kimi-code`，仍可用但不再维护）
 > - [国内网络环境 Windows 安装 Bun](./install-bun-china.md)
 > - [还原机房 PowerShell 7 + Windows Terminal 极速配置](./win-terminal-setup.md)
@@ -17,12 +18,12 @@ tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一�
 
 ## 环境信息
 
-| 项目 | 说明 |
-|------|------|
-| **系统** | Windows 10 / Windows 11（64 位） |
-| **权限** | 管理员（用于安装 PS7 / Git / Node.js MSI） |
-| **场景** | 学校/培训机构机房，OS-Easy 还原卡，重启还原 |
-| **网络** | 国内校园网/机房，GitHub 直连不稳定 |
+| 项目     | 说明                                                               |
+| -------- | ------------------------------------------------------------------ |
+| **系统** | Windows 10 / Windows 11（64 位）                                   |
+| **权限** | 管理员（用于安装 PS7 / Git / Node.js MSI）                         |
+| **场景** | 学校/培训机构机房，OS-Easy 还原卡，重启还原                        |
+| **网络** | 国内校园网/机房，GitHub 直连不稳定                                 |
 | **目标** | 一条脚本完成全套 JS 开发环境 + AI 编程助手，重启后只需重新运行一次 |
 
 ---
@@ -31,13 +32,14 @@ tags: [windows, 还原机房, powershell, git, nodejs, npm, bun, kimi-code, 一�
 
 还原机房最大的坑不是安装，而是 **PATH 丢失**。
 
-| 问题 | 原因 |
-|------|------|
+| 问题                              | 原因                                        |
+| --------------------------------- | ------------------------------------------- |
 | `npm install -g xxx` 后命令找不到 | MSI 安装程序写入注册表的 PATH，被还原卡还原 |
-| `bun` 命令时有时无 | 同上一致 |
-| `git` 在新终端找不到 | 安装程序改的系统 PATH，重启后失效 |
+| `bun` 命令时有时无                | 同上一致                                    |
+| `git` 在新终端找不到              | 安装程序改的系统 PATH，重启后失效           |
 
 **本文的解决方案**：不依赖任何安装程序自动添加 PATH。在脚本中定义一个 **统一 PATH 管理函数**，所有组件安装完成后，由脚本**显式**把需要的目录同时写入：
+
 1. 当前 PowerShell 会话（`$env:Path`）—— 立即生效
 2. 用户注册表（`User` 作用域）—— 尽量持久化
 
@@ -84,51 +86,40 @@ function Add-ToPath {
     }
 }
 
-# --- 代理下载函数（自动 fallback）---
-# 通过文件头魔数校验避免代理返回 HTML 错误页/ captive portal 被误判为成功
-function Get-WithProxy {
-    param([string]$Url, [string]$OutFile)
-    $oldProgress = $ProgressPreference
-    $ProgressPreference = 'SilentlyContinue'
-    try {
-        $proxies = @(
-            "https://v4.gh-proxy.org/"
-            "https://gh-proxy.org/"
-            "https://mirror.ghproxy.com/"
-            "https://ghproxy.net/"
-            "https://ghp.ci/"
-        )
-        foreach ($p in $proxies) {
-            $proxyUrl = "$p$Url"
-            Write-Host "Trying $proxyUrl ..." -ForegroundColor DarkGray
-            try {
-                Invoke-WebRequest -Uri $proxyUrl -OutFile $OutFile -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
-                # 校验文件头魔数，避免代理返回 HTML 错误页/空文件
-                $fs = [System.IO.File]::OpenRead($OutFile)
-                try {
-                    $buf = New-Object byte[] 2
-                    $read = $fs.Read($buf, 0, 2)
-                    if ($read -lt 2) {
-                        Write-Warn "下载文件为空（可能代理返回了空响应），继续尝试..."
-                        continue
-                    }
-                    if (($buf[0] -eq 0xD0 -and $buf[1] -eq 0xCF) -or   # MSI (OLE)
-                        ($buf[0] -eq 0x4D -and $buf[1] -eq 0x5A) -or   # EXE (MZ)
-                        ($buf[0] -eq 0x50 -and $buf[1] -eq 0x4B)) {    # ZIP (PK)
-                        Write-Host "Success via $p" -ForegroundColor Green
-                        return
-                    }
-                    Write-Warn "下载内容非安装包（文件头不匹配），继续尝试其他代理..."
-                } finally {
-                    $fs.Dispose()
-                }
-            } catch { Write-Host "Failed via $p : $($_.Exception.Message)" -ForegroundColor Red }
+# --- 多源下载函数：每个源都直接校验 SHA256 ---
+function Get-VerifiedFile {
+    param(
+        [string[]]$Urls,
+        [string]$OutFile,
+        [string]$Sha256
+    )
+
+    if (Test-Path $OutFile) {
+        if ((Get-FileHash $OutFile -Algorithm SHA256).Hash -ieq $Sha256) {
+            Write-Ok "已存在校验通过的安装包：$OutFile"
+            return
         }
-        Write-Host "Trying direct download..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop
-    } finally {
-        $ProgressPreference = $oldProgress
+        Remove-Item $OutFile -Force
     }
+
+    $part = "$OutFile.part"
+    foreach ($downloadUrl in $Urls) {
+        Remove-Item $part -Force -ErrorAction SilentlyContinue
+        Write-Host "Trying $downloadUrl ..." -ForegroundColor DarkGray
+        & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 --output $part $downloadUrl
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $part)) {
+            $actualHash = (Get-FileHash $part -Algorithm SHA256).Hash
+            if ($actualHash -ieq $Sha256) {
+                Move-Item $part $OutFile -Force
+                Write-Ok "下载及 SHA256 校验成功。"
+                return
+            }
+            Write-Warn "SHA256 不匹配：$actualHash"
+        }
+    }
+
+    Remove-Item $part -Force -ErrorAction SilentlyContinue
+    throw "所有下载源均失败或校验不通过：$OutFile"
 }
 
 # 检测管理员权限
@@ -140,67 +131,65 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 $ps7Dir = "C:\Program Files\PowerShell\7"
 $ps7Exe = "$ps7Dir\pwsh.exe"
 if (-not (Test-Path $ps7Exe)) {
-    Write-Info "下载并安装 PowerShell 7.4..."
-    $ps7Ver = "7.4.6"
-    $ps7Url = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
+    $ps7Ver = "7.6.9"
     $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
-    if (Test-Path $ps7Out) { Remove-Item $ps7Out -Force }
-    Get-WithProxy -Url $ps7Url -OutFile $ps7Out
-    $ps7Hash = "ed331a04679b83d4c013705282d1f3f8d8300485eb04c081f36e11eaf1148bd0"
-    if ((Get-FileHash $ps7Out -Algorithm SHA256).Hash -ne $ps7Hash) {
-        throw "PowerShell $ps7Ver SHA256 校验失败"
-    }
+    $ps7Urls = @(
+        "https://mirrors.sdu.edu.cn/github-release/PowerShell_PowerShell/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi",
+        "https://mirror.nju.edu.cn/github-release/PowerShell/PowerShell/v$ps7Ver%20Release%20of%20PowerShell/PowerShell-$ps7Ver-win-x64.msi",
+        "https://v4.gh-proxy.org/https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
+    )
+    Write-Info "下载并安装 PowerShell $ps7Ver..."
+    Get-VerifiedFile -Urls $ps7Urls -OutFile $ps7Out -Sha256 "50D33C7494AAF82B987CFD4DE3F232D04F91FDD4C0DEECA8A669CCED3E7CF8F9"
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
     if ($proc.ExitCode -notin @(0, 3010)) {
-        throw "PowerShell 安装失败，退出码: $($proc.ExitCode)"
+        throw "PowerShell 安装失败，退出码：$($proc.ExitCode)"
     }
-    Write-Ok "PowerShell 7.4 安装完成"
+    Write-Ok "PowerShell $ps7Ver 安装完成"
 } else {
     Write-Ok "PowerShell 7 已存在，跳过安装"
 }
+[Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK', 'Off', 'Machine')
 
 # ==================== 2. Git ====================
 $gitDir = "C:\Program Files\Git\cmd"
 $gitExe = "$gitDir\git.exe"
 if (-not (Test-Path $gitExe)) {
-    Write-Info "下载并安装 Git 2.54..."
-    $gitVer = "2.54.0"
-    $gitUrl = "https://github.com/git-for-windows/git/releases/download/v$gitVer.windows.1/Git-$gitVer-64-bit.exe"
-    $gitOut = "$temp\Git-$gitVer-64-bit.exe"
-    if (Test-Path $gitOut) { Remove-Item $gitOut -Force }
-    Get-WithProxy -Url $gitUrl -OutFile $gitOut
-    # Git 安装包 SHA256 校验
-    $gitHash = "2b96e7854f0520f0f6b709c21041d9801b1be44d5e1a0d9fa621b2fbc40f1983"
-    if ((Get-FileHash $gitOut -Algorithm SHA256).Hash -ne $gitHash) {
-        throw "Git $gitVer SHA256 校验失败"
-    }
+    $gitVer = "2.56.0.4"
+    $gitTag = "v2.56.0.windows.4"
+    $gitName = "Git-$gitVer-64-bit.exe"
+    $gitOut = "$temp\$gitName"
+    $gitUrls = @(
+        "https://mirrors.cernet.edu.cn/github-release/git-for-windows/git/Git%20for%20Windows%20$gitTag/$gitName",
+        "https://mirrors.sdu.edu.cn/github-release/git-for-windows_git/$gitTag/$gitName",
+        "https://v4.gh-proxy.org/https://github.com/git-for-windows/git/releases/download/$gitTag/$gitName"
+    )
+    Write-Info "下载并安装 Git $gitVer..."
+    Get-VerifiedFile -Urls $gitUrls -OutFile $gitOut -Sha256 "4961A4A8CC778D8B6E00A5819E5FE4D078B754555AFF7AEDC2D77A5D74C2DE80"
     $proc = Start-Process -FilePath $gitOut -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS", "/COMPONENTS=icons,ext\reg\shellhere,assoc,assoc_sh" -Wait -PassThru
     if ($proc.ExitCode -ne 0) {
-        throw "Git 安装失败，退出码: $($proc.ExitCode)"
+        throw "Git 安装失败，退出码：$($proc.ExitCode)"
     }
     Write-Ok "Git $gitVer 安装完成"
 } else {
     Write-Ok "Git 已存在，跳过安装"
 }
 
-# ==================== 3. Node.js（清华 TUNA 镜像）====================
+# ==================== 3. Node.js（CERNET / 清华 TUNA 镜像）====================
 $nodeDir = "C:\Program Files\nodejs"
 $nodeExe = "$nodeDir\node.exe"
 if (-not (Test-Path $nodeExe)) {
-    Write-Info "从清华 TUNA 镜像下载并安装 Node.js..."
     $nodeVer = "v22.16.0"
     $msiName = "node-$nodeVer-x64.msi"
-    $nodeUrl = "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
     $nodeOut = "$temp\$msiName"
-    if (Test-Path $nodeOut) { Remove-Item $nodeOut -Force }
-    Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeOut -UseBasicParsing -TimeoutSec 300
-    $nodeHash = "e2f2802202513e1bf41f7c00307635f6c6fe31c0275c1e03d269d45a76e5fc2e"
-    if ((Get-FileHash $nodeOut -Algorithm SHA256).Hash -ne $nodeHash) {
-        throw "Node.js MSI SHA256 校验失败"
-    }
+    $nodeUrls = @(
+        "https://mirrors.cernet.edu.cn/nodejs-release/$nodeVer/$msiName",
+        "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/$nodeVer/$msiName"
+    )
+    Write-Info "从教育网镜像下载并安装 Node.js $nodeVer..."
+    Get-VerifiedFile -Urls $nodeUrls -OutFile $nodeOut -Sha256 "e2f2802202513e1bf41f7c00307635f6c6fe31c0275c1e03d269d45a76e5fc2e"
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$nodeOut`"", "/qn", "/norestart" -Wait -PassThru
     if ($proc.ExitCode -notin @(0, 3010)) {
-        throw "Node.js 安装失败，退出码: $($proc.ExitCode)"
+        throw "Node.js 安装失败，退出码：$($proc.ExitCode)"
     }
     Write-Ok "Node.js $nodeVer 安装完成"
 } else {
@@ -401,33 +390,34 @@ Write-Warn "还原卡环境：重启后需重新运行本脚本。建议保存�
 PowerShell 7 和 Node.js 使用 MSI 安装程序，默认安装到 `C:\Program Files\`，需要管理员权限。Git 的 `/VERYSILENT` 安装同样需要管理员。
 
 如果机房环境**完全无法获得管理员权限**，则需要改用：
+
 - Node.js 便携版（zip 解压到用户目录）
 - Git 便携版（PortableGit）
 - PowerShell 7 也有 zip 版
 
 但本文假设可以右键"以管理员身份运行"PowerShell，这是机房最常见的场景。
 
-### 2. 代理下载自动 fallback
+### 2. 教育网镜像优先，代理仅作回退
 
-```powershell
-$proxies = @(
-    "https://v4.gh-proxy.org/"
-    "https://gh-proxy.org/"
-    "https://mirror.ghproxy.com/"
-    "https://ghproxy.net/"
-    "https://ghp.ci/"
-)
+脚本使用 `Get-VerifiedFile` 按顺序尝试多个完整 URL，不再把所有地址机械地拼接到代理后面：
+
+| 组件             | 首选来源                 | 回退来源               |
+| ---------------- | ------------------------ | ---------------------- |
+| PowerShell 7.6.9 | CERNET 清单中的 SDU 节点 | NJU、`v4.gh-proxy.org` |
+| Git 2.56.0.4     | CERNET                   | SDU、`v4.gh-proxy.org` |
+| Node.js 22.16.0  | CERNET                   | 清华 TUNA              |
+
+每个来源下载后都立即校验 SHA256；只有校验通过才会把 `.part` 文件改成正式安装包。已存在且校验通过的安装包会直接复用，因此重复运行不必重新下载。
+
+CERNET 主站会根据网络跳转到具体节点，PowerShell 和 Git 的目录结构并不相同。脚本中的 URL 已按实际目录填写，不要只替换域名。可在 `https://mirrors.cernet.edu.cn/github-release/` 查看当前节点提供的项目。
+
+### 3. Node.js 使用 CERNET / TUNA 镜像
+
+```text
+https://mirrors.cernet.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-x64.msi
 ```
 
-GitHub Release 文件下载会依次尝试以上代理站，全部失败后才走直连。`v4.gh-proxy.org` 目前最稳定（支持文件流完整传输），排第一位。
-
-### 3. Node.js 从清华 TUNA 镜像下载
-
-```
-https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-x64.msi
-```
-
-TUNA 同步了完整的 Node.js 发布目录，国内下载速度通常在 5~20MB/s。如需其他版本，直接去镜像站目录里挑对应 MSI 改 URL 即可。
+CERNET 会把 `/nodejs-release/` 重定向到实际节点。不要手动改成 `/node/`：实测后者直接发起 GET 会返回 404，而保留 `/nodejs-release/` 可以正常下载并通过 SHA256 校验。CERNET 不可用时，脚本自动回退到 TUNA。
 
 ### 4. npm 国内镜像：npmmirror
 
@@ -463,12 +453,12 @@ function Add-ToPath {
 
 **为什么必须这样做？**
 
-| 组件 | MSI/安装程序的行为 | 还原机房的问题 |
-|------|-------------------|---------------|
-| Node.js | 把 `C:\Program Files\nodejs` 加入系统 PATH | 注册表还原后丢失 |
-| npm 全局包 | 把 `%APPDATA%\npm` 加入用户 PATH | 注册表还原后丢失 |
-| Git | 把 `C:\Program Files\Git\cmd` 加入系统 PATH | 注册表还原后丢失 |
-| Bun | 安装脚本把 `.bun\bin` 加入用户 PATH | 注册表还原后丢失 |
+| 组件       | MSI/安装程序的行为                          | 还原机房的问题   |
+| ---------- | ------------------------------------------- | ---------------- |
+| Node.js    | 把 `C:\Program Files\nodejs` 加入系统 PATH  | 注册表还原后丢失 |
+| npm 全局包 | 把 `%APPDATA%\npm` 加入用户 PATH            | 注册表还原后丢失 |
+| Git        | 把 `C:\Program Files\Git\cmd` 加入系统 PATH | 注册表还原后丢失 |
+| Bun        | 安装脚本把 `.bun\bin` 加入用户 PATH         | 注册表还原后丢失 |
 
 安装程序写入的是**注册表**，而还原卡保护的是**磁盘**+**注册表**。所以依赖安装程序自动添加 PATH 是不可靠的。
 
@@ -510,11 +500,13 @@ bun add -g @moonshot-ai/kimi-code
 实测发现 Kimi Code 官方通过 npm 发布的包名并非 `kimi-code`，而是 scoped 包 `@moonshot-ai/kimi-code`。Bun 对该包的支持更好，且安装后自动把 `kimi.exe` 链接到 `.bun\bin`，无需额外配置 PATH。
 
 **安装位置**：
+
 - 包本体：`~/.bun/install/global/node_modules/@moonshot-ai/kimi-code/`
 - 可执行文件：`~/.bun/bin/kimi.exe`
 - 配置目录：`~/.kimi-code/`（含 `config.toml`、API Key 等）
 
 **配置迁移**：
+
 - 旧版 `~/.kimi-code/config.toml` 继续兼容，无需重新配置 API Key。
 - 还原卡环境下，每次重启后 `~/.kimi-code/` 会被清空，需要重新运行脚本安装 Kimi Code，或把 `config.toml` 备份到 D 盘/U 盘，每次开机后复制回去。
 
@@ -533,6 +525,7 @@ bun add -g @moonshot-ai/kimi-code
 **原因**：虽然脚本已把 `%APPDATA%\npm` 加入注册表 PATH，但还原卡可能拦截了注册表写入，或者新窗口的 PATH 缓存未刷新。
 
 **解决**：
+
 - 方案 A：重新运行一遍脚本（脚本会检测已安装并跳过，只补 PATH）。
 - 方案 B：在当前窗口手动执行：
   ```powershell
@@ -559,30 +552,33 @@ npm.cmd update -g bun
 
 修改脚本中的版本号，重新运行即可。旧版本会被新版本覆盖安装。
 
-### Q6：机房网络连不上 TUNA 镜像？
+### Q6：机房网络连不上 CERNET 或 TUNA 镜像？
 
-如果清华 TUNA 也被墙/限速，替换为其他镜像：
+脚本会先从 CERNET 下载，失败后自动切换 TUNA。也可以把 `$nodeUrls` 改为其他镜像：
 
-| 镜像站 | Node.js 地址 |
-|--------|-------------|
+| 镜像站    | Node.js 地址                                           |
+| --------- | ------------------------------------------------------ |
+| CERNET    | `https://mirrors.cernet.edu.cn/nodejs-release/`        |
 | 清华 TUNA | `https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/` |
-| 华为云 | `https://repo.huaweicloud.com/nodejs/` |
-| 阿里云 | `https://cdn.npmmirror.com/binaries/node/` |
+| 华为云    | `https://repo.huaweicloud.com/nodejs/`                 |
+| 阿里云    | `https://cdn.npmmirror.com/binaries/node/`             |
+
+更换来源后仍需核对对应版本的 SHA256，不要绕过校验。
 
 ---
 
 ## 装完后，文件都在哪？
 
-| 组件 | 实际路径 | 说明 |
-|------|---------|------|
-| **PowerShell 7** | `C:\Program Files\PowerShell\7\pwsh.exe` | MSI 安装，与系统 5.1 共存 |
-| **Git** | `C:\Program Files\Git\cmd\git.exe` | 静默安装 |
-| **Node.js** | `C:\Program Files\nodejs\node.exe` | MSI 安装 |
-| **npm 全局包** | `C:\Users\<user>\AppData\Roaming\npm` | npm install -g 的落地位置 |
-| **Bun** | `C:\Users\<user>\AppData\Roaming\npm\node_modules\bun\bin\bun.exe` | 本体位置 |
-| **Bun 全局包** | `C:\Users\<user>\.bun\bin` | bun add -g 的落地位置（含 kimi 等工具） |
-| **Kimi Code 包** | `C:\Users\<user>\.bun\install\global\node_modules\@moonshot-ai\kimi-code\` | Bun 全局安装 |
-| **Kimi Code 配置** | `C:\Users\<user>\.kimi-code\` | 含 config.toml、API Key、session 等 |
+| 组件               | 实际路径                                                                   | 说明                                    |
+| ------------------ | -------------------------------------------------------------------------- | --------------------------------------- |
+| **PowerShell 7**   | `C:\Program Files\PowerShell\7\pwsh.exe`                                   | MSI 安装，与系统 5.1 共存               |
+| **Git**            | `C:\Program Files\Git\cmd\git.exe`                                         | 静默安装                                |
+| **Node.js**        | `C:\Program Files\nodejs\node.exe`                                         | MSI 安装                                |
+| **npm 全局包**     | `C:\Users\<user>\AppData\Roaming\npm`                                      | npm install -g 的落地位置               |
+| **Bun**            | `C:\Users\<user>\AppData\Roaming\npm\node_modules\bun\bin\bun.exe`         | 本体位置                                |
+| **Bun 全局包**     | `C:\Users\<user>\.bun\bin`                                                 | bun add -g 的落地位置（含 kimi 等工具） |
+| **Kimi Code 包**   | `C:\Users\<user>\.bun\install\global\node_modules\@moonshot-ai\kimi-code\` | Bun 全局安装                            |
+| **Kimi Code 配置** | `C:\Users\<user>\.kimi-code\`                                              | 含 config.toml、API Key、session 等     |
 
 ---
 
@@ -597,12 +593,12 @@ New-Item -ItemType Directory -Force -Path $portable | Out-Null
 
 # --- Node.js 便携版 ---
 $nodeZip = "$portable\node-v22.16.0-win-x64.zip"
-Invoke-WebRequest -Uri "https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-win-x64.zip" -OutFile $nodeZip
+Invoke-WebRequest -Uri "https://mirrors.cernet.edu.cn/nodejs-release/v22.16.0/node-v22.16.0-win-x64.zip" -OutFile $nodeZip
 Expand-Archive -Path $nodeZip -DestinationPath $portable -Force
 $nodeDir = "$portable\node-v22.16.0-win-x64"
 
 # --- Git 便携版（PortableGit）---
-$gitZip = "$portable\PortableGit-2.54.0-64-bit.7z.exe"
+$gitZip = "$portable\PortableGit-2.56.0.4-64-bit.7z.exe"
 # 下载后自解压...
 
 # --- 统一 PATH ---
@@ -616,6 +612,13 @@ Add-ToPath -Dir "$portable\PortableGit\cmd"
 ---
 
 ## 更新日志
+
+- **2026-11-09** 修复：
+  - PowerShell 全新安装改用 CERNET 清单中的 SDU/NJU 节点，版本更新为 7.6.9；已有 PowerShell 7 直接跳过
+  - Git 改用 CERNET 并更新为 2.56.0.4；Node.js 22.16.0 改用 CERNET 首选、TUNA 回退
+  - 下载函数改为 `Get-VerifiedFile`：使用 `curl.exe` 和 `.part` 文件，逐源校验 SHA256，删除失效代理拼接逻辑
+  - 修正 CERNET Node.js 路径：保留 `/nodejs-release/` 入口，避免手动改成 `/node/` 后 GET 返回 404
+  - 已实测 Node.js、npm、Bun、Kimi Code 完整安装及重复运行；所有新增镜像安装包均通过 SHA256 校验
 
 - **2026-06-03** 初版发布：
   - 整合 PS7 + Git + Node.js + npm + Bun + Kimi Code 为一条龙脚本
