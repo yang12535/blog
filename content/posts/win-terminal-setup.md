@@ -24,6 +24,132 @@ tags: [windows, terminal, powershell, utf-8, github-proxy, 还原机房]
 
 ```powershell
 $ErrorActionPreference = "Stop"
+function Write-Ok($msg)   { Write-Host ">>> $msg" -ForegroundColor Green }
+function Write-Warn($msg) { Write-Host ">>> $msg" -ForegroundColor Yellow }
+
+$curlHelp = & curl.exe --help all 2>$null | Out-String
+$curlRevokeFallback = if ($curlHelp -match '--ssl-revoke-best-effort') {
+    '--ssl-revoke-best-effort'
+} else {
+    '--ssl-no-revoke'
+}
+
+function Get-RemoteText {
+    param([string]$Url, [int]$MaxTime = 45)
+
+    $curlArgs = @(
+        '--fail', '--location', '--silent', '--show-error',
+        '--connect-timeout', '10', '--max-time', "$MaxTime", '--retry', '1'
+    )
+    $output = & curl.exe @curlArgs $Url
+    if ($LASTEXITCODE -eq 60) {
+        Write-Warn "curl 证书验证失败，使用 $curlRevokeFallback 重试元数据请求。"
+        $output = & curl.exe @curlArgs $curlRevokeFallback $Url
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "元数据请求失败：$Url"
+    }
+    return ($output -join "`n")
+}
+
+function Get-GitHubAsset {
+    param(
+        [string]$Repo,
+        [string]$AssetPattern,
+        [string]$FallbackTag,
+        [string]$FallbackReleaseName,
+        [string]$FallbackName,
+        [string]$FallbackHash
+    )
+
+    if ($FallbackName -notmatch $AssetPattern) {
+        throw "固定回退文件名与匹配规则不符：$FallbackName"
+    }
+    $fallback = [PSCustomObject]@{
+        Version = $Matches[1]
+        Tag = $FallbackTag
+        ReleaseName = $FallbackReleaseName
+        Name = $FallbackName
+        Hash = $FallbackHash
+        Url = "https://github.com/$Repo/releases/download/$FallbackTag/$FallbackName"
+    }
+
+    try {
+        $release = (Get-RemoteText "https://api.github.com/repos/$Repo/releases/latest") | ConvertFrom-Json
+        $asset = $release.assets | Where-Object { $_.name -match $AssetPattern } | Select-Object -First 1
+        if ($null -eq $asset) {
+            Write-Warn "$Repo 最新 Release 没有 $AssetPattern 对应的安装包，使用固定版本 $($fallback.Version)。"
+            return $fallback
+        }
+        if ($asset.digest -notmatch '^sha256:[0-9A-Fa-f]{64}$') {
+            Write-Warn "$Repo 最新 Release 未提供可信 SHA256，使用固定版本 $($fallback.Version)。"
+            return $fallback
+        }
+        if ($asset.name -notmatch $AssetPattern) {
+            throw "安装包文件名匹配失败：$($asset.name)"
+        }
+        Write-Ok "从 GitHub 官方 Release 获取到 $($asset.name) 及 SHA256。"
+        return [PSCustomObject]@{
+            Version = $Matches[1]
+            Tag = [string]$release.tag_name
+            ReleaseName = [string]$release.name
+            Name = [string]$asset.name
+            Hash = $asset.digest.Substring(7).ToUpperInvariant()
+            Url = [string]$asset.browser_download_url
+        }
+    } catch {
+        Write-Warn "GitHub 官方 Release 元数据不可用，使用固定版本 $($fallback.Version)：$($_.Exception.Message)"
+        return $fallback
+    }
+}
+
+function Get-CernetMirrorUrls {
+    param([string]$Repository, [string[]]$RelativePaths)
+
+    try {
+        $response = (Get-RemoteText "https://mirrors.cernet.edu.cn/api/scoring/$Repository") | ConvertFrom-Json
+    } catch {
+        Write-Warn "CERNET 动态镜像清单不可用，改用固定回退地址：$($_.Exception.Message)"
+        return
+    }
+
+    $seenSites = @{}
+    $seenUrls = @{}
+    $siteCount = 0
+    foreach ($score in $response.scores) {
+        $site = ([string]$score.abbr -split '\.')[0]
+        if ($seenSites.ContainsKey($site)) {
+            continue
+        }
+        $seenSites[$site] = $true
+        $siteCount++
+        $repoPath = ([string]$score.repo).TrimEnd('/')
+        foreach ($relativePath in $RelativePaths) {
+            $url = "https://$($score.resolve)$repoPath/$($relativePath.TrimStart('/'))"
+            if (-not $seenUrls.ContainsKey($url)) {
+                $seenUrls[$url] = $true
+                Write-Output $url
+            }
+        }
+        if ($siteCount -ge 4) {
+            break
+        }
+    }
+}
+
+function Get-GitHubMirrorPaths {
+    param([string]$Repo, [PSCustomObject]$Asset)
+
+    $tag = [Uri]::EscapeDataString($Asset.Tag)
+    $releaseName = [Uri]::EscapeDataString($Asset.ReleaseName)
+    $sduRepo = $Repo.Replace('/', '_')
+    return @(
+        "$Repo/LatestRelease/$($Asset.Name)",
+        "$Repo/$tag/$($Asset.Name)",
+        "$Repo/$releaseName/$($Asset.Name)",
+        "$sduRepo/$tag/$($Asset.Name)"
+    ) | Select-Object -Unique
+}
 
 function Get-VerifiedFile {
     param(
@@ -34,35 +160,29 @@ function Get-VerifiedFile {
 
     if (Test-Path $OutFile) {
         if ((Get-FileHash $OutFile -Algorithm SHA256).Hash -ieq $Sha256) {
-            Write-Host ">>> 已存在校验通过的安装包：$OutFile" -ForegroundColor Green
+            Write-Ok "已存在校验通过的安装包：$OutFile"
             return
         }
         Remove-Item $OutFile -Force
     }
 
     $part = "$OutFile.part"
-    $curlHelp = & curl.exe --help all 2>$null | Out-String
-    $revokeFallback = if ($curlHelp -match '--ssl-revoke-best-effort') {
-        '--ssl-revoke-best-effort'
-    } else {
-        '--ssl-no-revoke'
-    }
     foreach ($downloadUrl in $Urls) {
         Remove-Item $part -Force -ErrorAction SilentlyContinue
         Write-Host "Trying $downloadUrl ..." -ForegroundColor DarkGray
         & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 --output $part $downloadUrl
         if ($LASTEXITCODE -eq 60) {
-            Write-Host ">>> curl 证书验证失败，使用 $revokeFallback 重试（仍校验 CA、域名和有效期）。" -ForegroundColor Yellow
-            & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 $revokeFallback --output $part $downloadUrl
+            Write-Warn "curl 证书验证失败，使用 $curlRevokeFallback 重试（仍校验 CA、域名和有效期）。"
+            & curl.exe --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 1 $curlRevokeFallback --output $part $downloadUrl
         }
         if ($LASTEXITCODE -eq 0 -and (Test-Path $part)) {
             $actualHash = (Get-FileHash $part -Algorithm SHA256).Hash
             if ($actualHash -ieq $Sha256) {
                 Move-Item $part $OutFile -Force
-                Write-Host ">>> 下载及 SHA256 校验成功。" -ForegroundColor Green
+                Write-Ok "下载及 SHA256 校验成功。"
                 return
             }
-            Write-Host "SHA256 不匹配：$actualHash" -ForegroundColor Red
+            Write-Warn "SHA256 不匹配：$actualHash"
         }
     }
 
@@ -77,24 +197,24 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 $temp = "$env:TEMP\termsetup"
 New-Item -ItemType Directory -Force -Path $temp | Out-Null
 
-# --- 1. PowerShell 7：CERNET 清单节点优先 ---
+# --- 1. PowerShell 7：官方 Release 元数据 + CERNET 动态节点 ---
 $ps7Dir = "C:\Program Files\PowerShell\7"
 $ps7Exe = "$ps7Dir\pwsh.exe"
-$ps7Ver = "7.6.9"
-$ps7Hash = "50D33C7494AAF82B987CFD4DE3F232D04F91FDD4C0DEECA8A669CCED3E7CF8F9"
-
 if (-not (Test-Path $ps7Exe)) {
-    $ps7Out = "$temp\PowerShell-$ps7Ver-win-x64.msi"
+    $ps7 = Get-GitHubAsset -Repo "PowerShell/PowerShell" -AssetPattern '^PowerShell-(\d+\.\d+\.\d+)-win-x64\.msi$' -FallbackTag "v7.6.9" -FallbackReleaseName "v7.6.9 Release of PowerShell" -FallbackName "PowerShell-7.6.9-win-x64.msi" -FallbackHash "50D33C7494AAF82B987CFD4DE3F232D04F91FDD4C0DEECA8A669CCED3E7CF8F9"
+    $ps7Out = "$temp\$($ps7.Name)"
+    $ps7Paths = Get-GitHubMirrorPaths -Repo "PowerShell/PowerShell" -Asset $ps7
     $ps7Urls = @(
-        "https://mirrors.sdu.edu.cn/github-release/PowerShell_PowerShell/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi",
-        "https://mirror.nju.edu.cn/github-release/PowerShell/PowerShell/v$ps7Ver%20Release%20of%20PowerShell/PowerShell-$ps7Ver-win-x64.msi",
-        "https://v4.gh-proxy.org/https://github.com/PowerShell/PowerShell/releases/download/v$ps7Ver/PowerShell-$ps7Ver-win-x64.msi"
-    )
-    Write-Host ">>> 下载并安装 PowerShell $ps7Ver..." -ForegroundColor Cyan
-    Get-VerifiedFile -Urls $ps7Urls -OutFile $ps7Out -Sha256 $ps7Hash
+        @(Get-CernetMirrorUrls -Repository "github-release" -RelativePaths $ps7Paths)
+        $ps7Paths | ForEach-Object { "https://mirrors.cernet.edu.cn/github-release/$_" }
+        "https://v4.gh-proxy.org/$($ps7.Url)"
+        $ps7.Url
+    ) | Select-Object -Unique
+    Write-Host ">>> 下载并安装 PowerShell $($ps7.Version)..." -ForegroundColor Cyan
+    Get-VerifiedFile -Urls $ps7Urls -OutFile $ps7Out -Sha256 $ps7.Hash
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", "`"$ps7Out`"", "/qn", "ADD_EXPLORER_CONTEXT_MENU=1", "REBOOT=ReallySuppress" -Wait -PassThru
     if ($proc.ExitCode -notin @(0, 3010)) {
-        throw "PowerShell $ps7Ver 安装失败，退出码：$($proc.ExitCode)"
+        throw "PowerShell $($ps7.Version) 安装失败，退出码：$($proc.ExitCode)"
     }
 } else {
     Write-Host ">>> PowerShell 7 已存在，跳过安装。" -ForegroundColor Green
@@ -205,11 +325,13 @@ Write-Host ">>> 完成！双击桌面的 'Terminal' 快捷方式即可使用。"
 
 ## 分步详解
 
-### 1. 安装 PowerShell 7（全新安装为 7.6.9）
+### 1. 安装 PowerShell 7（自动选择兼容 MSI）
 
-Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。主脚本首选 CERNET github-release（`https://mirrors.cernet.edu.cn/github-release/`）清单中的 SDU 节点，失败后切换 NJU 或 `v4.gh-proxy.org`；检测到任意已有 PowerShell 7 时会跳过安装。
+Windows 自带的 PowerShell 5.1 默认编码是 GBK，Unicode 支持差、很多新语法不支持。主脚本先从 GitHub 官方 Release API 获取最新 x64 MSI 的文件名和 SHA256，再按 CERNET `/api/scoring/github-release` 返回的动态节点及目录入口尝试下载，失败后切换统一重定向入口、`v4.gh-proxy.org` 或 GitHub 官方地址。
 
-如果 Schannel 因证书吊销列表不可达而使 `curl` 返回 60，下载函数会自动使用 `--ssl-revoke-best-effort` 重试；旧版 `curl` 不支持该参数时退到 `--ssl-no-revoke`。CA、域名、有效期和安装包 SHA256 校验始终保留，不安装额外根证书，也不使用 `--insecure`。
+镜像站更新后可能删除旧 Release，因此不再把镜像 URL 永久绑定到某个版本。如果最新版不提供 MSI、官方元数据不可用或缺少 SHA256，脚本回退到内置的 PowerShell 7.6.9 和固定哈希；检测到任意已有 PowerShell 7 时会跳过安装。动态版本的哈希只信 GitHub 官方 API，不信镜像或下载代理附带的哈希。
+
+如果 Schannel 因证书吊销列表不可达而使 `curl` 返回 60，元数据请求和文件下载都会自动使用 `--ssl-revoke-best-effort` 重试；旧版 `curl` 不支持该参数时退到 `--ssl-no-revoke`。CA、域名、有效期和安装包 SHA256 校验始终保留，不安装额外根证书，也不使用 `--insecure`。
 
 ```powershell
 msiexec /i "PowerShell-<版本>-win-x64.msi" /qn ADD_EXPLORER_CONTEXT_MENU=1
@@ -475,6 +597,11 @@ Write-Host ">>> 完成！双击桌面 'Terminal' 即可使用。" -ForegroundCol
 ---
 
 ## 更新日志
+
+- **2026-11-16** 修复：
+  - 镜像站同步后旧版 PowerShell 的写死镜像 URL 已返回 404；主脚本改为从 GitHub 官方最新 Release 获取 x64 MSI 的文件名和 SHA256
+  - CERNET 改为读取动态节点及真实目录入口，兼容 `LatestRelease`、版本标签和 SDU 目录形式，并保留统一重定向、代理和 GitHub 官方回退
+  - 最新版没有 MSI、官方元数据不可用或缺少 SHA256 时回退到 PowerShell 7.6.9 和固定哈希；纯代理备选脚本仍保持 7.4.6 不变
 
 - **2026-11-09** 修复：
   - 主脚本改为教育网镜像优先，PowerShell 全新安装版本更新为 7.6.9；已有 PowerShell 7 直接跳过
